@@ -133,9 +133,11 @@ body{font-family:Inter,system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min
 .btn-login{width:100%;padding:.8rem;border:none;border-radius:.55rem;background:#dc2626;color:#fff;font-weight:700;cursor:pointer}
 .login-hint{text-align:center;font-size:.75rem;color:rgba(255,255,255,.8);margin-top:1rem}
 .app{display:none}.app.show{display:block}
-.app-sticky{position:sticky;top:0;z-index:40;background:#1e293b;box-shadow:0 4px 18px rgba(15,23,42,.18)}
-.page-chrome{position:sticky;top:var(--sticky-chrome-h,72px);z-index:30;background:var(--cami-bg,#eef2f7);padding:.75rem 0 .4rem;margin:0 -1rem;padding-left:1rem;padding-right:1rem;box-shadow:0 8px 18px rgba(15,23,42,.06)}
-.table-scroll thead th{position:sticky;top:0;z-index:2;background:#f8fafc}
+.app-sticky{position:fixed;top:0;left:0;right:0;z-index:40;background:var(--cami-bg,#eef2f7);box-shadow:0 8px 24px rgba(15,23,42,.14)}
+.page-chrome{display:none;background:var(--cami-bg,#eef2f7);padding:.7rem 1rem .55rem;max-width:1900px;margin:0 auto}
+.page-chrome.show{display:block}
+.table-scroll thead th{background:#f8fafc}
+#app.ready{padding-top:var(--sticky-chrome-h,140px)}
 .header{background:linear-gradient(to right,#1e3a5f,#1e293b);color:#fff}
 .header-inner{max-width:1900px;margin:0 auto;padding:.9rem 1.1rem;display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;justify-content:space-between}
 .logo{display:flex;gap:.65rem;align-items:center}
@@ -419,10 +421,7 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
     </div></div>
   </div></header>
   <div id="expiryAlert" class="expiry-alert"><div class="expiry-alert-inner"><i class="fas fa-exclamation-triangle"></i><div id="expiryAlertText"></div><button class="btn-sm" onclick="filterExpiring()">Mostra</button></div></div>
-  </div>
-  <main class="main">
-  <div id="pageDpc" class="page-panel active">
-    <div class="page-chrome" id="dpcChrome">
+    <div class="page-chrome show" id="dpcChrome">
     <div id="permBanner" class="info-banner"></div>
     <div class="stats" id="statsContainer"></div>
     <div class="client-stats" id="clientStats"></div>
@@ -436,6 +435,22 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
       <select id="filterScadenza" onchange="renderTable()"><option value="">Scadenze DPC</option><option value="scaduti">DPC scaduti</option><option value="d7">DPC scaduti + entro 7 gg</option><option value="d15">DPC scaduti + entro 15 gg</option><option value="d30">DPC scaduti + entro 30 gg</option><option value="in_scadenza">DPC in scadenza (1-30)</option><option value="ok">DPC in regola</option></select>
     </div></div>
     </div><!-- /dpcChrome -->
+    <div class="page-chrome" id="commesseChrome">
+    <div class="stats" id="commesseStats"></div>
+    <div class="filters"><div class="filters-inner">
+      <div class="search-wrap"><i class="fas fa-search"></i><input id="commesseSearch" placeholder="Cerca commessa, cliente, ROE, N° PROTOCOLLO OFC/AMM, N° PROTOCOLLO CON..." oninput="renderCommesse()"></div>
+      <select id="commesseFilterStato" onchange="renderCommesse()">
+        <option value="aperte">Aperte</option>
+        <option value="chiuse">Chiuse</option>
+        <option value="tutte">Tutte</option>
+      </select>
+      <select id="commesseFilterCliente" onchange="renderCommesse()"><option value="">Tutti i clienti</option></select>
+      <button class="btn btn-primary" onclick="openCommessaModal()"><i class="fas fa-plus"></i> Nuova commessa</button>
+    </div></div>
+    </div><!-- /commesseChrome -->
+  </div>
+  <main class="main">
+  <div id="pageDpc" class="page-panel active">
     <div class="table-wrap">
       <div class="table-scroll-top" id="tableScrollTop" title="Scorri orizzontalmente"><div class="table-scroll-top-inner" id="tableScrollTopInner"></div></div>
       <div class="table-scroll" id="tableScroll"><table>
@@ -451,19 +466,6 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
   </div><!-- /pageDpc -->
 
   <div id="pageCommesse" class="page-panel">
-    <div class="page-chrome" id="commesseChrome">
-    <div class="stats" id="commesseStats"></div>
-    <div class="filters"><div class="filters-inner">
-      <div class="search-wrap"><i class="fas fa-search"></i><input id="commesseSearch" placeholder="Cerca commessa, cliente, ROE, N° PROTOCOLLO OFC/AMM, N° PROTOCOLLO CON..." oninput="renderCommesse()"></div>
-      <select id="commesseFilterStato" onchange="renderCommesse()">
-        <option value="aperte">Aperte</option>
-        <option value="chiuse">Chiuse</option>
-        <option value="tutte">Tutte</option>
-      </select>
-      <select id="commesseFilterCliente" onchange="renderCommesse()"><option value="">Tutti i clienti</option></select>
-      <button class="btn btn-primary" onclick="openCommessaModal()"><i class="fas fa-plus"></i> Nuova commessa</button>
-    </div></div>
-    </div><!-- /commesseChrome -->
     <div class="table-wrap">
       <div class="table-scroll">
         <table>
@@ -1994,10 +1996,13 @@ function hideAllPages(){
   ["pageDpc","pageCommesse","pageTools"].forEach(function(id){
     var el=document.getElementById(id);if(el)el.classList.remove("active");
   });
+  var dc=document.getElementById("dpcChrome");if(dc)dc.classList.remove("show");
+  var cc=document.getElementById("commesseChrome");if(cc)cc.classList.remove("show");
 }
 function showCommessePage(){
   hideAllPages();
   var c=document.getElementById("pageCommesse");if(c)c.classList.add("active");
+  var cc=document.getElementById("commesseChrome");if(cc)cc.classList.add("show");
   var bd=document.getElementById("btnDpcHome"),bc=document.getElementById("btnCommesse"),bt=document.getElementById("btnToolsNav");
   if(bd)bd.style.display="inline-flex";
   if(bc)bc.style.display="none";
@@ -2010,6 +2015,7 @@ function showCommessePage(){
 function showDpcPage(){
   hideAllPages();
   var d=document.getElementById("pageDpc");if(d)d.classList.add("active");
+  var dc=document.getElementById("dpcChrome");if(dc)dc.classList.add("show");
   var bd=document.getElementById("btnDpcHome"),bc=document.getElementById("btnCommesse"),bt=document.getElementById("btnToolsNav");
   if(bd)bd.style.display="none";
   if(bc)bc.style.display="inline-flex";
@@ -2795,6 +2801,7 @@ function renderStats(){
     '<div class="stat-card stat-scaduti" title="DPC con almeno una scadenza superata (manutenzione o filtri)"><div class="stat-icon"><i class="fas fa-exclamation-circle"></i></div><div class="stat-body"><div class="stat-value '+(sc?"stat-red":"")+'">'+sc+'</div><div class="stat-label">DPC scaduti</div></div></div>'+
     '<div class="stat-card stat-scadenza" title="DPC con prossima scadenza entro 30 giorni"><div class="stat-icon"><i class="fas fa-clock"></i></div><div class="stat-body"><div class="stat-value '+(so?"stat-orange":"")+'">'+so+'</div><div class="stat-label">DPC in scadenza</div></div></div>'+
     '<div class="stat-card stat-op"><div class="stat-icon"><i class="fas fa-check-circle"></i></div><div class="stat-body"><div class="stat-value">'+op+'</div><div class="stat-label">Operative</div></div></div>';
+  try{syncStickyChrome();}catch(e){}
 }
 function renderClientStats(){
   var counts={};
@@ -2852,8 +2859,10 @@ function updateExpiry(){
 }
 function syncStickyChrome(){
   var el=document.getElementById("appSticky");
-  var h=el?Math.ceil(el.getBoundingClientRect().height):72;
+  var h=el?Math.ceil(el.getBoundingClientRect().height):140;
   document.documentElement.style.setProperty("--sticky-chrome-h",(h)+"px");
+  var app=document.getElementById("app");
+  if(app){app.classList.add("ready");app.style.paddingTop=h+"px";}
 }
 window.addEventListener("resize",function(){try{syncStickyChrome();}catch(e){}});
 function filterExpiring(){var hasOver=equipment.some(function(e){return deviceExpiryStatus(e)==="overdue";});document.getElementById("filterScadenza").value=hasOver?"scaduti":"in_scadenza";renderTable();}
@@ -2929,7 +2938,9 @@ async function showApp(){document.getElementById("loginScreen").classList.add("h
   setTimeout(refreshBell,500);await loadAll();
   try{await loadDbNotifiche();refreshBell();}catch(e){}
   try{startNotificheRealtime();}catch(e){console.warn(e);}
-  if(s||a||t)setTimeout(function(){sendExpiryEmail(false);},2000);if(s)setTimeout(checkAutoBackup,2500);requestNotifyPermission();setTimeout(notifyExpiringOnLogin,3000);setTimeout(showPendingInAppNotifications,1500);}
+  if(s||a||t)setTimeout(function(){sendExpiryEmail(false);},2000);if(s)setTimeout(checkAutoBackup,2500);requestNotifyPermission();setTimeout(notifyExpiringOnLogin,3000);setTimeout(showPendingInAppNotifications,1500);
+  try{var dc=document.getElementById("dpcChrome");if(dc)dc.classList.add("show");syncStickyChrome();setTimeout(syncStickyChrome,200);}catch(e){}
+}
 async function showPendingInAppNotifications(){
   if(!currentUser)return;
   var items=[];
