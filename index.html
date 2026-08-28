@@ -433,8 +433,6 @@ html.modal-open .app-sticky{z-index:1!important}
 
 /* Standby: solo lista DPC (il resto resta nel codice, nascosto) */
 html.ui-only-dpc #btnCommesse,
-html.ui-only-dpc #btnDpcHome,
-html.ui-only-dpc #btnToolsNav,
 html.ui-only-dpc #btnNuovoIntervento,
 html.ui-only-dpc #btnInterventiAssegnati,
 html.ui-only-dpc #altroAnagrafica,
@@ -444,7 +442,6 @@ html.ui-only-dpc #btnPacchetto,
 html.ui-only-dpc #btnExportCustom,
 html.ui-only-dpc #btnEmail,
 html.ui-only-dpc #pageCommesse,
-html.ui-only-dpc #pageTools,
 html.ui-only-dpc #commesseChrome{display:none!important}
 
 .modal-overlay.show{
@@ -2154,11 +2151,10 @@ function applyUiStandbyMode(){
     document.documentElement.classList.toggle("ui-only-dpc", !!UI_STANDBY_ONLY_DPC);
   }catch(e){}
   if(!UI_STANDBY_ONLY_DPC)return;
-  ["btnCommesse","btnDpcHome","btnToolsNav","btnNuovoIntervento","btnInterventiAssegnati","btnClienti","btnUsers","btnAssegnaTecnico","btnTools","btnReportMensile","btnPacchetto","btnExportCustom","btnEmail","btnAudit","btnBackup","btnCloudBackups","btnLoadBackup"].forEach(function(id){
+  ["btnCommesse","btnNuovoIntervento","btnInterventiAssegnati","btnClienti","btnUsers","btnAssegnaTecnico","btnReportMensile","btnPacchetto","btnExportCustom","btnEmail","btnAudit","btnBackup","btnCloudBackups","btnLoadBackup"].forEach(function(id){
     var el=document.getElementById(id);
     if(el)el.style.display="none";
   });
-  window.__toolsNavVisible=false;
   try{showDpcPage();}catch(e){}
 }
 function showCommessePage(){
@@ -2188,18 +2184,17 @@ function showDpcPage(){
   if(typeof UI_STANDBY_ONLY_DPC!=="undefined"&&UI_STANDBY_ONLY_DPC){
     if(bd)bd.style.display="none";
     if(bc)bc.style.display="none";
-    if(bt)bt.style.display="none";
+    if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
   }
   try{syncStickyChrome();}catch(e){}
   try{window.scrollTo(0,0);}catch(e){}
 }
 function showToolsPage(){
-  if(UI_STANDBY_ONLY_DPC){showDpcPage();return;}
   hideAllPages();
   var t=document.getElementById("pageTools");if(t)t.classList.add("active");
   var bd=document.getElementById("btnDpcHome"),bc=document.getElementById("btnCommesse"),bt=document.getElementById("btnToolsNav");
   if(bd)bd.style.display="inline-flex";
-  if(bc)bc.style.display="inline-flex";
+  if(bc)bc.style.display=(UI_STANDBY_ONLY_DPC?"none":"inline-flex");
   if(bt)bt.style.display="none";
   switchToolsTab("prev");
   try{window.scrollTo(0,0);}catch(e){}
