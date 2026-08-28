@@ -4813,14 +4813,39 @@ async function runExcelImport(file,clienteId,dpcMode){
   reader.onload=async function(e){
     try{
       var wb=XLSX.read(new Uint8Array(e.target.result),{type:"array",cellDates:true});
-      // usa il foglio con più righe (i file CAMI a volte hanno più sheet)
-      var rows=[], chosen="";
+      // Scegli il foglio APPARECCHIATURE, mai la legenda acronimi (Foglio1 = 27 righe)
+      function scoreCamiSheet(name, rows){
+        var score=0, posN=0, joinedAll="";
+        var lim=Math.min(rows.length, 20);
+        for(var r=0;r<lim;r++){
+          joinedAll+=" "+normalizeHeader((rows[r]||[]).join(" | "));
+        }
+        if(joinedAll.indexOf("acronimo")>-1 && joinedAll.indexOf("matricola")>-1) score+=5000;
+        if(joinedAll.indexOf("identificativo")>-1) score+=800;
+        if(joinedAll.indexOf("stadio")>-1) score+=400;
+        if(joinedAll.indexOf("pos.")>-1||/\bpos\b/.test(joinedAll)) score+=200;
+        var nlow=String(name||"").toLowerCase();
+        if(nlow.indexOf("foglio1")>-1||nlow.indexOf("legenda")>-1||nlow.indexOf("acronim")>-1) score-=4000;
+        if(nlow.indexOf("generale")>-1||nlow.indexOf("elenco")>-1||nlow.indexOf("apparecch")>-1) score+=1500;
+        for(var r=0;r<rows.length;r++){
+          var v=rows[r]&&rows[r][0];
+          if(v==null||v==="")continue;
+          var s=String(v).trim();
+          if(/^\d+$/.test(s)){var n=parseInt(s,10); if(n>=1&&n<=9999)posN++;}
+        }
+        score+=posN*20;
+        return {score:score,posN:posN};
+      }
+      var rows=[], chosen="", bestScore=-1e9, sheetReport=[];
       (wb.SheetNames||[]).forEach(function(name){
-        var r=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:"",raw:false,blankrows:false});
-        if(r&&r.length>rows.length){rows=r;chosen=name;}
+        var r=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:"",raw:false,blankrows:true});
+        if(!r||!r.length)return;
+        var sc=scoreCamiSheet(name,r);
+        sheetReport.push(name+" (pos "+sc.posN+", punti "+sc.score+")");
+        if(sc.score>bestScore){bestScore=sc.score;rows=r;chosen=name;}
       });
       if(!rows||rows.length<2){alert("File vuoto");return;}
-      console.log("[import] foglio",chosen,"righe",rows.length);
+      console.log("[import] foglio scelto",chosen, sheetReport);
 
       function parseExcelDate(v){
         if(v==null||v==="")return "";
@@ -4887,7 +4912,7 @@ async function runExcelImport(file,clienteId,dpcMode){
       // —— Rileva layout CAMI (3 righe intestazione) ——
       var cami=null;
       (function detectCami(){
-        var lim=Math.min(rows.length,8);
+        var lim=Math.min(rows.length,16);
         var rowAcro=-1, rowSub=-1;
         for(var r=0;r<lim;r++){
           var joined=(rows[r]||[]).map(normalizeHeader).join(" | ");
@@ -4908,6 +4933,7 @@ async function runExcelImport(file,clienteId,dpcMode){
           return -1;
         }
         var map={
+          pos:colIn(hA,["pos.","pos"]),
           acr:colIn(hA,["acronimo dpc","acronimo"]),
           cost:colIn(hA,["costruttore"]),
           mod:colIn(hA,["modello"]),
@@ -5080,90 +5106,73 @@ async function runExcelImport(file,clienteId,dpcMode){
 
       if(cami&&(cami.mat>=0||cami.id>=0||cami.acr>=0)){
         // ===== IMPORT FORMATO CAMI =====
-        if(!confirm("Formato CAMI rilevato (filtri a stadi).\nCliente: "+clienteName(clienteId)+"\nFoglio: "+chosen+" · righe file: "+rows.length+"\nDati da riga "+(cami.dataStart+1)+"\nStadi trovati: "+Object.keys(cami.stages).join(", ")+"\nProcedere?"))return;
-        var skipEmpty=0,skipDup=0;
+        if(!confirm("Formato CAMI rilevato.\nCliente: "+clienteName(clienteId)+"\nFoglio: "+chosen+"\nDPC con numero Pos. nel file: verranno importati tutti\nDati da riga "+(cami.dataStart+1)+"\nStadi: "+Object.keys(cami.stages).join(", ")+"\nProcedere?"))return;
+        var skipEmpty=0,skipDup=0,skipErr=0;
         function isPlaceholderId(v){
-          var t=String(v||"").trim().toLowerCase();
-          return !t||t==="-"||t==="n.d."||t==="n.a."||t==="nd"||t==="na"||t==="/"||t==="null"||t==="undefined"||t==="nessuno";
+          var t=String(v==null?"":v).trim().toLowerCase();
+          return !t||t==="-"||t==="n.d."||t==="n.a."||t==="nd"||t==="na"||t==="/"||t==="."||t==="null"||t==="undefined"||t==="nessuno";
         }
-        // Excel unisce le celle: la matricola/ID compare solo sulla prima riga del gruppo.
-        var lastCarry={};
-        function carry(idx, row){
-          if(idx==null||idx<0)return "";
-          var v=cell(row,idx);
-          var t=String(v==null?"":v).trim();
-          if(!isPlaceholderId(t)){lastCarry[idx]=t;return t;}
-          return lastCarry[idx]||t;
+        function isPosNum(v){
+          var s=String(v==null?"":v).trim();
+          if(!/^\d+$/.test(s))return false;
+          var n=parseInt(s,10);
+          return n>=1&&n<=99999;
         }
         var seenKeys={};
         for(var r=cami.dataStart;r<rows.length;r++){
           var row=rows[r];
-          if(!row||!row.length){skipEmpty++;continue;}
+          if(!row||!row.length)continue;
           var anyCell=false;
           for(var ci=0;ci<row.length;ci++){
             if(String(row[ci]==null?"":row[ci]).trim()){anyCell=true;break;}
           }
-          if(!anyCell){skipEmpty++;continue;}
+          if(!anyCell)continue;
 
-          var acrRaw=carry(cami.acr,row);
-          var costRaw=carry(cami.cost,row);
-          var modRaw=carry(cami.mod,row);
-          var matRaw=carry(cami.mat,row);
-          var iddRaw=carry(cami.id,row);
-          var sedeCarried=carry(cami.sede,row);
+          var posRaw=cami.pos>=0?cell(row,cami.pos):cell(row,0);
+          var acrRaw=cell(row,cami.acr);
+          var matRaw=cell(row,cami.mat);
+          var iddRaw=cell(row,cami.id);
+          var costRaw=cell(row,cami.cost);
+          var modRaw=cell(row,cami.mod);
 
-          // riga DPC se ha acronimo O matricola O id O costruttore+modello
-          var looksDpc=!(isPlaceholderId(acrRaw)&&isPlaceholderId(matRaw)&&isPlaceholderId(iddRaw)&&isPlaceholderId(costRaw)&&isPlaceholderId(modRaw));
-          if(!looksDpc){
-            skipEmpty++;
-            continue;
-          }
-          var mat=isPlaceholderId(matRaw)?("MAT-R"+(r+1)):matRaw.trim();
-          var idd=isPlaceholderId(iddRaw)?("ID-R"+(r+1)):iddRaw.trim();
-          var sedeImp=(sedeCarried||cell(row,cami.sede)||"N.A.").trim()||"N.A.";
+          // riga DPC se ha Pos numerico OPPURE acronimo+identificativo/matricola
+          var hasPos=isPosNum(posRaw);
+          var hasId=!isPlaceholderId(iddRaw);
+          var hasMat=!isPlaceholderId(matRaw);
+          var hasAcr=!isPlaceholderId(acrRaw);
+          if(!hasPos && !hasId && !hasMat && !hasAcr){skipEmpty++;continue;}
+          if(!hasPos && !hasAcr && !hasId && isPlaceholderId(costRaw) && isPlaceholderId(modRaw)){skipEmpty++;continue;}
+
+          var mat=String(matRaw||"").trim()||"N.D.";
+          var idd=hasId?String(iddRaw).trim():(hasPos?("ID-POS-"+String(posRaw).trim()):("ID-R"+(r+1)));
+          var sedeImp=(cell(row,cami.sede)||"N.A.").trim()||"N.A.";
           var sedeImpKey=sedeImp.toLowerCase();
-          var stanzaKey=String(carry(cami.stanza,row)||"").trim().toLowerCase();
-          var edKey=String(carry(cami.ed,row)||"").trim().toLowerCase();
-          var acrKey=String(acrRaw||"").trim().toLowerCase();
 
-          // duplicato solo se è DAVVERO lo stesso apparecchio (non solo stesso ID ripetuto per celle unite)
-          var dupKey=[acrKey, String(mat).toLowerCase(), isPlaceholderId(iddRaw)?"":String(idd).toLowerCase(), sedeImpKey, edKey, stanzaKey].join("|");
-
+          // chiave: Pos (univoco nel file CAMI) + ID reale. NON usare solo ID (nel file ABBVIE alcuni ID si ripetono su DPC diversi)
+          var dupKey=hasPos?("pos:"+String(posRaw).trim()):("r:"+r+":"+String(idd).toLowerCase()+":"+String(mat).toLowerCase()+":"+String(acrRaw||"").toLowerCase());
           if(seenKeys[dupKey]){
             skipDup++;
-            if(errors.length<30)errors.push("Riga "+(r+1)+": duplicato nel file ("+mat+" / "+idd+")");
+            if(errors.length<40)errors.push("Riga "+(r+1)+": duplicato Pos/chiave ("+posRaw+" "+mat+" / "+idd+")");
             continue;
           }
           var already=equipment.find(function(x){
             if(x.clienteId!==clienteId)return false;
-            var sameAcr=String(x.acronimo||"").trim().toLowerCase()===acrKey;
-            var sameMat=String(x.matricola||"").toLowerCase()===String(mat).toLowerCase();
-            var sameId=!isPlaceholderId(iddRaw)&&String(x.idDispositivo||"").toLowerCase()===String(idd).toLowerCase();
-            var sameSede=String(x.sede||"").trim().toLowerCase()===sedeImpKey;
-            var sameSt=String(x.stanza||"").trim().toLowerCase()===stanzaKey;
-            if(sameId&&sameAcr&&sameSede)return true;
-            if(sameMat&&sameAcr&&sameSede&&sameSt&&isPlaceholderId(iddRaw))return true;
+            if(hasPos){
+              var note=String(x.note||"");
+              if(note.indexOf("Pos "+String(posRaw).trim()+" ")===0||note.indexOf("Pos "+String(posRaw).trim()+"·")>-1||note.indexOf("Pos."+String(posRaw).trim())>-1)return true;
+            }
+            if(hasId&&hasMat){
+              return String(x.idDispositivo||"").toLowerCase()===String(idd).toLowerCase()
+                && String(x.matricola||"").toLowerCase()===String(mat).toLowerCase();
+            }
             return false;
           });
           if(already){
             skipDup++;
-            if(errors.length<30)errors.push("Riga "+(r+1)+": già presente in anagrafica ("+mat+" / "+idd+")");
+            if(errors.length<40)errors.push("Riga "+(r+1)+": già in anagrafica ("+mat+" / "+idd+")");
             continue;
           }
           seenKeys[dupKey]=1;
-          // sovrascrivi celle carried sulla riga (così insert usa i valori pieni)
-          if(cami.acr>=0&&isPlaceholderId(cell(row,cami.acr))&&acrRaw)row[cami.acr]=acrRaw;
-          if(cami.cost>=0&&isPlaceholderId(cell(row,cami.cost))&&costRaw)row[cami.cost]=costRaw;
-          if(cami.mod>=0&&isPlaceholderId(cell(row,cami.mod))&&modRaw)row[cami.mod]=modRaw;
-          if(cami.mat>=0&&isPlaceholderId(cell(row,cami.mat))&&matRaw)row[cami.mat]=matRaw;
-          if(cami.id>=0&&isPlaceholderId(cell(row,cami.id))&&iddRaw)row[cami.id]=iddRaw;
-          if(cami.sede>=0&&isPlaceholderId(cell(row,cami.sede))&&sedeCarried)row[cami.sede]=sedeCarried;
-          if(cami.ed>=0){var ev=carry(cami.ed,row);if(ev)row[cami.ed]=ev;}
-          if(cami.lab>=0){var lv=carry(cami.lab,row);if(lv)row[cami.lab]=lv;}
-          if(cami.piano>=0){var pv=carry(cami.piano,row);if(pv)row[cami.piano]=pv;}
-          if(cami.stanza>=0){var sv=carry(cami.stanza,row);if(sv)row[cami.stanza]=sv;}
-          if(cami.stato>=0){var stv=carry(cami.stato,row);if(stv)row[cami.stato]=stv;}
-          if(cami.ref>=0){var rv=carry(cami.ref,row);if(rv)row[cami.ref]=rv;}
 
           // tipi attività
           var attRaw=cell(row,cami.attivita);
@@ -5265,32 +5274,37 @@ async function runExcelImport(file,clienteId,dpcMode){
             ha_sistema_filtrante:haFiltro,
             stadi_filtranti:maxS?(maxS+" Stadio"):"",
             accessori:accessori,
-            note:("Import Excel riga "+(r+1)+(noteExtra.length?(" · "+noteExtra.join(" · ")):"" )),
+            note:("Pos "+(hasPos?String(posRaw).trim():"-")+" · Import Excel riga "+(r+1)+(noteExtra.length?(" · "+noteExtra.join(" · ")):"" )),
             filtri_stadi:fs,
             ultima_man:ultimaMan||null,
             prossima_man:null
           };
 
-          var res=await sb.from("equipment").insert([insertRow]);
-          if(res.error){
-            // retry without dipartimento if column missing
-            if((res.error.message||"").indexOf("dipartimento")>-1){
-              delete insertRow.dipartimento;
-              res=await sb.from("equipment").insert([insertRow]);
-            }
-            if(res.error)errors.push("Riga "+(r+1)+": "+res.error.message);
-            else ok++;
-          }else ok++;
+          try{
+            var res=await sb.from("equipment").insert([insertRow]);
+            if(res.error){
+              if((res.error.message||"").indexOf("dipartimento")>-1){
+                delete insertRow.dipartimento;
+                res=await sb.from("equipment").insert([insertRow]);
+              }
+              if(res.error){skipErr++;errors.push("Riga "+(r+1)+" Pos "+posRaw+": "+res.error.message);}
+              else ok++;
+            }else ok++;
+          }catch(ex){
+            skipErr++;
+            errors.push("Riga "+(r+1)+" Pos "+posRaw+": "+(ex.message||ex));
+          }
         }
-        skip=skipEmpty+skipDup;
-        await logAudit("IMPORT",null,"Import CAMI Excel -> "+clienteName(clienteId)+" - "+ok+" DPC");
-        alert("Import CAMI completato\n\nInseriti: "+ok+
+        skip=skipEmpty+skipDup+skipErr;
+        await logAudit("IMPORT",null,"Import CAMI Excel -> "+clienteName(clienteId)+" - "+ok+" DPC foglio "+chosen);
+        alert("Import CAMI completato\n\nFoglio: "+chosen+"\nInseriti: "+ok+
           "\nDuplicati saltati: "+skipDup+
-          "\nRighe vuote/ignorate: "+skipEmpty+
+          "\nErrori inserimento: "+skipErr+
+          "\nRighe non-DPC ignorate: "+skipEmpty+
           "\nCon sistema filtrante: "+withFiltro+
           "\nStadi filtro OK/in regola: "+okF+
           "\nStadi filtro scaduti: "+scadutiF+
-          (errors.length?"\n\nDettagli (max 15):\n"+errors.slice(0,15).join("\n"):""));
+          (errors.length?"\n\nDettagli (max 20):\n"+errors.slice(0,20).join("\n"):""));
         toast("Import: "+ok+" DPC");
         await loadAll();
         return;
