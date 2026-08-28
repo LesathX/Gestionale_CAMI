@@ -133,7 +133,7 @@ body{font-family:Inter,system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min
 .btn-login{width:100%;padding:.8rem;border:none;border-radius:.55rem;background:#dc2626;color:#fff;font-weight:700;cursor:pointer}
 .login-hint{text-align:center;font-size:.75rem;color:rgba(255,255,255,.8);margin-top:1rem}
 .app{display:none}.app.show{display:block}
-.app-sticky{position:fixed;top:0;left:0;right:0;z-index:40;background:#eef2f7;box-shadow:0 8px 24px rgba(15,23,42,.18)}
+.app-sticky{position:fixed;top:0;left:0;right:0;z-index:9999;background:#eef2f7;box-shadow:0 8px 24px rgba(15,23,42,.18)}
 .page-chrome{background:#eef2f7;padding:.7rem 1.15rem .15rem;max-width:1900px;margin:0 auto}
 #commesseChrome{display:none}
 #stickySpacer{height:160px;flex-shrink:0}
@@ -361,34 +361,6 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
 @media(max-width:640px){
   #commessaModal div[style*="grid-template-columns:1fr 1fr 1fr"]{grid-template-columns:1fr!important}
 }
-
-/* popup sempre sopra header/filtri fissi */
-.modal-overlay,
-.modal-overlay.show{
-  z-index:10050!important;
-  position:fixed!important;
-  inset:0;
-  align-items:flex-start;
-  justify-content:center;
-  padding:1.25rem 1rem 2rem;
-  overflow-y:auto;
-}
-.modal-overlay.show{display:flex!important}
-.modal-overlay .modal{
-  margin:auto;
-  max-height:none;
-  position:relative;
-  z-index:1;
-}
-#quickClienteModal,
-#quickClienteModal.show{z-index:10120!important}
-#storicoInterventiModal,
-#storicoInterventiModal.show,
-#clienteSchedaModal,
-#clienteSchedaModal.show{z-index:10100!important}
-.toast{z-index:10200!important}
-.loading-overlay{z-index:10300!important}
-.login-screen{z-index:10400}
 
 </style>
 </head>
@@ -1694,9 +1666,13 @@ function refreshStageStatus(n){var proxEl=document.getElementById("s"+n+"_prox")
 function parseNumStadi(label){if(!label)return 0;var m=String(label).match(/(\d)/);if(m)return parseInt(m[1],10);var n=parseInt(label,10);return isNaN(n)?0:n;}
 function stageProxList(e){var out=[],fs=(e&&e.filtriStadi)?e.filtriStadi:{};for(var i=1;i<=4;i++){var s=fs[String(i)];if(!s)continue;var prox=s.prox||"";if(!prox)prox=calcProx(s.data_install,s.durata_mesi);if(prox)out.push({stadio:i,prox:prox,status:expStatus(prox),codice:s.codice||""});}return out;}
 function worstStageStatus(e){var list=stageProxList(e),worst="none";list.forEach(function(x){var s=expStatusSimple(x.prox||"");if(s==="overdue")worst="overdue";else if(s==="soon"&&worst!=="overdue")worst="soon";else if(s==="ok"&&worst==="none")worst="ok";});return worst;}
-function nextFilterProx(e){var list=stageProxList(e);if(!list.length)return null;var o=list.filter(function(x){return expStatusSimple(x.prox)==="overdue";});if(o.length){o.sort(function(a,b){return String(a.prox).localeCompare(String(b.prox));});return o[0];}var s=list.filter(function(x){return expStatusSimple(x.prox)==="soon";});if(s.length){s.sort(function(a,b){return String(a.prox).localeCompare(String(b.prox));});return s[0];}list.sort(function(a,b){return String(a.prox).localeCompare(String(b.prox));});return list[0];}
-function deviceExpiryStatus(e){var man=expStatusSimple(e.prossimaMan),st=worstStageStatus(e);if(man==="overdue"||st==="overdue")return"overdue";if(man==="soon"||st==="soon")return"soon";if(man==="ok"||st==="ok")return"ok";return"none";}
-function deviceExpiryTier(e){var worst="ok",dates=[];if(e.prossimaMan)dates.push(e.prossimaMan);stageProxList(e).forEach(function(x){if(x.prox)dates.push(x.prox);});if(!dates.length)return"none";dates.forEach(function(d){var s=expStatus(d);if(s==="overdue")worst="overdue";else if(s==="soon7"&&worst!=="overdue")worst="soon7";else if(s==="soon15"&&worst!=="overdue"&&worst!=="soon7")worst="soon15";else if(s==="soon30"&&(worst==="ok"||worst==="none"))worst="soon30";});return worst;}
+function nextFilterProx(e){if(isStatoSenzaScadenze(e))return null;var list=stageProxList(e);if(!list.length)return null;var o=list.filter(function(x){return expStatusSimple(x.prox)==="overdue";});if(o.length){o.sort(function(a,b){return String(a.prox).localeCompare(String(b.prox));});return o[0];}var s=list.filter(function(x){return expStatusSimple(x.prox)==="soon";});if(s.length){s.sort(function(a,b){return String(a.prox).localeCompare(String(b.prox));});return s[0];}list.sort(function(a,b){return String(a.prox).localeCompare(String(b.prox));});return list[0];}
+function isStatoSenzaScadenze(e){
+  var s=normalizeHeader((e&&e.stato)||"");
+  return s.indexOf("dismess")>-1||s.indexOf("disuso")>-1||s.indexOf("competenza")>-1;
+}
+function deviceExpiryStatus(e){if(isStatoSenzaScadenze(e))return"none";var man=expStatusSimple(e.prossimaMan),st=worstStageStatus(e);if(man==="overdue"||st==="overdue")return"overdue";if(man==="soon"||st==="soon")return"soon";if(man==="ok"||st==="ok")return"ok";return"none";}
+function deviceExpiryTier(e){if(isStatoSenzaScadenze(e))return"none";var worst="ok",dates=[];if(e.prossimaMan)dates.push(e.prossimaMan);stageProxList(e).forEach(function(x){if(x.prox)dates.push(x.prox);});if(!dates.length)return"none";dates.forEach(function(d){var s=expStatus(d);if(s==="overdue")worst="overdue";else if(s==="soon7"&&worst!=="overdue")worst="soon7";else if(s==="soon15"&&worst!=="overdue"&&worst!=="soon7")worst="soon15";else if(s==="soon30"&&(worst==="ok"||worst==="none"))worst="soon30";});return worst;}
 function countStadi(fs){if(!fs)return 0;return Object.keys(fs).filter(function(k){var s=fs[k];return s&&(s.codice||s.misure||s.tipologia||s.prox||s.data_install);}).length;}
 function buildStadiForm(){var box=document.getElementById("stadiBox");if(!box)return;var h="";for(var i=1;i<=4;i++){h+='<div class="stadio-card" id="stadioCard'+i+'" style="display:none"><h4>'+i+'o Stadio</h4><div class="stadio-grid"><div><label>Codice filtro</label><input id="s'+i+'_codice"></div><div><label>Misure (mm)</label><input id="s'+i+'_misure"></div><div><label>Tipologia</label><select id="s'+i+'_tipologia"><option value="">-</option><option value="P">P Particolare</option><option value="M">M Molecolare</option></select></div><div><label>Q.ta</label><input id="s'+i+'_qty"></div><div><label>Correlazione</label><input id="s'+i+'_correlazione"></div><div><label>Data install.</label><input type="date" id="s'+i+'_data"></div><div><label>Durata mesi</label><input id="s'+i+'_durata" type="number" min="1"></div><div><label>Prox. sostituz.</label><input type="date" id="s'+i+'_prox"></div><div><label>Status (auto)</label><input id="s'+i+'_status" readonly style="background:#f1f5f9;font-weight:600" placeholder="automatico"></div></div></div>';}box.innerHTML=h;bindStageAutoProx();updateStadiVisibility();}
 function updateStadiVisibility(){var n=parseNumStadi(val("stadiFiltranti"));for(var i=1;i<=4;i++){var card=document.getElementById("stadioCard"+i);if(card)card.style.display=(i<=n)?"block":"none";}var hint=document.getElementById("stadiSectionHint");if(hint)hint.textContent=n>0?("Compila i "+n+" stadi filtranti dichiarati."):"Seleziona prima il N. Stadi per visualizzare i dettagli filtro.";}
@@ -2909,6 +2885,7 @@ function filterByClienteChip(clienteId){
 function updateExpiry(){
   var scMan=0,soMan=0,scFil=0,soFil=0,dpcSc=0,dpcSo=0;
   visibleEquipment().forEach(function(e){
+    if(isStatoSenzaScadenze(e))return;
     if(isOverdue(e.prossimaMan))scMan++;
     else if(isSoon(e.prossimaMan))soMan++;
     stageProxList(e).forEach(function(x){
@@ -2985,23 +2962,33 @@ function applyColgroup(tbl, widths){
   tbl.style.width=total+"px";
   tbl.style.minWidth=total+"px";
   tbl.style.maxWidth="none";
-  return total;
 }
 function matchFrozenCols(headTbl, bodyTbl){
-  if(!headTbl||!bodyTbl)return 0;
-  var n=(headTbl.querySelectorAll("thead th")||[]).length;
-  if(!n && bodyTbl.querySelector("tbody tr")) n=bodyTbl.querySelector("tbody tr").children.length;
-  if(!n)return 0;
-  var map={
-    dpcHeadTable:[100,150,130,150,120,130,110,112,140,130,150,110,160,72,100,112,140,100,160,80,80,130,140,170],
-    commHeadTable:[120,170,84,120,90,170,170,160,180,160,120,170,110,90,200]
-  };
-  var widths=(map[headTbl.id]||[]).slice();
-  while(widths.length<n)widths.push(110);
-  widths=widths.slice(0,n);
-  var total=applyColgroup(headTbl, widths);
+  if(!headTbl||!bodyTbl)return;
+  var hths=headTbl.querySelectorAll("thead th");
+  var bths=bodyTbl.querySelectorAll("thead th");
+  var rows=bodyTbl.querySelectorAll("tbody tr");
+  var n=hths.length || (rows[0]?rows[0].children.length:0);
+  if(!n)return;
+  var mins=[96,130,120,130,110,120,100,100,130,120,140,100,160,70,90,110,130,90,140,70,70,110,90,110];
+  var widths=[];
+  for(var i=0;i<n;i++){
+    var w=mins[i]||90;
+    if(hths[i]){
+      hths[i].style.whiteSpace="nowrap";
+      w=Math.max(w, Math.ceil(hths[i].scrollWidth||0)+8);
+    }
+    if(bths[i]) w=Math.max(w, Math.ceil(bths[i].scrollWidth||0)+8);
+    var scan=Math.min(rows.length, 8);
+    for(var r=0;r<scan;r++){
+      var cell=rows[r]&&rows[r].children[i];
+      if(!cell)continue;
+      w=Math.max(w, Math.min(280, Math.ceil(cell.scrollWidth||0)+8));
+    }
+    widths.push(w);
+  }
+  applyColgroup(headTbl, widths);
   applyColgroup(bodyTbl, widths);
-  return total;
 }
 function syncTableScrollbars(){
   var top=document.getElementById("tableScrollTop");
@@ -3011,8 +2998,10 @@ function syncTableScrollbars(){
   var headTbl=document.getElementById("dpcHeadTable");
   var bodyTbl=bot?bot.querySelector("table"):null;
   if(top&&bot&&inner&&bodyTbl){
-    var total=matchFrozenCols(headTbl, bodyTbl)||bodyTbl.scrollWidth;
-    inner.style.width=total+"px";
+    matchFrozenCols(headTbl, bodyTbl);
+    var w=Math.max(bodyTbl.scrollWidth, bot.clientWidth, headTbl?headTbl.scrollWidth:0);
+    inner.style.width=w+"px";
+    if(headTbl){headTbl.style.minWidth=w+"px";headTbl.style.width=w+"px";}
     bindHScroll(top,bot);bindHScroll(bot,top);
     if(head){bindHScroll(head,bot);bindHScroll(bot,head);bindHScroll(top,head);bindHScroll(head,top);}
     top.scrollLeft=bot.scrollLeft;
@@ -3025,8 +3014,10 @@ function syncTableScrollbars(){
   var cheadTbl=document.getElementById("commHeadTable");
   var cbodyTbl=cbot?cbot.querySelector("table"):null;
   if(ctop&&cbot&&cinner&&cbodyTbl){
-    var ctotal=matchFrozenCols(cheadTbl, cbodyTbl)||cbodyTbl.scrollWidth;
-    cinner.style.width=ctotal+"px";
+    matchFrozenCols(cheadTbl, cbodyTbl);
+    var cw=Math.max(cbodyTbl.scrollWidth, cbot.clientWidth, cheadTbl?cheadTbl.scrollWidth:0);
+    cinner.style.width=cw+"px";
+    if(cheadTbl)cheadTbl.style.minWidth=cw+"px";
     bindHScroll(ctop,cbot);bindHScroll(cbot,ctop);
     if(chead){bindHScroll(chead,cbot);bindHScroll(cbot,chead);bindHScroll(ctop,chead);bindHScroll(chead,ctop);}
     ctop.scrollLeft=cbot.scrollLeft;
@@ -3037,8 +3028,8 @@ function syncTableScrollbars(){
 window.addEventListener("resize",function(){try{syncTableScrollbars();}catch(e){}});
 
 
-function renderTable(){try{refreshBell();}catch(ex){}try{setTimeout(syncTableScrollbars,0);}catch(ex){}var q=document.getElementById("searchInput").value.toLowerCase(),fcl=document.getElementById("filterCliente").value,fac=document.getElementById("filterAcronimo").value,fse=document.getElementById("filterSede").value,fst=document.getElementById("filterStato").value,ffi=document.getElementById("filterFiltro").value,fsc=document.getElementById("filterScadenza").value;var baseList=visibleEquipment();var list=baseList.filter(function(e){var ms=!q||[e.matricola,e.idDispositivo,e.modello,e.sede,e.acronimo,labelAcronimo(e.acronimo,"full"),clienteName(e.clienteId),clienteCode(e.clienteId),e.responsabile,filterCodesText(e)].join(" ").toLowerCase().indexOf(q)>-1;var dest=deviceExpiryStatus(e),msc=true;if(fsc==="scaduti")msc=dest==="overdue";else if(fsc==="in_scadenza")msc=dest==="soon";else if(fsc==="d7"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7";}else if(fsc==="d15"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7"||t==="soon15";}else if(fsc==="d30")msc=dest==="overdue"||dest==="soon";else if(fsc==="ok")msc=dest==="ok"||dest==="none";return ms&&(!fcl||e.clienteId===fcl)&&(!fac||e.acronimo===fac)&&(!fse||e.sede===fse)&&(!fst||e.stato===fst)&&(!ffi||e.haSistemaFiltrante===ffi)&&msc;});list.sort(function(a,b){var o={overdue:0,soon:1,ok:2,none:3},sa=deviceExpiryStatus(a),sb=deviceExpiryStatus(b);if(o[sa]!==o[sb])return o[sa]-o[sb];return(a.matricola||"").localeCompare(b.matricola||"");});var tb=document.getElementById("tableBody"),empty=document.getElementById("emptyState");if(!list.length){tb.innerHTML="";empty.classList.add("show");return;}empty.classList.remove("show");var html="";list.forEach(function(e){var st=deviceExpiryStatus(e),row=st==="overdue"?"row-overdue":(st==="soon"?"row-soon":"");var manSt=expStatus(e.prossimaMan),dc=manSt==="overdue"?"overdue":(manSt==="soon"?"soon":"");var days="";if(manSt==="overdue")days=" <small>(-"+Math.abs(daysUntil(e.prossimaMan))+"g)</small>";else if(manSt==="soon")days=" <small>("+daysUntil(e.prossimaMan)+"g)</small>";var nf=nextFilterProx(e),filCell="-";if(nf){var fdc=nf.status==="overdue"?"overdue":(nf.status==="soon"?"soon":"");var fd="";if(nf.status==="overdue")fd=" <small>(-"+Math.abs(daysUntil(nf.prox))+"g)</small>";else if(nf.status==="soon")fd=" <small>("+daysUntil(nf.prox)+"g)</small>";filCell='<span class="'+fdc+'">S'+nf.stadio+' '+fmt(nf.prox)+fd+'</span>';}
-    var stFil="-";if(nf){stFil=statusFiltroBadge(autoFilterStatus(nf.prox));}else{var fs=e.filtriStadi||{};for(var si=1;si<=4;si++){var ss=fs[String(si)];if(ss&&ss.prox){stFil=statusFiltroBadge(autoFilterStatus(ss.prox));break;}}}var att=(e.tipoAttivita&&e.tipoAttivita.length)?e.tipoAttivita.join(", "):"-";var filtro=e.haSistemaFiltrante==="si"?'<span class="badge badge-blue">Si</span>':'<span class="badge badge-gray">No</span>';var nSt=countStadi(e.filtriStadi),stadiTxt=nSt?(nSt+"o"):(e.stadiFiltranti||"-");var canInt=canEditInterventi(e.clienteId);var canAna=canEditAnagrafica(e.clienteId);var az='<button class="btn-icon history" title="Storico" onclick="openHistory(\''+e.id+'\')"><i class="fas fa-history"></i></button><button class="btn-icon report" title="Report" onclick="openReport(\''+e.id+'\')"><i class="fas fa-file-alt"></i></button><button class="btn-icon" title="Commenti" style="color:#7c3aed" onclick="openComments(\''+e.id+'\')"><i class="fas fa-comments"></i></button><button class="btn-icon" title="Scheda/Stampa" style="color:#0369a1" onclick="openPrintScheda(\''+e.id+'\')"><i class="fas fa-print"></i></button>';if(canAna)az+='<button class="btn-icon" title="Duplica" style="color:#0f766e" onclick="duplicaEquipment(\''+e.id+'\')"><i class="fas fa-copy"></i></button><button class="btn-icon edit" title="Modifica" onclick="editEquipment(\''+e.id+'\')"><i class="fas fa-pen"></i></button><button class="btn-icon delete" title="Elimina" onclick="deleteEquipment(\''+e.id+'\')"><i class="fas fa-trash"></i></button>';html+='<tr class="'+row+'"><td>'+clienteBadge(e.clienteId)+'</td><td title="'+String(labelAcronimo(e.acronimo,'full')).replace(/"/g,'&quot;')+'"><strong>'+(e.acronimo||"-")+'</strong><div style="font-size:.68rem;color:#64748b;font-weight:500;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+labelAcronimo(e.acronimo,'desc')+'</div></td><td class="truncate">'+(e.costruttore||"-")+'</td><td class="truncate">'+(e.modello||"-")+'</td><td class="code">'+(e.matricola||"-")+'</td><td class="code">'+(e.idDispositivo||"-")+'</td><td>'+fmt(e.ultimaMan)+'</td><td class="'+dc+'">'+fmt(e.prossimaMan)+days+'</td><td>'+filCell+'</td><td>'+stFil+'</td><td>'+(e.sede||"-")+'</td><td class="truncate">'+(e.edificio||"-")+'</td><td class="truncate">'+(e.laboratorio||"-")+'</td><td>'+(e.piano||"-")+'</td><td>'+(e.stanza||"-")+'</td><td>'+statusBadge(e.stato)+'</td><td class="truncate">'+(e.responsabile||"-")+'</td><td>'+(e.cadenzaMan||"-")+'</td><td>'+att+'</td><td>'+filtro+'</td><td>'+stadiTxt+'</td><td class="truncate">'+(e.accessori||"-")+'</td><td class="truncate">'+(e.note||"-")+'</td><td><div class="actions">'+az+'</div></td></tr>';});tb.innerHTML=html;try{setTimeout(syncTableScrollbars,30);}catch(ex){};}
+function renderTable(){try{refreshBell();}catch(ex){}try{setTimeout(syncTableScrollbars,0);}catch(ex){}var q=document.getElementById("searchInput").value.toLowerCase(),fcl=document.getElementById("filterCliente").value,fac=document.getElementById("filterAcronimo").value,fse=document.getElementById("filterSede").value,fst=document.getElementById("filterStato").value,ffi=document.getElementById("filterFiltro").value,fsc=document.getElementById("filterScadenza").value;var baseList=visibleEquipment();var list=baseList.filter(function(e){var ms=!q||[e.matricola,e.idDispositivo,e.modello,e.sede,e.acronimo,labelAcronimo(e.acronimo,"full"),clienteName(e.clienteId),clienteCode(e.clienteId),e.responsabile,filterCodesText(e)].join(" ").toLowerCase().indexOf(q)>-1;var dest=deviceExpiryStatus(e),msc=true;if(fsc==="scaduti")msc=dest==="overdue";else if(fsc==="in_scadenza")msc=dest==="soon";else if(fsc==="d7"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7";}else if(fsc==="d15"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7"||t==="soon15";}else if(fsc==="d30")msc=dest==="overdue"||dest==="soon";else if(fsc==="ok")msc=dest==="ok"||dest==="none";return ms&&(!fcl||e.clienteId===fcl)&&(!fac||e.acronimo===fac)&&(!fse||e.sede===fse)&&(!fst||e.stato===fst)&&(!ffi||e.haSistemaFiltrante===ffi)&&msc;});list.sort(function(a,b){var o={overdue:0,soon:1,ok:2,none:3},sa=deviceExpiryStatus(a),sb=deviceExpiryStatus(b);if(o[sa]!==o[sb])return o[sa]-o[sb];return(a.matricola||"").localeCompare(b.matricola||"");});var tb=document.getElementById("tableBody"),empty=document.getElementById("emptyState");if(!list.length){tb.innerHTML="";empty.classList.add("show");return;}empty.classList.remove("show");var html="";list.forEach(function(e){var st=deviceExpiryStatus(e),row=st==="overdue"?"row-overdue":(st==="soon"?"row-soon":"");var manSt=isStatoSenzaScadenze(e)?"none":expStatus(e.prossimaMan),dc=manSt==="overdue"?"overdue":(manSt==="soon"?"soon":"");var days="";if(manSt==="overdue")days=" <small>(-"+Math.abs(daysUntil(e.prossimaMan))+"g)</small>";else if(manSt==="soon")days=" <small>("+daysUntil(e.prossimaMan)+"g)</small>";var nf=nextFilterProx(e),filCell="-";if(nf){var fdc=nf.status==="overdue"?"overdue":(nf.status==="soon"?"soon":"");var fd="";if(nf.status==="overdue")fd=" <small>(-"+Math.abs(daysUntil(nf.prox))+"g)</small>";else if(nf.status==="soon")fd=" <small>("+daysUntil(nf.prox)+"g)</small>";filCell='<span class="'+fdc+'">S'+nf.stadio+' '+fmt(nf.prox)+fd+'</span>';}
+    var stFil="-";if(isStatoSenzaScadenze(e)){filCell="-";stFil="-";}else if(nf){stFil=statusFiltroBadge(autoFilterStatus(nf.prox));}else{var fs=e.filtriStadi||{};for(var si=1;si<=4;si++){var ss=fs[String(si)];if(ss&&ss.prox){stFil=statusFiltroBadge(autoFilterStatus(ss.prox));break;}}}var att=(e.tipoAttivita&&e.tipoAttivita.length)?e.tipoAttivita.join(", "):"-";var filtro=e.haSistemaFiltrante==="si"?'<span class="badge badge-blue">Si</span>':'<span class="badge badge-gray">No</span>';var nSt=countStadi(e.filtriStadi),stadiTxt=nSt?(nSt+"o"):(e.stadiFiltranti||"-");var canInt=canEditInterventi(e.clienteId);var canAna=canEditAnagrafica(e.clienteId);var az='<button class="btn-icon history" title="Storico" onclick="openHistory(\''+e.id+'\')"><i class="fas fa-history"></i></button><button class="btn-icon report" title="Report" onclick="openReport(\''+e.id+'\')"><i class="fas fa-file-alt"></i></button><button class="btn-icon" title="Commenti" style="color:#7c3aed" onclick="openComments(\''+e.id+'\')"><i class="fas fa-comments"></i></button><button class="btn-icon" title="Scheda/Stampa" style="color:#0369a1" onclick="openPrintScheda(\''+e.id+'\')"><i class="fas fa-print"></i></button>';if(canAna)az+='<button class="btn-icon" title="Duplica" style="color:#0f766e" onclick="duplicaEquipment(\''+e.id+'\')"><i class="fas fa-copy"></i></button><button class="btn-icon edit" title="Modifica" onclick="editEquipment(\''+e.id+'\')"><i class="fas fa-pen"></i></button><button class="btn-icon delete" title="Elimina" onclick="deleteEquipment(\''+e.id+'\')"><i class="fas fa-trash"></i></button>';html+='<tr class="'+row+'"><td>'+clienteBadge(e.clienteId)+'</td><td title="'+String(labelAcronimo(e.acronimo,'full')).replace(/"/g,'&quot;')+'"><strong>'+(e.acronimo||"-")+'</strong><div style="font-size:.68rem;color:#64748b;font-weight:500;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+labelAcronimo(e.acronimo,'desc')+'</div></td><td class="truncate">'+(e.costruttore||"-")+'</td><td class="truncate">'+(e.modello||"-")+'</td><td class="code">'+(e.matricola||"-")+'</td><td class="code">'+(e.idDispositivo||"-")+'</td><td>'+fmt(e.ultimaMan)+'</td><td class="'+dc+'">'+(isStatoSenzaScadenze(e)?"-":(fmt(e.prossimaMan)+days))+'</td><td>'+filCell+'</td><td>'+stFil+'</td><td>'+(e.sede||"-")+'</td><td class="truncate">'+(e.edificio||"-")+'</td><td class="truncate">'+(e.laboratorio||"-")+'</td><td>'+(e.piano||"-")+'</td><td>'+(e.stanza||"-")+'</td><td>'+statusBadge(e.stato)+'</td><td class="truncate">'+(e.responsabile||"-")+'</td><td>'+(e.cadenzaMan||"-")+'</td><td>'+att+'</td><td>'+filtro+'</td><td>'+stadiTxt+'</td><td class="truncate">'+(e.accessori||"-")+'</td><td class="truncate">'+(e.note||"-")+'</td><td><div class="actions">'+az+'</div></td></tr>';});tb.innerHTML=html;try{setTimeout(syncTableScrollbars,30);}catch(ex){};}
 async function doLogin(){var u=document.getElementById("loginUsername").value.trim(),p=document.getElementById("loginPassword").value,err=document.getElementById("loginError");if(!u||!p){err.textContent="Inserisci credenziali";err.classList.add("show");return;}var res=await sb.from("users").select("*").eq("username",u).limit(1);if(res.error){err.textContent=res.error.message;err.classList.add("show");return;}if(!res.data.length||res.data[0].password!==p){err.textContent="Credenziali non corrette";err.classList.add("show");return;}var row=res.data[0];var role=normalizeRole(row.role);currentUser={id:row.id,username:row.username,nome:row.nome||row.username,role:role,clienteId:row.cliente_id||null,clienteIds:[]};try{var tc=await sb.from("tecnico_clienti").select("cliente_id").eq("user_id",row.id);if(tc&&!tc.error&&tc.data)currentUser.clienteIds=tc.data.map(function(x){return x.cliente_id;});}catch(ex){}if(!currentUser.clienteIds.length&&currentUser.clienteId)currentUser.clienteIds=[currentUser.clienteId];safeSetSession(SESSION_KEY,JSON.stringify(currentUser));err.classList.remove("show");
   try{await sb.from("users").update({last_login:new Date().toISOString()}).eq("id",row.id);}catch(e){}
   try{await logAudit("LOGIN",null,"Accesso "+currentUser.username+" ("+currentUser.role+")");}catch(e){}
@@ -3840,6 +3831,7 @@ function buildExpiryMessage(){
   var days=o.days||30;
   var a=[],b=[],c=[];
   visibleEquipment().forEach(function(e){
+    if(isStatoSenzaScadenze(e))return;
     var base=clienteName(e.clienteId)+" | "+(e.acronimo||"")+" | mat. "+(e.matricola||"-")+" | sede "+(e.sede||"-");
     if(isOverdue(e.prossimaMan))a.push("- "+base+" [MANUTENZIONE "+fmt(e.prossimaMan)+"]");
     else if(isSoonDays(e.prossimaMan,days))b.push("- "+base+" [MANUTENZIONE "+fmt(e.prossimaMan)+"]");
@@ -5610,6 +5602,7 @@ function openOggiModal(){
   document.getElementById("oggiModal").classList.add("show");
   var items=[];
   visibleEquipment().forEach(function(e){
+    if(isStatoSenzaScadenze(e))return;
     if(isOverdue(e.prossimaMan)||isSoon(e.prossimaMan)){
       items.push({type:"man",status:expStatus(e.prossimaMan),date:e.prossimaMan,e:e,label:"Manutenzione"});
     }
@@ -5653,10 +5646,12 @@ function checkSoftBlock(e){
   if(!el)return;
   if(!e){el.style.display="none";return;}
   var msgs=[];
-  if(isOverdue(e.prossimaMan))msgs.push("Manutenzione scaduta il "+fmt(e.prossimaMan));
-  stageProxList(e).forEach(function(x){
-    if(expStatusSimple(x.prox)==="overdue")msgs.push("Filtro stadio "+x.stadio+(x.codice?" ("+x.codice+")":"")+" SCADUTO il "+fmt(x.prox));
-  });
+  if(!isStatoSenzaScadenze(e)){
+    if(isOverdue(e.prossimaMan))msgs.push("Manutenzione scaduta il "+fmt(e.prossimaMan));
+    stageProxList(e).forEach(function(x){
+      if(expStatusSimple(x.prox)==="overdue")msgs.push("Filtro stadio "+x.stadio+(x.codice?" ("+x.codice+")":"")+" SCADUTO il "+fmt(x.prox));
+    });
+  }
   if(msgs.length){el.style.display="block";el.innerHTML="ATTENZIONE - non in regola:<br>"+msgs.join("<br>");}
   else el.style.display="none";
 }
@@ -5815,6 +5810,7 @@ function buildNotifications(){
   });
   // 2) scadenze DPC
   visibleEquipment().forEach(function(e){
+    if(isStatoSenzaScadenze(e))return;
     if(isOverdue(e.prossimaMan))items.push({tier:"overdue",text:"MAN scaduta: "+(e.acronimo||"")+" "+(e.matricola||"")+" ("+fmt(e.prossimaMan)+")",id:e.id,kind:"equip"});
     else if(isSoonTier(e.prossimaMan,DAYS_WARN_7))items.push({tier:"soon7",text:"MAN entro 7gg: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip"});
     else if(isSoonTier(e.prossimaMan,DAYS_WARN_15))items.push({tier:"soon15",text:"MAN entro 15gg: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip"});
