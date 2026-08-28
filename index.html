@@ -437,8 +437,6 @@ html.ui-only-dpc #btnDpcHome,
 html.ui-only-dpc #btnToolsNav,
 html.ui-only-dpc #btnNuovoIntervento,
 html.ui-only-dpc #btnInterventiAssegnati,
-html.ui-only-dpc #btnDashboard,
-html.ui-only-dpc #btnOggi,
 html.ui-only-dpc #altroAnagrafica,
 html.ui-only-dpc #altroAdmin,
 html.ui-only-dpc #btnReportMensile,
@@ -2156,7 +2154,7 @@ function applyUiStandbyMode(){
     document.documentElement.classList.toggle("ui-only-dpc", !!UI_STANDBY_ONLY_DPC);
   }catch(e){}
   if(!UI_STANDBY_ONLY_DPC)return;
-  ["btnCommesse","btnDpcHome","btnToolsNav","btnNuovoIntervento","btnInterventiAssegnati","btnDashboard","btnOggi","btnClienti","btnUsers","btnAssegnaTecnico","btnTools","btnReportMensile","btnPacchetto","btnExportCustom","btnEmail","btnAudit","btnBackup","btnCloudBackups","btnLoadBackup"].forEach(function(id){
+  ["btnCommesse","btnDpcHome","btnToolsNav","btnNuovoIntervento","btnInterventiAssegnati","btnClienti","btnUsers","btnAssegnaTecnico","btnTools","btnReportMensile","btnPacchetto","btnExportCustom","btnEmail","btnAudit","btnBackup","btnCloudBackups","btnLoadBackup"].forEach(function(id){
     var el=document.getElementById(id);
     if(el)el.style.display="none";
   });
