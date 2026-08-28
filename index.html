@@ -171,6 +171,15 @@ body{font-family:Inter,system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min
 .search-wrap input{width:100%;padding:.45rem .55rem .45rem 1.8rem;border:1px solid #e2e8f0;border-radius:.4rem;font-size:.76rem}
 .filters-inner select{min-width:105px;padding:.45rem;border:1px solid #e2e8f0;border-radius:.4rem;font-size:.72rem;background:#fff}
 .table-wrap{background:#fff;border:1px solid #e2e8f0;border-radius:.6rem;overflow:hidden}
+
+.frozen-head{margin-top:.55rem;background:#fff;border:1px solid #e2e8f0;border-bottom:0;border-radius:.6rem .6rem 0 0;overflow:hidden}
+.frozen-head .table-scroll{overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.frozen-head .table-scroll::-webkit-scrollbar{height:0}
+.frozen-head table{margin:0}
+.frozen-head th{background:#f1f5f9;position:static}
+.table-wrap.under-frozen{border-top-left-radius:0;border-top-right-radius:0;border-top:1px solid #e2e8f0}
+.table-wrap.under-frozen thead{display:none}
+
 .table-scroll-top{overflow-x:auto;overflow-y:hidden;height:14px;border-bottom:1px solid #e2e8f0;background:#f8fafc}
 .table-scroll-top-inner{height:1px;pointer-events:none}
 .table-scroll{overflow-x:auto;scrollbar-width:thin}
@@ -435,6 +444,16 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
       <select id="filterFiltro" onchange="renderTable()"><option value="">Filtro</option><option value="si">Si</option><option value="no">No</option></select>
       <select id="filterScadenza" onchange="renderTable()"><option value="">Scadenze DPC</option><option value="scaduti">DPC scaduti</option><option value="d7">DPC scaduti + entro 7 gg</option><option value="d15">DPC scaduti + entro 15 gg</option><option value="d30">DPC scaduti + entro 30 gg</option><option value="in_scadenza">DPC in scadenza (1-30)</option><option value="ok">DPC in regola</option></select>
     </div></div>
+    <div class="frozen-head" id="dpcFrozenHead">
+      <div class="table-scroll-top" id="tableScrollTop" title="Scorri orizzontalmente"><div class="table-scroll-top-inner" id="tableScrollTopInner"></div></div>
+      <div class="table-scroll" id="tableHeadScroll">
+        <table id="dpcHeadTable"><thead><tr>
+          <th>Cliente</th><th>Acronimo</th><th>Costruttore</th><th>Modello</th><th>Matricola</th><th>ID</th>
+          <th>Ultima</th><th>Prossima</th><th>Prox filtro</th><th>Status filtro</th><th>Sede</th><th>Edificio</th><th>Lab</th><th>Piano</th><th>Stanza</th>
+          <th>Stato</th><th>Referente</th><th>Cadenza</th><th>Attivita</th><th>Filtro</th><th>Stadi</th><th>Accessori</th><th>Note</th><th>Azioni</th>
+        </tr></thead></table>
+      </div>
+    </div>
     </div><!-- /dpcChrome -->
     <div class="page-chrome" id="commesseChrome">
     <div class="stats" id="commesseStats"></div>
@@ -448,13 +467,34 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
       <select id="commesseFilterCliente" onchange="renderCommesse()"><option value="">Tutti i clienti</option></select>
       <button class="btn btn-primary" onclick="openCommessaModal()"><i class="fas fa-plus"></i> Nuova commessa</button>
     </div></div>
+    <div class="frozen-head" id="commFrozenHead">
+      <div class="table-scroll-top" id="commScrollTop" title="Scorri orizzontalmente"><div class="table-scroll-top-inner" id="commScrollTopInner"></div></div>
+      <div class="table-scroll" id="commHeadScroll">
+        <table id="commHeadTable"><thead><tr>
+            <th>N° Commessa</th>
+            <th>Cliente</th>
+            <th>Durata</th>
+            <th>N° interventi</th>
+            <th>Cadenza</th>
+            <th>Tipo intervento</th>
+            <th>Referente cliente</th>
+            <th>N° PROTOCOLLO ROE</th>
+            <th>N° PROTOCOLLO OFC/AMM</th>
+            <th>N° PROTOCOLLO CON</th>
+            <th>CREATO DA</th>
+            <th>RESPONSABILE COMMESSA</th>
+            <th>INTERVENTI</th>
+            <th>Stato</th>
+            <th>Azioni</th>
+        </tr></thead></table>
+      </div>
+    </div>
     </div><!-- /commesseChrome -->
   </div><!-- /appSticky -->
   <div id="stickySpacer" aria-hidden="true"></div>
   <main class="main">
   <div id="pageDpc" class="page-panel active">
-    <div class="table-wrap">
-      <div class="table-scroll-top" id="tableScrollTop" title="Scorri orizzontalmente"><div class="table-scroll-top-inner" id="tableScrollTopInner"></div></div>
+    <div class="table-wrap under-frozen">
       <div class="table-scroll" id="tableScroll"><table>
       <thead><tr>
         <th>Cliente</th><th>Acronimo</th><th>Costruttore</th><th>Modello</th><th>Matricola</th><th>ID</th>
@@ -468,9 +508,9 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
   </div><!-- /pageDpc -->
 
   <div id="pageCommesse" class="page-panel">
-    <div class="table-wrap">
-      <div class="table-scroll">
-        <table>
+    <div class="table-wrap under-frozen">
+      <div class="table-scroll" id="commesseTableScroll">
+        <table id="commesseBodyTable">
           <thead><tr>
             <th>N° Commessa</th>
             <th>Cliente</th>
@@ -2135,7 +2175,7 @@ function renderCommesseStats(list){
     '<div class="stat-card stat-comm-closed"><div class="stat-icon"><i class="fas fa-folder"></i></div><div class="stat-body"><div class="stat-value">'+chiuse+'</div><div class="stat-label">Chiuse</div></div></div>'+
     '<div class="stat-card stat-comm-tot"><div class="stat-icon"><i class="fas fa-layer-group"></i></div><div class="stat-body"><div class="stat-value">'+list.length+'</div><div class="stat-label">Totale</div></div></div>';
 }
-async function renderCommesse(){
+async function renderCommesse(){try{setTimeout(syncTableScrollbars,40);}catch(e){}
   try{await ensureAssiCache();}catch(e){}
   var q=(document.getElementById("commesseSearch")&&document.getElementById("commesseSearch").value||"").toLowerCase().trim();
   var st=document.getElementById("commesseFilterStato").value||"aperte";
@@ -2882,34 +2922,82 @@ if(!window.__stickyObs && typeof ResizeObserver!=="undefined"){
 window.addEventListener("resize",function(){try{syncStickyChrome();}catch(e){}});
 function filterExpiring(){var hasOver=equipment.some(function(e){return deviceExpiryStatus(e)==="overdue";});document.getElementById("filterScadenza").value=hasOver?"scaduti":"in_scadenza";renderTable();}
 
+function bindHScroll(a,b){
+  if(!a||!b||a===b)return;
+  if(!a._hPair)a._hPair=[];
+  if(a._hPair.indexOf(b)>=0)return;
+  a._hPair.push(b);
+  a.addEventListener("scroll",function(){
+    if(window.__hLock)return;
+    window.__hLock=true;
+    try{
+      var x=a.scrollLeft;
+      (a._hPair||[]).forEach(function(el){if(el)el.scrollLeft=x;});
+    }finally{window.__hLock=false;}
+  });
+}
+function matchFrozenCols(headTbl, bodyTbl){
+  if(!headTbl||!bodyTbl)return;
+  var hths=headTbl.querySelectorAll("thead th");
+  var bths=bodyTbl.querySelectorAll("thead th");
+  var row=bodyTbl.querySelector("tbody tr");
+  var n=hths.length;
+  var widths=[];
+  for(var i=0;i<n;i++){
+    var w=0;
+    if(row&&row.children[i])w=row.children[i].getBoundingClientRect().width;
+    else if(bths[i])w=bths[i].getBoundingClientRect().width;
+    else if(hths[i])w=hths[i].getBoundingClientRect().width;
+    if(w<40)w=40;
+    widths.push(w);
+  }
+  var total=widths.reduce(function(a,b){return a+b;},0);
+  headTbl.style.width=total+"px";
+  bodyTbl.style.width=total+"px";
+  for(var i=0;i<n;i++){
+    var px=widths[i]+"px";
+    if(hths[i]){hths[i].style.width=px;hths[i].style.minWidth=px;hths[i].style.maxWidth=px;}
+    if(bths[i]){bths[i].style.width=px;bths[i].style.minWidth=px;bths[i].style.maxWidth=px;}
+    if(row&&row.children[i]){row.children[i].style.width=px;row.children[i].style.minWidth=px;}
+  }
+}
 function syncTableScrollbars(){
   var top=document.getElementById("tableScrollTop");
+  var head=document.getElementById("tableHeadScroll");
   var bot=document.getElementById("tableScroll");
   var inner=document.getElementById("tableScrollTopInner");
-  if(!top||!bot||!inner)return;
-  var tbl=bot.querySelector("table");
-  if(!tbl)return;
-  // larghezza contenuto = tabella
-  inner.style.width=Math.max(tbl.scrollWidth, bot.clientWidth)+"px";
-  if(!bot._scrollSyncBound){
-    bot._scrollSyncBound=true;
-    top.addEventListener("scroll",function(){
-      if(bot._ignoreScroll)return;
-      bot._ignoreScroll=true;
-      bot.scrollLeft=top.scrollLeft;
-      bot._ignoreScroll=false;
-    });
-    bot.addEventListener("scroll",function(){
-      if(top._ignoreScroll)return;
-      top._ignoreScroll=true;
-      top.scrollLeft=bot.scrollLeft;
-      top._ignoreScroll=false;
-    });
-    window.addEventListener("resize",function(){syncTableScrollbars();});
+  var headTbl=document.getElementById("dpcHeadTable");
+  var bodyTbl=bot?bot.querySelector("table"):null;
+  if(top&&bot&&inner&&bodyTbl){
+    matchFrozenCols(headTbl, bodyTbl);
+    var w=Math.max(bodyTbl.scrollWidth, bot.clientWidth, headTbl?headTbl.scrollWidth:0);
+    inner.style.width=w+"px";
+    if(headTbl)headTbl.style.minWidth=w+"px";
+    bindHScroll(top,bot);bindHScroll(bot,top);
+    if(head){bindHScroll(head,bot);bindHScroll(bot,head);bindHScroll(top,head);bindHScroll(head,top);}
+    top.scrollLeft=bot.scrollLeft;
+    if(head)head.scrollLeft=bot.scrollLeft;
   }
-  // mantieni posizione
-  top.scrollLeft=bot.scrollLeft;
+  var ctop=document.getElementById("commScrollTop");
+  var chead=document.getElementById("commHeadScroll");
+  var cbot=document.getElementById("commesseTableScroll");
+  var cinner=document.getElementById("commScrollTopInner");
+  var cheadTbl=document.getElementById("commHeadTable");
+  var cbodyTbl=cbot?cbot.querySelector("table"):null;
+  if(ctop&&cbot&&cinner&&cbodyTbl){
+    matchFrozenCols(cheadTbl, cbodyTbl);
+    var cw=Math.max(cbodyTbl.scrollWidth, cbot.clientWidth, cheadTbl?cheadTbl.scrollWidth:0);
+    cinner.style.width=cw+"px";
+    if(cheadTbl)cheadTbl.style.minWidth=cw+"px";
+    bindHScroll(ctop,cbot);bindHScroll(cbot,ctop);
+    if(chead){bindHScroll(chead,cbot);bindHScroll(cbot,chead);bindHScroll(ctop,chead);bindHScroll(chead,ctop);}
+    ctop.scrollLeft=cbot.scrollLeft;
+    if(chead)chead.scrollLeft=cbot.scrollLeft;
+  }
+  try{syncStickyChrome();}catch(e){}
 }
+window.addEventListener("resize",function(){try{syncTableScrollbars();}catch(e){}});
+
 
 function renderTable(){try{refreshBell();}catch(ex){}try{setTimeout(syncTableScrollbars,0);}catch(ex){}var q=document.getElementById("searchInput").value.toLowerCase(),fcl=document.getElementById("filterCliente").value,fac=document.getElementById("filterAcronimo").value,fse=document.getElementById("filterSede").value,fst=document.getElementById("filterStato").value,ffi=document.getElementById("filterFiltro").value,fsc=document.getElementById("filterScadenza").value;var baseList=visibleEquipment();var list=baseList.filter(function(e){var ms=!q||[e.matricola,e.idDispositivo,e.modello,e.sede,e.acronimo,labelAcronimo(e.acronimo,"full"),clienteName(e.clienteId),clienteCode(e.clienteId),e.responsabile,filterCodesText(e)].join(" ").toLowerCase().indexOf(q)>-1;var dest=deviceExpiryStatus(e),msc=true;if(fsc==="scaduti")msc=dest==="overdue";else if(fsc==="in_scadenza")msc=dest==="soon";else if(fsc==="d7"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7";}else if(fsc==="d15"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7"||t==="soon15";}else if(fsc==="d30")msc=dest==="overdue"||dest==="soon";else if(fsc==="ok")msc=dest==="ok"||dest==="none";return ms&&(!fcl||e.clienteId===fcl)&&(!fac||e.acronimo===fac)&&(!fse||e.sede===fse)&&(!fst||e.stato===fst)&&(!ffi||e.haSistemaFiltrante===ffi)&&msc;});list.sort(function(a,b){var o={overdue:0,soon:1,ok:2,none:3},sa=deviceExpiryStatus(a),sb=deviceExpiryStatus(b);if(o[sa]!==o[sb])return o[sa]-o[sb];return(a.matricola||"").localeCompare(b.matricola||"");});var tb=document.getElementById("tableBody"),empty=document.getElementById("emptyState");if(!list.length){tb.innerHTML="";empty.classList.add("show");return;}empty.classList.remove("show");var html="";list.forEach(function(e){var st=deviceExpiryStatus(e),row=st==="overdue"?"row-overdue":(st==="soon"?"row-soon":"");var manSt=expStatus(e.prossimaMan),dc=manSt==="overdue"?"overdue":(manSt==="soon"?"soon":"");var days="";if(manSt==="overdue")days=" <small>(-"+Math.abs(daysUntil(e.prossimaMan))+"g)</small>";else if(manSt==="soon")days=" <small>("+daysUntil(e.prossimaMan)+"g)</small>";var nf=nextFilterProx(e),filCell="-";if(nf){var fdc=nf.status==="overdue"?"overdue":(nf.status==="soon"?"soon":"");var fd="";if(nf.status==="overdue")fd=" <small>(-"+Math.abs(daysUntil(nf.prox))+"g)</small>";else if(nf.status==="soon")fd=" <small>("+daysUntil(nf.prox)+"g)</small>";filCell='<span class="'+fdc+'">S'+nf.stadio+' '+fmt(nf.prox)+fd+'</span>';}
     var stFil="-";if(nf){stFil=statusFiltroBadge(autoFilterStatus(nf.prox));}else{var fs=e.filtriStadi||{};for(var si=1;si<=4;si++){var ss=fs[String(si)];if(ss&&ss.prox){stFil=statusFiltroBadge(autoFilterStatus(ss.prox));break;}}}var att=(e.tipoAttivita&&e.tipoAttivita.length)?e.tipoAttivita.join(", "):"-";var filtro=e.haSistemaFiltrante==="si"?'<span class="badge badge-blue">Si</span>':'<span class="badge badge-gray">No</span>';var nSt=countStadi(e.filtriStadi),stadiTxt=nSt?(nSt+"o"):(e.stadiFiltranti||"-");var canInt=canEditInterventi(e.clienteId);var canAna=canEditAnagrafica(e.clienteId);var az='<button class="btn-icon history" title="Storico" onclick="openHistory(\''+e.id+'\')"><i class="fas fa-history"></i></button><button class="btn-icon report" title="Report" onclick="openReport(\''+e.id+'\')"><i class="fas fa-file-alt"></i></button><button class="btn-icon" title="Commenti" style="color:#7c3aed" onclick="openComments(\''+e.id+'\')"><i class="fas fa-comments"></i></button><button class="btn-icon" title="Scheda/Stampa" style="color:#0369a1" onclick="openPrintScheda(\''+e.id+'\')"><i class="fas fa-print"></i></button>';if(canAna)az+='<button class="btn-icon" title="Duplica" style="color:#0f766e" onclick="duplicaEquipment(\''+e.id+'\')"><i class="fas fa-copy"></i></button><button class="btn-icon edit" title="Modifica" onclick="editEquipment(\''+e.id+'\')"><i class="fas fa-pen"></i></button><button class="btn-icon delete" title="Elimina" onclick="deleteEquipment(\''+e.id+'\')"><i class="fas fa-trash"></i></button>';html+='<tr class="'+row+'"><td>'+clienteBadge(e.clienteId)+'</td><td title="'+String(labelAcronimo(e.acronimo,'full')).replace(/"/g,'&quot;')+'"><strong>'+(e.acronimo||"-")+'</strong><div style="font-size:.68rem;color:#64748b;font-weight:500;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+labelAcronimo(e.acronimo,'desc')+'</div></td><td class="truncate">'+(e.costruttore||"-")+'</td><td class="truncate">'+(e.modello||"-")+'</td><td class="code">'+(e.matricola||"-")+'</td><td class="code">'+(e.idDispositivo||"-")+'</td><td>'+fmt(e.ultimaMan)+'</td><td class="'+dc+'">'+fmt(e.prossimaMan)+days+'</td><td>'+filCell+'</td><td>'+stFil+'</td><td>'+(e.sede||"-")+'</td><td class="truncate">'+(e.edificio||"-")+'</td><td class="truncate">'+(e.laboratorio||"-")+'</td><td>'+(e.piano||"-")+'</td><td>'+(e.stanza||"-")+'</td><td>'+statusBadge(e.stato)+'</td><td class="truncate">'+(e.responsabile||"-")+'</td><td>'+(e.cadenzaMan||"-")+'</td><td>'+att+'</td><td>'+filtro+'</td><td>'+stadiTxt+'</td><td class="truncate">'+(e.accessori||"-")+'</td><td class="truncate">'+(e.note||"-")+'</td><td><div class="actions">'+az+'</div></td></tr>';});tb.innerHTML=html;try{setTimeout(syncTableScrollbars,30);}catch(ex){};}
