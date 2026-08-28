@@ -91,7 +91,7 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--cami-bg);color:#1e2
 .stat-value{font-size:1.45rem;font-weight:700;line-height:1.15;letter-spacing:-.02em}
 .stat-label{font-size:.7rem;color:var(--cami-muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;margin-top:.15rem}
 .stat-red{color:#dc2626}.stat-orange{color:#ea580c}
-.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:50;padding:1rem}
+.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:8px 12px 24px;overflow-y:auto}
 .modal-overlay.show{display:flex}
 #storicoInterventiModal.modal-overlay.show{z-index:50000!important;position:fixed!important;display:flex!important}
 .modal{background:#fff;border-radius:1.1rem;width:100%;max-width:54rem;max-height:92vh;overflow-y:auto;box-shadow:0 25px 60px rgba(15,23,42,.25);border:1px solid rgba(226,232,240,.8)}
@@ -210,7 +210,7 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
 .btn-icon.edit:hover{color:#1d4ed8;background:#eff6ff}.btn-icon.delete:hover{color:#e11d48;background:#fff1f2}
 .btn-icon.history:hover{color:#7c3aed;background:#f5f3ff}.btn-icon.report:hover{color:#0369a1;background:#e0f2fe}
 .empty{display:none;padding:2.5rem;text-align:center;color:#94a3b8}.empty.show{display:block}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:50;padding:1rem}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:8px 12px 24px;overflow-y:auto}
 .modal-overlay.show{display:flex}
 .modal{background:#fff;border-radius:1rem;width:100%;max-width:54rem;max-height:92vh;overflow-y:auto}
 .modal-lg{max-width:58rem}
@@ -430,6 +430,19 @@ html.modal-open .app-sticky{z-index:1!important}
 .toast{z-index:50200!important}
 .loading-overlay{z-index:50300!important}
 .login-screen{z-index:50400}
+
+.modal-overlay.show{
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:center!important;
+  padding:8px 10px 20px!important;
+  overflow-y:auto!important;
+}
+.modal-overlay .modal{
+  margin:0 auto!important;
+  max-height:calc(100vh - 16px)!important;
+  overflow-y:auto;
+}
 
 </style>
 </head>
@@ -6109,7 +6122,10 @@ async function confirmSaveEquipment(){
     document.querySelectorAll(".modal-overlay").forEach(function(el){
       el.style.zIndex="50000";
       el.style.position="fixed";
-      if(el.classList.contains("show"))open=true;
+      if(el.classList.contains("show")){
+        open=true;
+        try{el.scrollTop=0;}catch(e){}
+      }
     });
     document.documentElement.classList.toggle("modal-open", open);
   }
