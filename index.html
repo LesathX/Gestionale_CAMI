@@ -2957,33 +2957,23 @@ function applyColgroup(tbl, widths){
   tbl.style.width=total+"px";
   tbl.style.minWidth=total+"px";
   tbl.style.maxWidth="none";
+  return total;
 }
 function matchFrozenCols(headTbl, bodyTbl){
-  if(!headTbl||!bodyTbl)return;
-  var hths=headTbl.querySelectorAll("thead th");
-  var bths=bodyTbl.querySelectorAll("thead th");
-  var rows=bodyTbl.querySelectorAll("tbody tr");
-  var n=hths.length || (rows[0]?rows[0].children.length:0);
-  if(!n)return;
-  var mins=[96,130,120,130,110,120,100,100,130,120,140,100,160,70,90,110,130,90,140,70,70,110,90,110];
-  var widths=[];
-  for(var i=0;i<n;i++){
-    var w=mins[i]||90;
-    if(hths[i]){
-      hths[i].style.whiteSpace="nowrap";
-      w=Math.max(w, Math.ceil(hths[i].scrollWidth||0)+8);
-    }
-    if(bths[i]) w=Math.max(w, Math.ceil(bths[i].scrollWidth||0)+8);
-    var scan=Math.min(rows.length, 8);
-    for(var r=0;r<scan;r++){
-      var cell=rows[r]&&rows[r].children[i];
-      if(!cell)continue;
-      w=Math.max(w, Math.min(280, Math.ceil(cell.scrollWidth||0)+8));
-    }
-    widths.push(w);
-  }
-  applyColgroup(headTbl, widths);
+  if(!headTbl||!bodyTbl)return 0;
+  var n=(headTbl.querySelectorAll("thead th")||[]).length;
+  if(!n && bodyTbl.querySelector("tbody tr")) n=bodyTbl.querySelector("tbody tr").children.length;
+  if(!n)return 0;
+  var map={
+    dpcHeadTable:[100,150,130,150,120,130,110,112,140,130,150,110,160,72,100,112,140,100,160,80,80,130,140,170],
+    commHeadTable:[120,170,84,120,90,170,170,160,180,160,120,170,110,90,200]
+  };
+  var widths=(map[headTbl.id]||[]).slice();
+  while(widths.length<n)widths.push(110);
+  widths=widths.slice(0,n);
+  var total=applyColgroup(headTbl, widths);
   applyColgroup(bodyTbl, widths);
+  return total;
 }
 function syncTableScrollbars(){
   var top=document.getElementById("tableScrollTop");
@@ -2993,10 +2983,8 @@ function syncTableScrollbars(){
   var headTbl=document.getElementById("dpcHeadTable");
   var bodyTbl=bot?bot.querySelector("table"):null;
   if(top&&bot&&inner&&bodyTbl){
-    matchFrozenCols(headTbl, bodyTbl);
-    var w=Math.max(bodyTbl.scrollWidth, bot.clientWidth, headTbl?headTbl.scrollWidth:0);
-    inner.style.width=w+"px";
-    if(headTbl){headTbl.style.minWidth=w+"px";headTbl.style.width=w+"px";}
+    var total=matchFrozenCols(headTbl, bodyTbl)||bodyTbl.scrollWidth;
+    inner.style.width=total+"px";
     bindHScroll(top,bot);bindHScroll(bot,top);
     if(head){bindHScroll(head,bot);bindHScroll(bot,head);bindHScroll(top,head);bindHScroll(head,top);}
     top.scrollLeft=bot.scrollLeft;
@@ -3009,10 +2997,8 @@ function syncTableScrollbars(){
   var cheadTbl=document.getElementById("commHeadTable");
   var cbodyTbl=cbot?cbot.querySelector("table"):null;
   if(ctop&&cbot&&cinner&&cbodyTbl){
-    matchFrozenCols(cheadTbl, cbodyTbl);
-    var cw=Math.max(cbodyTbl.scrollWidth, cbot.clientWidth, cheadTbl?cheadTbl.scrollWidth:0);
-    cinner.style.width=cw+"px";
-    if(cheadTbl)cheadTbl.style.minWidth=cw+"px";
+    var ctotal=matchFrozenCols(cheadTbl, cbodyTbl)||cbodyTbl.scrollWidth;
+    cinner.style.width=ctotal+"px";
     bindHScroll(ctop,cbot);bindHScroll(cbot,ctop);
     if(chead){bindHScroll(chead,cbot);bindHScroll(cbot,chead);bindHScroll(ctop,chead);bindHScroll(chead,ctop);}
     ctop.scrollLeft=cbot.scrollLeft;
