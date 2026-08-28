@@ -431,6 +431,24 @@ html.modal-open .app-sticky{z-index:1!important}
 .loading-overlay{z-index:50300!important}
 .login-screen{z-index:50400}
 
+/* Standby: solo lista DPC (il resto resta nel codice, nascosto) */
+html.ui-only-dpc #btnCommesse,
+html.ui-only-dpc #btnDpcHome,
+html.ui-only-dpc #btnToolsNav,
+html.ui-only-dpc #btnNuovoIntervento,
+html.ui-only-dpc #btnInterventiAssegnati,
+html.ui-only-dpc #btnDashboard,
+html.ui-only-dpc #btnOggi,
+html.ui-only-dpc #altroAnagrafica,
+html.ui-only-dpc #altroAdmin,
+html.ui-only-dpc #btnReportMensile,
+html.ui-only-dpc #btnPacchetto,
+html.ui-only-dpc #btnExportCustom,
+html.ui-only-dpc #btnEmail,
+html.ui-only-dpc #pageCommesse,
+html.ui-only-dpc #pageTools,
+html.ui-only-dpc #commesseChrome{display:none!important}
+
 .modal-overlay.show{
   display:flex!important;
   align-items:flex-start!important;
@@ -1512,6 +1530,8 @@ function saveEmailJsKeys(pk,sid,tid){
 }
 
 const SESSION_KEY="lab_session_cami_v17";
+const UI_STANDBY_ONLY_DPC=true; /* true = solo lista DPC visibile; il resto è in standby */
+try{if(UI_STANDBY_ONLY_DPC)document.documentElement.classList.add("ui-only-dpc");}catch(e){}
 const LAST_EMAIL_KEY="lab_last_email_cami";
 const LAST_BACKUP_KEY="lab_last_backup_cami";
 const DAYS_WARNING=30;
@@ -2131,7 +2151,20 @@ function hideAllPages(){
   var dc=document.getElementById("dpcChrome");if(dc)dc.style.display="none";
   var cc=document.getElementById("commesseChrome");if(cc)cc.style.display="none";
 }
+function applyUiStandbyMode(){
+  try{
+    document.documentElement.classList.toggle("ui-only-dpc", !!UI_STANDBY_ONLY_DPC);
+  }catch(e){}
+  if(!UI_STANDBY_ONLY_DPC)return;
+  ["btnCommesse","btnDpcHome","btnToolsNav","btnNuovoIntervento","btnInterventiAssegnati","btnDashboard","btnOggi","btnClienti","btnUsers","btnAssegnaTecnico","btnTools","btnReportMensile","btnPacchetto","btnExportCustom","btnEmail","btnAudit","btnBackup","btnCloudBackups","btnLoadBackup"].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el)el.style.display="none";
+  });
+  window.__toolsNavVisible=false;
+  try{showDpcPage();}catch(e){}
+}
 function showCommessePage(){
+  if(UI_STANDBY_ONLY_DPC){showDpcPage();return;}
   hideAllPages();
   var c=document.getElementById("pageCommesse");if(c)c.classList.add("active");
   var cc=document.getElementById("commesseChrome");if(cc)cc.style.display="block";
@@ -2154,10 +2187,16 @@ function showDpcPage(){
   if(bd)bd.style.display="none";
   if(bc)bc.style.display="inline-flex";
   if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
+  if(typeof UI_STANDBY_ONLY_DPC!=="undefined"&&UI_STANDBY_ONLY_DPC){
+    if(bd)bd.style.display="none";
+    if(bc)bc.style.display="none";
+    if(bt)bt.style.display="none";
+  }
   try{syncStickyChrome();}catch(e){}
   try{window.scrollTo(0,0);}catch(e){}
 }
 function showToolsPage(){
+  if(UI_STANDBY_ONLY_DPC){showDpcPage();return;}
   hideAllPages();
   var t=document.getElementById("pageTools");if(t)t.classList.add("active");
   var bd=document.getElementById("btnDpcHome"),bc=document.getElementById("btnCommesse"),bt=document.getElementById("btnToolsNav");
@@ -3148,6 +3187,8 @@ async function showApp(){document.getElementById("loginScreen").classList.add("h
   var be=document.getElementById("btnExportCustom");if(be)be.style.display=(s||a||t)?"inline-flex":"none";
   var br=document.getElementById("btnReportMensile");if(br)br.style.display=(s||a||t)?"inline-flex":"none";
   var bp=document.getElementById("btnPacchetto");if(bp)bp.style.display=(s||a||t)?"inline-flex":"none";
+  try{refreshAltroMenuVisibility();}catch(e){}
+  try{applyUiStandbyMode();}catch(e){}
   try{refreshAltroMenuVisibility();}catch(e){}
   setTimeout(refreshBell,500);await loadAll();
   try{await loadDbNotifiche();refreshBell();}catch(e){}
