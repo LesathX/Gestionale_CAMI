@@ -133,7 +133,7 @@ body{font-family:Inter,system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min
 .btn-login{width:100%;padding:.8rem;border:none;border-radius:.55rem;background:#dc2626;color:#fff;font-weight:700;cursor:pointer}
 .login-hint{text-align:center;font-size:.75rem;color:rgba(255,255,255,.8);margin-top:1rem}
 .app{display:none}.app.show{display:block}
-.app-sticky{position:fixed;top:0;left:0;right:0;z-index:9999;background:#eef2f7;box-shadow:0 8px 24px rgba(15,23,42,.18)}
+.app-sticky{position:fixed;top:0;left:0;right:0;z-index:40;background:#eef2f7;box-shadow:0 8px 24px rgba(15,23,42,.18)}
 .page-chrome{background:#eef2f7;padding:.7rem 1.15rem .15rem;max-width:1900px;margin:0 auto}
 #commesseChrome{display:none}
 #stickySpacer{height:160px;flex-shrink:0}
@@ -361,6 +361,34 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
 @media(max-width:640px){
   #commessaModal div[style*="grid-template-columns:1fr 1fr 1fr"]{grid-template-columns:1fr!important}
 }
+
+/* popup sempre sopra header/filtri fissi */
+.modal-overlay,
+.modal-overlay.show{
+  z-index:10050!important;
+  position:fixed!important;
+  inset:0;
+  align-items:flex-start;
+  justify-content:center;
+  padding:1.25rem 1rem 2rem;
+  overflow-y:auto;
+}
+.modal-overlay.show{display:flex!important}
+.modal-overlay .modal{
+  margin:auto;
+  max-height:none;
+  position:relative;
+  z-index:1;
+}
+#quickClienteModal,
+#quickClienteModal.show{z-index:10120!important}
+#storicoInterventiModal,
+#storicoInterventiModal.show,
+#clienteSchedaModal,
+#clienteSchedaModal.show{z-index:10100!important}
+.toast{z-index:10200!important}
+.loading-overlay{z-index:10300!important}
+.login-screen{z-index:10400}
 
 </style>
 </head>
