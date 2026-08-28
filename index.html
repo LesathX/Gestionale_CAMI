@@ -134,7 +134,7 @@ body{font-family:Inter,system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min
 .login-hint{text-align:center;font-size:.75rem;color:rgba(255,255,255,.8);margin-top:1rem}
 .app{display:none}.app.show{display:block}
 .app-sticky{position:fixed;top:0;left:0;right:0;z-index:9999;background:#eef2f7;box-shadow:0 8px 24px rgba(15,23,42,.18)}
-.page-chrome{background:#eef2f7;padding:.7rem 1rem .55rem;max-width:1900px;margin:0 auto}
+.page-chrome{background:#eef2f7;padding:.7rem 1.15rem .15rem;max-width:1900px;margin:0 auto}
 #commesseChrome{display:none}
 #stickySpacer{height:160px;flex-shrink:0}
 .table-scroll thead th{background:#f8fafc}
@@ -153,7 +153,7 @@ body{font-family:Inter,system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min
 .expiry-alert.show{display:block}.expiry-alert.danger{background:#fef2f2;border-color:#fca5a5;color:#991b1b}
 .expiry-alert-inner{max-width:1900px;margin:0 auto;padding:.55rem 1.1rem;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
 .expiry-alert .btn-sm{background:#dc2626;color:#fff;border:none;padding:.28rem .6rem;border-radius:.3rem;font-size:.72rem;cursor:pointer}
-.main{max-width:1900px;margin:0 auto;padding:1rem}
+.main{max-width:1900px;margin:0 auto;padding:1.1rem 1.15rem 2rem}
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:.55rem;margin-bottom:.85rem}
 @media(min-width:1000px){.stats{grid-template-columns:repeat(6,1fr)}}
 .stat-card{background:#fff;border:1px solid #e2e8f0;border-radius:.6rem;padding:.7rem}
@@ -172,37 +172,17 @@ body{font-family:Inter,system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min
 .filters-inner select{min-width:105px;padding:.45rem;border:1px solid #e2e8f0;border-radius:.4rem;font-size:.72rem;background:#fff}
 .table-wrap{background:#fff;border:1px solid #e2e8f0;border-radius:.6rem;overflow:hidden}
 
-.frozen-head{margin-top:.55rem;background:#fff;border:1px solid #e2e8f0;border-bottom:0;border-radius:.6rem .6rem 0 0;overflow:hidden}
+.frozen-head{margin-top:.45rem;background:#fff;border:1px solid #e2e8f0;border-bottom:0;border-radius:.6rem .6rem 0 0;overflow:hidden}
 .frozen-head .table-scroll{overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
 .frozen-head .table-scroll::-webkit-scrollbar{height:0}
-.frozen-head table{margin:0;width:max-content;min-width:100%;table-layout:auto;border-collapse:separate;border-spacing:0}
-.frozen-head th{background:#f1f5f9;position:static;white-space:nowrap;overflow:hidden;text-overflow:clip;padding:.5rem .85rem;font-weight:600;box-sizing:content-box;max-width:none!important}
-#dpcHeadTable th:nth-child(1){min-width:88px}
-#dpcHeadTable th:nth-child(2){min-width:120px}
-#dpcHeadTable th:nth-child(3){min-width:110px}
-#dpcHeadTable th:nth-child(4){min-width:110px}
-#dpcHeadTable th:nth-child(5){min-width:100px}
-#dpcHeadTable th:nth-child(6){min-width:70px}
-#dpcHeadTable th:nth-child(7){min-width:90px}
-#dpcHeadTable th:nth-child(8){min-width:108px}
-#dpcHeadTable th:nth-child(9){min-width:118px}
-#dpcHeadTable th:nth-child(10){min-width:118px}
-#dpcHeadTable th:nth-child(11){min-width:90px}
-#dpcHeadTable th:nth-child(12){min-width:90px}
-#dpcHeadTable th:nth-child(13){min-width:70px}
-#dpcHeadTable th:nth-child(14){min-width:70px}
-#dpcHeadTable th:nth-child(15){min-width:80px}
-#dpcHeadTable th:nth-child(16){min-width:100px}
-#dpcHeadTable th:nth-child(17){min-width:100px}
-#dpcHeadTable th:nth-child(18){min-width:96px}
-#dpcHeadTable th:nth-child(19){min-width:110px}
-#dpcHeadTable th:nth-child(20){min-width:70px}
-#dpcHeadTable th:nth-child(21){min-width:70px}
-#dpcHeadTable th:nth-child(22){min-width:100px}
-#dpcHeadTable th:nth-child(23){min-width:80px}
-#dpcHeadTable th:nth-child(24){min-width:90px}
-.table-wrap.under-frozen{border-top-left-radius:0;border-top-right-radius:0;border-top:1px solid #e2e8f0}
+.frozen-head table,.table-wrap.under-frozen table{margin:0;border-collapse:collapse;table-layout:fixed}
+.frozen-head th,.table-wrap.under-frozen th,.table-wrap.under-frozen td{
+  box-sizing:border-box;padding:.42rem .55rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle
+}
+.frozen-head th{background:#f1f5f9;position:static;font-weight:600;border-bottom:1px solid #e2e8f0}
+.table-wrap.under-frozen{border-top-left-radius:0;border-top-right-radius:0;border-top:0}
 .table-wrap.under-frozen thead{display:none}
+.table-wrap.under-frozen td.truncate{max-width:none}
 
 .table-scroll-top{overflow-x:auto;overflow-y:hidden;height:14px;border-bottom:1px solid #e2e8f0;background:#f8fafc}
 .table-scroll-top-inner{height:1px;pointer-events:none}
@@ -2960,45 +2940,50 @@ function bindHScroll(a,b){
     }finally{window.__hLock=false;}
   });
 }
+function applyColgroup(tbl, widths){
+  if(!tbl||!widths||!widths.length)return;
+  var old=tbl.querySelector("colgroup");
+  if(old)old.remove();
+  var cg=document.createElement("colgroup");
+  var total=0;
+  for(var i=0;i<widths.length;i++){
+    var col=document.createElement("col");
+    col.style.width=widths[i]+"px";
+    cg.appendChild(col);
+    total+=widths[i];
+  }
+  tbl.insertBefore(cg, tbl.firstChild);
+  tbl.style.tableLayout="fixed";
+  tbl.style.width=total+"px";
+  tbl.style.minWidth=total+"px";
+  tbl.style.maxWidth="none";
+}
 function matchFrozenCols(headTbl, bodyTbl){
   if(!headTbl||!bodyTbl)return;
   var hths=headTbl.querySelectorAll("thead th");
   var bths=bodyTbl.querySelectorAll("thead th");
-  var row=bodyTbl.querySelector("tbody tr");
-  var n=hths.length;
+  var rows=bodyTbl.querySelectorAll("tbody tr");
+  var n=hths.length || (rows[0]?rows[0].children.length:0);
   if(!n)return;
-  var canvas=document.createElement("canvas");
-  var ctx=canvas.getContext("2d");
-  try{ctx.font="600 12px Inter,system-ui,sans-serif";}catch(e){}
+  var mins=[96,130,120,130,110,120,100,100,130,120,140,100,160,70,90,110,130,90,140,70,70,110,90,110];
   var widths=[];
   for(var i=0;i<n;i++){
-    var label=((hths[i]&&hths[i].textContent)||"").replace(/\s+/g," ").trim();
-    var textW=0;
-    try{textW=ctx.measureText(label).width;}catch(e){textW=label.length*8;}
-    var headerW=Math.ceil(textW)+36;
-    var bodyW=0;
-    if(row&&row.children[i]){
-      var cell=row.children[i];
-      bodyW=Math.max(cell.scrollWidth||0, Math.ceil(cell.getBoundingClientRect().width)||0);
-    }else if(bths[i]){
-      bodyW=Math.ceil(bths[i].getBoundingClientRect().width)||0;
+    var w=mins[i]||90;
+    if(hths[i]){
+      hths[i].style.whiteSpace="nowrap";
+      w=Math.max(w, Math.ceil(hths[i].scrollWidth||0)+8);
     }
-    var w=Math.max(72, headerW, bodyW);
+    if(bths[i]) w=Math.max(w, Math.ceil(bths[i].scrollWidth||0)+8);
+    var scan=Math.min(rows.length, 8);
+    for(var r=0;r<scan;r++){
+      var cell=rows[r]&&rows[r].children[i];
+      if(!cell)continue;
+      w=Math.max(w, Math.min(280, Math.ceil(cell.scrollWidth||0)+8));
+    }
     widths.push(w);
   }
-  var total=widths.reduce(function(a,b){return a+b;},0);
-  headTbl.style.width=total+"px";
-  headTbl.style.minWidth=total+"px";
-  headTbl.style.tableLayout="auto";
-  bodyTbl.style.width=total+"px";
-  bodyTbl.style.minWidth=total+"px";
-  bodyTbl.style.tableLayout="auto";
-  for(var i=0;i<n;i++){
-    var px=Math.max(widths[i], 80)+"px";
-    if(hths[i]){hths[i].style.width=px;hths[i].style.minWidth=px;hths[i].style.maxWidth="none";}
-    if(bths[i]){bths[i].style.width=px;bths[i].style.minWidth=px;bths[i].style.maxWidth="none";}
-    if(row&&row.children[i]){row.children[i].style.width=px;row.children[i].style.minWidth=px;row.children[i].style.maxWidth="none";}
-  }
+  applyColgroup(headTbl, widths);
+  applyColgroup(bodyTbl, widths);
 }
 function syncTableScrollbars(){
   var top=document.getElementById("tableScrollTop");
@@ -3011,7 +2996,7 @@ function syncTableScrollbars(){
     matchFrozenCols(headTbl, bodyTbl);
     var w=Math.max(bodyTbl.scrollWidth, bot.clientWidth, headTbl?headTbl.scrollWidth:0);
     inner.style.width=w+"px";
-    if(headTbl)headTbl.style.minWidth=w+"px";
+    if(headTbl){headTbl.style.minWidth=w+"px";headTbl.style.width=w+"px";}
     bindHScroll(top,bot);bindHScroll(bot,top);
     if(head){bindHScroll(head,bot);bindHScroll(bot,head);bindHScroll(top,head);bindHScroll(head,top);}
     top.scrollLeft=bot.scrollLeft;
