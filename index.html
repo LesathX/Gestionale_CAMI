@@ -133,6 +133,9 @@ body{font-family:Inter,system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min
 .btn-login{width:100%;padding:.8rem;border:none;border-radius:.55rem;background:#dc2626;color:#fff;font-weight:700;cursor:pointer}
 .login-hint{text-align:center;font-size:.75rem;color:rgba(255,255,255,.8);margin-top:1rem}
 .app{display:none}.app.show{display:block}
+.app-sticky{position:sticky;top:0;z-index:40;background:#1e293b;box-shadow:0 4px 18px rgba(15,23,42,.18)}
+.page-chrome{position:sticky;top:var(--sticky-chrome-h,72px);z-index:30;background:var(--cami-bg,#eef2f7);padding:.75rem 0 .4rem;margin:0 -1rem;padding-left:1rem;padding-right:1rem;box-shadow:0 8px 18px rgba(15,23,42,.06)}
+.table-scroll thead th{position:sticky;top:0;z-index:2;background:#f8fafc}
 .header{background:linear-gradient(to right,#1e3a5f,#1e293b);color:#fff}
 .header-inner{max-width:1900px;margin:0 auto;padding:.9rem 1.1rem;display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;justify-content:space-between}
 .logo{display:flex;gap:.65rem;align-items:center}
@@ -159,7 +162,7 @@ body{font-family:Inter,system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min
 .client-chip:hover{background:#eff6ff;border-color:#93c5fd;box-shadow:0 1px 3px rgba(37,99,235,.15)}
 .client-chip:active{background:#dbeafe}
 .client-chip.active-chip{background:#dbeafe;border-color:#3b82f6;color:#1e40af;font-weight:600}
-.filters{background:#fff;border:1px solid #e2e8f0;border-radius:.6rem;padding:.65rem;margin-bottom:.85rem}
+.filters{background:#fff;border:1px solid #e2e8f0;border-radius:.6rem;padding:.65rem;margin-bottom:.45rem}
 .filters-inner{display:flex;flex-wrap:nowrap;gap:.35rem;overflow-x:auto;align-items:center}
 .search-wrap{position:relative;flex:1 1 140px;min-width:120px}
 .search-wrap i{position:absolute;left:.55rem;top:50%;transform:translateY(-50%);color:#94a3b8}
@@ -287,7 +290,7 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
 .oggi-tag.man{background:#dbeafe;color:#1d4ed8}
 .oggi-tag.fil{background:#fce7f3;color:#be185d}
 @media print{
-  .header,.filters,.stats,.client-stats,.expiry-alert,.header-actions,.btn,.footer-note,#permBanner,.modal-header .modal-close,.form-actions{display:none!important}
+  .header,.filters,.stats,.client-stats,.expiry-alert,.header-actions,.btn,.footer-note,#permBanner,.modal-header .modal-close,.form-actions,.app-sticky,.page-chrome{display:none!important}
   .modal-overlay.show{position:static;background:#fff;display:block!important}
   .modal{box-shadow:none;max-width:100%;max-height:none}
 }
@@ -364,6 +367,7 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
   </div>
 </div>
 <div id="app" class="app">
+  <div class="app-sticky" id="appSticky">
   <header class="header"><div class="header-inner">
     <div class="logo"><div class="logo-icon"><i class="fas fa-flask"></i></div><div><h1>Gestionale CAMI <span class="sync-badge">Multi</span></h1><p>DPC - Stadi dinamici</p></div></div>
     <div class="header-actions">
@@ -415,8 +419,10 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
     </div></div>
   </div></header>
   <div id="expiryAlert" class="expiry-alert"><div class="expiry-alert-inner"><i class="fas fa-exclamation-triangle"></i><div id="expiryAlertText"></div><button class="btn-sm" onclick="filterExpiring()">Mostra</button></div></div>
+  </div>
   <main class="main">
   <div id="pageDpc" class="page-panel active">
+    <div class="page-chrome" id="dpcChrome">
     <div id="permBanner" class="info-banner"></div>
     <div class="stats" id="statsContainer"></div>
     <div class="client-stats" id="clientStats"></div>
@@ -429,6 +435,7 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
       <select id="filterFiltro" onchange="renderTable()"><option value="">Filtro</option><option value="si">Si</option><option value="no">No</option></select>
       <select id="filterScadenza" onchange="renderTable()"><option value="">Scadenze DPC</option><option value="scaduti">DPC scaduti</option><option value="d7">DPC scaduti + entro 7 gg</option><option value="d15">DPC scaduti + entro 15 gg</option><option value="d30">DPC scaduti + entro 30 gg</option><option value="in_scadenza">DPC in scadenza (1-30)</option><option value="ok">DPC in regola</option></select>
     </div></div>
+    </div><!-- /dpcChrome -->
     <div class="table-wrap">
       <div class="table-scroll-top" id="tableScrollTop" title="Scorri orizzontalmente"><div class="table-scroll-top-inner" id="tableScrollTopInner"></div></div>
       <div class="table-scroll" id="tableScroll"><table>
@@ -444,6 +451,7 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
   </div><!-- /pageDpc -->
 
   <div id="pageCommesse" class="page-panel">
+    <div class="page-chrome" id="commesseChrome">
     <div class="stats" id="commesseStats"></div>
     <div class="filters"><div class="filters-inner">
       <div class="search-wrap"><i class="fas fa-search"></i><input id="commesseSearch" placeholder="Cerca commessa, cliente, ROE, N° PROTOCOLLO OFC/AMM, N° PROTOCOLLO CON..." oninput="renderCommesse()"></div>
@@ -455,6 +463,7 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
       <select id="commesseFilterCliente" onchange="renderCommesse()"><option value="">Tutti i clienti</option></select>
       <button class="btn btn-primary" onclick="openCommessaModal()"><i class="fas fa-plus"></i> Nuova commessa</button>
     </div></div>
+    </div><!-- /commesseChrome -->
     <div class="table-wrap">
       <div class="table-scroll">
         <table>
@@ -987,7 +996,7 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
       </div>
       <div class="form-group"><label>Referente – nome</label>
         <input id="commRefNome" list="listCommRefNome" placeholder="scegli o digita" oninput="onCommRefNomeChange()" onchange="onCommRefNomeChange()">
-        <small class="hint">Suggerimenti dal cliente e dalla sede selezionata</small>
+        <small class="hint">Suggerimenti dal cliente selezionato</small>
       </div>
       <div class="form-group"><label>Referente – contatto</label>
         <input id="commRefContatto" list="listCommRefContatto" placeholder="tel / email">
@@ -1995,6 +2004,7 @@ function showCommessePage(){
   if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
   fillCommesseClienteFilters();
   loadCommesse();
+  try{syncStickyChrome();}catch(e){}
   try{window.scrollTo(0,0);}catch(e){}
 }
 function showDpcPage(){
@@ -2004,6 +2014,7 @@ function showDpcPage(){
   if(bd)bd.style.display="none";
   if(bc)bc.style.display="inline-flex";
   if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
+  try{syncStickyChrome();}catch(e){}
   try{window.scrollTo(0,0);}catch(e){}
 }
 function showToolsPage(){
@@ -2291,10 +2302,9 @@ function fillCommClienteFattSelect(selected){
   if(cur)sel.value=cur;
 }
 
-function collectClienteRefPairs(cid, sedeFilter){
-  // mappa referente -> set contatti (cliente + opz. sede)
+function collectClienteRefPairs(cid){
+  // mappa referente -> set contatti (dal cliente selezionato)
   var map={};
-  sedeFilter=String(sedeFilter||"").trim().toLowerCase();
   function add(ref, cont){
     ref=String(ref||"").trim();
     cont=String(cont||"").trim();
@@ -2303,33 +2313,16 @@ function collectClienteRefPairs(cid, sedeFilter){
     if(cont)map[ref][cont]=1;
   }
   if(!cid)return map;
-  (equipment||[]).filter(function(e){
-    if(e.clienteId!==cid)return false;
-    if(sedeFilter){
-      var se=String(e.sede||"").trim().toLowerCase();
-      if(se!==sedeFilter)return false;
-    }
-    return true;
-  }).forEach(function(e){
+  (equipment||[]).filter(function(e){return e.clienteId===cid;}).forEach(function(e){
     add(e.responsabile, e.referenteContatto);
   });
-  (commesse||[]).filter(function(c){
-    if(!(c.cliente_id===cid||c.cliente_fatturazione_id===cid))return false;
-    if(sedeFilter){
-      var se=String(c.sede||"").trim().toLowerCase();
-      if(!se||se!==sedeFilter)return false;
-    }
-    return true;
-  }).forEach(function(c){
+  (commesse||[]).filter(function(c){return c.cliente_id===cid||c.cliente_fatturazione_id===cid;}).forEach(function(c){
     add(c.referente_nome, c.referente_contatto);
   });
-  // anagrafica cliente: se sede scelta, solo se coincide
+  // anagrafica cliente se presente
   var cli=(clienti||[]).find(function(c){return c.id===cid;});
   if(cli){
-    var cliSede=String(cli.sede||"").trim().toLowerCase();
-    if(!sedeFilter||cliSede===sedeFilter){
-      add(cli.referente||cli.responsabile, cli.referente_contatto||cli.telefono||cli.email);
-    }
+    add(cli.referente||cli.responsabile, cli.referente_contatto||cli.telefono||cli.email);
   }
   return map;
 }
@@ -2358,32 +2351,25 @@ function onCommClienteChange(){
       else ns.value="";
     }
   }
-  // referenti: cliente + sede selezionata
-  try{refreshCommReferenti();}catch(e){}
-  fillCommDpcList();
-}
-function getCommSedeFilter(){
-  var ns=document.getElementById("commSede");
-  return ns?(ns.value||"").trim():"";
-}
-function refreshCommReferenti(){
-  var cid=document.getElementById("commCliente")?document.getElementById("commCliente").value:"";
-  var sede=getCommSedeFilter();
-  var pairs=collectClienteRefPairs(cid, sede);
-  var refs=Object.keys(pairs).sort(function(a,b){return a.localeCompare(b,"it",{sensitivity:"base"});});
-  var rn=document.getElementById("commRefNome");
-  if(rn){
-    rn.setAttribute("list","listCommRefNome");
-    if(!document.getElementById("listCommRefNome")){
-      var dl=document.createElement("datalist");dl.id="listCommRefNome";document.body.appendChild(dl);
+  // referenti del solo cliente
+  try{
+    var pairs=collectClienteRefPairs(cid);
+    var refs=Object.keys(pairs).sort(function(a,b){return a.localeCompare(b,"it",{sensitivity:"base"});});
+    var rn=document.getElementById("commRefNome");
+    if(rn){
+      rn.setAttribute("list","listCommRefNome");
+      if(!document.getElementById("listCommRefNome")){
+        var dl=document.createElement("datalist");dl.id="listCommRefNome";document.body.appendChild(dl);
+      }
+      fillDatalist("listCommRefNome", refs);
     }
-    fillDatalist("listCommRefNome", refs);
-  }
-  onCommRefNomeChange();
+    // contatti: finché non c'è referente, lista vuota (o tutti del cliente se preferisci solo dopo scelta)
+    onCommRefNomeChange();
+  }catch(e){}
+  fillCommDpcList();
 }
 function onCommRefNomeChange(){
   var cid=document.getElementById("commCliente")?document.getElementById("commCliente").value:"";
-  var sede=getCommSedeFilter();
   var ref=(document.getElementById("commRefNome")&&document.getElementById("commRefNome").value||"").trim();
   var rc=document.getElementById("commRefContatto");
   if(!rc)return;
@@ -2393,24 +2379,24 @@ function onCommRefNomeChange(){
   }
   var contatti=[];
   if(cid&&ref){
-    var pairs=collectClienteRefPairs(cid, sede);
+    var pairs=collectClienteRefPairs(cid);
+    // match case-insensitive sul nome referente
     Object.keys(pairs).forEach(function(k){
       if(k.toLowerCase()===ref.toLowerCase()||k.toLowerCase().indexOf(ref.toLowerCase())===0){
         Object.keys(pairs[k]).forEach(function(c){contatti.push(c);});
       }
     });
   }
+  // dedup
   var seen={}, uniq=[];
   contatti.forEach(function(c){var k=c.toLowerCase();if(!seen[k]){seen[k]=1;uniq.push(c);}});
   fillDatalist("listCommRefContatto", uniq);
+  // se un solo contatto noto, suggeriscilo (non sovrascrivere se già compilato con altro)
   if(uniq.length===1){
     if(!rc.value||uniq.indexOf(rc.value)>=0)rc.value=uniq[0];
   }
 }
-function onCommSedeChange(){
-  try{refreshCommReferenti();}catch(e){}
-  fillCommDpcList();
-}
+function onCommSedeChange(){fillCommDpcList();}
 function fillCommDpcList(selectedIds){
   var box=document.getElementById("commDpcList");
   if(!box)return;
@@ -2851,7 +2837,7 @@ function updateExpiry(){
     else if(d==="soon")dpcSo++;
   });
   var box=document.getElementById("expiryAlert"),tx=document.getElementById("expiryAlertText");
-  if(!scMan&&!soMan&&!scFil&&!soFil&&!dpcSc&&!dpcSo){box.classList.remove("show","danger");return;}
+  if(!scMan&&!soMan&&!scFil&&!soFil&&!dpcSc&&!dpcSo){box.classList.remove("show","danger");try{syncStickyChrome();}catch(e){}return;}
   var p=[];
   if(dpcSc)p.push("<strong>"+dpcSc+" DPC scaduti</strong>");
   if(dpcSo)p.push("<strong>"+dpcSo+" DPC in scadenza</strong>");
@@ -2862,7 +2848,14 @@ function updateExpiry(){
   tx.innerHTML=p.join(" · ");
   box.classList.add("show");
   if(scMan||scFil||dpcSc)box.classList.add("danger");else box.classList.remove("danger");
+  try{syncStickyChrome();}catch(e){}
 }
+function syncStickyChrome(){
+  var el=document.getElementById("appSticky");
+  var h=el?Math.ceil(el.getBoundingClientRect().height):72;
+  document.documentElement.style.setProperty("--sticky-chrome-h",(h)+"px");
+}
+window.addEventListener("resize",function(){try{syncStickyChrome();}catch(e){}});
 function filterExpiring(){var hasOver=equipment.some(function(e){return deviceExpiryStatus(e)==="overdue";});document.getElementById("filterScadenza").value=hasOver?"scaduti":"in_scadenza";renderTable();}
 
 function syncTableScrollbars(){
