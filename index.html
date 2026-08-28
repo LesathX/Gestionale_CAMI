@@ -175,8 +175,32 @@ body{font-family:Inter,system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min
 .frozen-head{margin-top:.55rem;background:#fff;border:1px solid #e2e8f0;border-bottom:0;border-radius:.6rem .6rem 0 0;overflow:hidden}
 .frozen-head .table-scroll{overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
 .frozen-head .table-scroll::-webkit-scrollbar{height:0}
-.frozen-head table{margin:0}
-.frozen-head th{background:#f1f5f9;position:static;white-space:nowrap;overflow:visible;max-width:none!important;padding:.5rem .75rem;font-weight:600}
+.frozen-head table{margin:0;width:max-content;min-width:100%;table-layout:auto;border-collapse:separate;border-spacing:0}
+.frozen-head th{background:#f1f5f9;position:static;white-space:nowrap;overflow:hidden;text-overflow:clip;padding:.5rem .85rem;font-weight:600;box-sizing:content-box;max-width:none!important}
+#dpcHeadTable th:nth-child(1){min-width:88px}
+#dpcHeadTable th:nth-child(2){min-width:120px}
+#dpcHeadTable th:nth-child(3){min-width:110px}
+#dpcHeadTable th:nth-child(4){min-width:110px}
+#dpcHeadTable th:nth-child(5){min-width:100px}
+#dpcHeadTable th:nth-child(6){min-width:70px}
+#dpcHeadTable th:nth-child(7){min-width:90px}
+#dpcHeadTable th:nth-child(8){min-width:108px}
+#dpcHeadTable th:nth-child(9){min-width:118px}
+#dpcHeadTable th:nth-child(10){min-width:118px}
+#dpcHeadTable th:nth-child(11){min-width:90px}
+#dpcHeadTable th:nth-child(12){min-width:90px}
+#dpcHeadTable th:nth-child(13){min-width:70px}
+#dpcHeadTable th:nth-child(14){min-width:70px}
+#dpcHeadTable th:nth-child(15){min-width:80px}
+#dpcHeadTable th:nth-child(16){min-width:100px}
+#dpcHeadTable th:nth-child(17){min-width:100px}
+#dpcHeadTable th:nth-child(18){min-width:96px}
+#dpcHeadTable th:nth-child(19){min-width:110px}
+#dpcHeadTable th:nth-child(20){min-width:70px}
+#dpcHeadTable th:nth-child(21){min-width:70px}
+#dpcHeadTable th:nth-child(22){min-width:100px}
+#dpcHeadTable th:nth-child(23){min-width:80px}
+#dpcHeadTable th:nth-child(24){min-width:90px}
 .table-wrap.under-frozen{border-top-left-radius:0;border-top-right-radius:0;border-top:1px solid #e2e8f0}
 .table-wrap.under-frozen thead{display:none}
 
@@ -2965,15 +2989,15 @@ function matchFrozenCols(headTbl, bodyTbl){
   var total=widths.reduce(function(a,b){return a+b;},0);
   headTbl.style.width=total+"px";
   headTbl.style.minWidth=total+"px";
-  headTbl.style.tableLayout="fixed";
+  headTbl.style.tableLayout="auto";
   bodyTbl.style.width=total+"px";
   bodyTbl.style.minWidth=total+"px";
-  bodyTbl.style.tableLayout="fixed";
+  bodyTbl.style.tableLayout="auto";
   for(var i=0;i<n;i++){
-    var px=widths[i]+"px";
-    if(hths[i]){hths[i].style.width=px;hths[i].style.minWidth=px;hths[i].style.maxWidth="";}
-    if(bths[i]){bths[i].style.width=px;bths[i].style.minWidth=px;bths[i].style.maxWidth="";}
-    if(row&&row.children[i]){row.children[i].style.width=px;row.children[i].style.minWidth=px;}
+    var px=Math.max(widths[i], 80)+"px";
+    if(hths[i]){hths[i].style.width=px;hths[i].style.minWidth=px;hths[i].style.maxWidth="none";}
+    if(bths[i]){bths[i].style.width=px;bths[i].style.minWidth=px;bths[i].style.maxWidth="none";}
+    if(row&&row.children[i]){row.children[i].style.width=px;row.children[i].style.minWidth=px;row.children[i].style.maxWidth="none";}
   }
 }
 function syncTableScrollbars(){
@@ -4788,9 +4812,15 @@ async function runExcelImport(file,clienteId,dpcMode){
   var reader=new FileReader();
   reader.onload=async function(e){
     try{
-      var wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
-      var rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:"",raw:false});
+      var wb=XLSX.read(new Uint8Array(e.target.result),{type:"array",cellDates:true});
+      // usa il foglio con più righe (i file CAMI a volte hanno più sheet)
+      var rows=[], chosen="";
+      (wb.SheetNames||[]).forEach(function(name){
+        var r=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:"",raw:false,blankrows:false});
+        if(r&&r.length>rows.length){rows=r;chosen=name;}
+      });
       if(!rows||rows.length<2){alert("File vuoto");return;}
+      console.log("[import] foglio",chosen,"righe",rows.length);
 
       function parseExcelDate(v){
         if(v==null||v==="")return "";
@@ -5048,76 +5078,92 @@ async function runExcelImport(file,clienteId,dpcMode){
 
       var ok=0,skip=0,errors=[],withFiltro=0,scadutiF=0,okF=0;
 
-      if(cami&&cami.mat>=0||cami&&cami.id>=0){
+      if(cami&&(cami.mat>=0||cami.id>=0||cami.acr>=0)){
         // ===== IMPORT FORMATO CAMI =====
-        if(!confirm("Formato CAMI rilevato (filtri a stadi).\nCliente: "+clienteName(clienteId)+"\nDati da riga "+(cami.dataStart+1)+"\nStadi trovati: "+Object.keys(cami.stages).join(", ")+"\nProcedere?"))return;
+        if(!confirm("Formato CAMI rilevato (filtri a stadi).\nCliente: "+clienteName(clienteId)+"\nFoglio: "+chosen+" · righe file: "+rows.length+"\nDati da riga "+(cami.dataStart+1)+"\nStadi trovati: "+Object.keys(cami.stages).join(", ")+"\nProcedere?"))return;
         var skipEmpty=0,skipDup=0;
         function isPlaceholderId(v){
           var t=String(v||"").trim().toLowerCase();
-          return !t||t==="-"||t==="n.d."||t==="n.a."||t==="nd"||t==="na"||t==="null"||t==="undefined";
+          return !t||t==="-"||t==="n.d."||t==="n.a."||t==="nd"||t==="na"||t==="/"||t==="null"||t==="undefined"||t==="nessuno";
         }
-        // chiavi già viste in QUESTO import (evita doppioni nel file)
+        // Excel unisce le celle: la matricola/ID compare solo sulla prima riga del gruppo.
+        var lastCarry={};
+        function carry(idx, row){
+          if(idx==null||idx<0)return "";
+          var v=cell(row,idx);
+          var t=String(v==null?"":v).trim();
+          if(!isPlaceholderId(t)){lastCarry[idx]=t;return t;}
+          return lastCarry[idx]||t;
+        }
         var seenKeys={};
         for(var r=cami.dataStart;r<rows.length;r++){
           var row=rows[r];
           if(!row||!row.length){skipEmpty++;continue;}
-          // riga tutta vuota?
           var anyCell=false;
           for(var ci=0;ci<row.length;ci++){
             if(String(row[ci]==null?"":row[ci]).trim()){anyCell=true;break;}
           }
           if(!anyCell){skipEmpty++;continue;}
 
-          var matRaw=cell(row,cami.mat), iddRaw=cell(row,cami.id);
-          // senza matricola E senza identificativo reali → salta (non è un DPC)
-          if(isPlaceholderId(matRaw)&&isPlaceholderId(iddRaw)){
-            // potrebbe essere riga di sola formattazione: salta silenzioso
+          var acrRaw=carry(cami.acr,row);
+          var costRaw=carry(cami.cost,row);
+          var modRaw=carry(cami.mod,row);
+          var matRaw=carry(cami.mat,row);
+          var iddRaw=carry(cami.id,row);
+          var sedeCarried=carry(cami.sede,row);
+
+          // riga DPC se ha acronimo O matricola O id O costruttore+modello
+          var looksDpc=!(isPlaceholderId(acrRaw)&&isPlaceholderId(matRaw)&&isPlaceholderId(iddRaw)&&isPlaceholderId(costRaw)&&isPlaceholderId(modRaw));
+          if(!looksDpc){
             skipEmpty++;
             continue;
           }
           var mat=isPlaceholderId(matRaw)?("MAT-R"+(r+1)):matRaw.trim();
           var idd=isPlaceholderId(iddRaw)?("ID-R"+(r+1)):iddRaw.trim();
-          var sedeImp=(cell(row,cami.sede)||"N.A.").trim();
+          var sedeImp=(sedeCarried||cell(row,cami.sede)||"N.A.").trim()||"N.A.";
           var sedeImpKey=sedeImp.toLowerCase();
+          var stanzaKey=String(carry(cami.stanza,row)||"").trim().toLowerCase();
+          var edKey=String(carry(cami.ed,row)||"").trim().toLowerCase();
+          var acrKey=String(acrRaw||"").trim().toLowerCase();
 
-          // Chiave duplicato:
-          // 1) se ID reale → cliente+ID (univoco)
-          // 2) se solo matricola reale → cliente+sede+matricola
-          // 3) se entrambi placeholder già gestiti sopra
-          var dupKey="";
-          if(!isPlaceholderId(iddRaw)){
-            dupKey="id:"+String(idd).toLowerCase();
-          }else if(!isPlaceholderId(matRaw)){
-            dupKey="mat:"+sedeImpKey+"|"+String(mat).toLowerCase();
-          }else{
-            dupKey="row:"+r;
-          }
+          // duplicato solo se è DAVVERO lo stesso apparecchio (non solo stesso ID ripetuto per celle unite)
+          var dupKey=[acrKey, String(mat).toLowerCase(), isPlaceholderId(iddRaw)?"":String(idd).toLowerCase(), sedeImpKey, edKey, stanzaKey].join("|");
 
           if(seenKeys[dupKey]){
             skipDup++;
             if(errors.length<30)errors.push("Riga "+(r+1)+": duplicato nel file ("+mat+" / "+idd+")");
             continue;
           }
-          // duplicato già in database?
-          var already=null;
-          if(!isPlaceholderId(iddRaw)){
-            already=equipment.find(function(x){
-              return x.clienteId===clienteId&&String(x.idDispositivo||"").toLowerCase()===String(idd).toLowerCase();
-            });
-          }else if(!isPlaceholderId(matRaw)){
-            already=equipment.find(function(x){
-              return x.clienteId===clienteId
-                &&String(x.sede||"").trim().toLowerCase()===sedeImpKey
-                &&String(x.matricola||"").toLowerCase()===String(mat).toLowerCase()
-                &&isPlaceholderId(x.idDispositivo);
-            });
-          }
+          var already=equipment.find(function(x){
+            if(x.clienteId!==clienteId)return false;
+            var sameAcr=String(x.acronimo||"").trim().toLowerCase()===acrKey;
+            var sameMat=String(x.matricola||"").toLowerCase()===String(mat).toLowerCase();
+            var sameId=!isPlaceholderId(iddRaw)&&String(x.idDispositivo||"").toLowerCase()===String(idd).toLowerCase();
+            var sameSede=String(x.sede||"").trim().toLowerCase()===sedeImpKey;
+            var sameSt=String(x.stanza||"").trim().toLowerCase()===stanzaKey;
+            if(sameId&&sameAcr&&sameSede)return true;
+            if(sameMat&&sameAcr&&sameSede&&sameSt&&isPlaceholderId(iddRaw))return true;
+            return false;
+          });
           if(already){
             skipDup++;
             if(errors.length<30)errors.push("Riga "+(r+1)+": già presente in anagrafica ("+mat+" / "+idd+")");
             continue;
           }
           seenKeys[dupKey]=1;
+          // sovrascrivi celle carried sulla riga (così insert usa i valori pieni)
+          if(cami.acr>=0&&isPlaceholderId(cell(row,cami.acr))&&acrRaw)row[cami.acr]=acrRaw;
+          if(cami.cost>=0&&isPlaceholderId(cell(row,cami.cost))&&costRaw)row[cami.cost]=costRaw;
+          if(cami.mod>=0&&isPlaceholderId(cell(row,cami.mod))&&modRaw)row[cami.mod]=modRaw;
+          if(cami.mat>=0&&isPlaceholderId(cell(row,cami.mat))&&matRaw)row[cami.mat]=matRaw;
+          if(cami.id>=0&&isPlaceholderId(cell(row,cami.id))&&iddRaw)row[cami.id]=iddRaw;
+          if(cami.sede>=0&&isPlaceholderId(cell(row,cami.sede))&&sedeCarried)row[cami.sede]=sedeCarried;
+          if(cami.ed>=0){var ev=carry(cami.ed,row);if(ev)row[cami.ed]=ev;}
+          if(cami.lab>=0){var lv=carry(cami.lab,row);if(lv)row[cami.lab]=lv;}
+          if(cami.piano>=0){var pv=carry(cami.piano,row);if(pv)row[cami.piano]=pv;}
+          if(cami.stanza>=0){var sv=carry(cami.stanza,row);if(sv)row[cami.stanza]=sv;}
+          if(cami.stato>=0){var stv=carry(cami.stato,row);if(stv)row[cami.stato]=stv;}
+          if(cami.ref>=0){var rv=carry(cami.ref,row);if(rv)row[cami.ref]=rv;}
 
           // tipi attività
           var attRaw=cell(row,cami.attivita);
