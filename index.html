@@ -4838,7 +4838,7 @@ async function runExcelImport(file,clienteId,dpcMode){
       }
       var rows=[], chosen="", bestScore=-1e9, sheetReport=[];
       (wb.SheetNames||[]).forEach(function(name){
-        var r=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:"",raw:false,blankrows:true});
+        var r=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:"",raw:true,blankrows:true});
         if(!r||!r.length)return;
         var sc=scoreCamiSheet(name,r);
         sheetReport.push(name+" (pos "+sc.posN+", punti "+sc.score+")");
@@ -4858,51 +4858,42 @@ async function runExcelImport(file,clienteId,dpcMode){
           if(dt.getUTCFullYear()!==y||(dt.getUTCMonth()+1)!==mo||dt.getUTCDate()!==d)return "";
           return y+"-"+("0"+mo).slice(-2)+"-"+("0"+d).slice(-2);
         }
-        // Excel serial number
-        if(typeof v==="number"&&!isNaN(v)){
-          try{
-            var epoch=new Date(Date.UTC(1899,11,30));
-            var dt=new Date(epoch.getTime()+Math.round(v)*86400000);
-            if(!isNaN(dt.getTime()))return ymdValid(dt.getUTCFullYear(),dt.getUTCMonth()+1,dt.getUTCDate());
-          }catch(ex){}
+        if(typeof v==="number"&&isFinite(v)){
+          if(v>20000&&v<90000){
+            var epoch=Date.UTC(1899,11,30);
+            var dt=new Date(epoch+Math.round(v)*86400000);
+            return ymdValid(dt.getUTCFullYear(),dt.getUTCMonth()+1,dt.getUTCDate());
+          }
+          return "";
         }
-        // Date object
         if(Object.prototype.toString.call(v)==="[object Date]"&&!isNaN(v.getTime())){
-          return ymdValid(v.getFullYear(),v.getMonth()+1,v.getDate());
+          var loc=ymdValid(v.getFullYear(),v.getMonth()+1,v.getDate());
+          if(loc)return loc;
+          return ymdValid(v.getUTCFullYear(),v.getUTCMonth()+1,v.getUTCDate());
         }
         var s=String(v).trim();
         if(!s||s==="-"||s==="N.D."||s==="N.A."||s.toLowerCase()==="n.d.")return "";
-        // togli orario: "2025-03-03 00:00:00" / "2025-03-03T00:05:45"
+        if(/^\d{1,2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(s))return "";
         s=s.replace(/T.*$/,"").replace(/\s+\d{1,2}:\d{2}(:\d{2})?.*$/,"").trim();
-
-        // ISO yyyy-mm-dd (valida mese/giorno!)
         var m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
         if(m){
           var ok=ymdValid(m[1],m[2],m[3]);
           if(ok)return ok;
-          // se mese>12 forse era yyyy-dd-mm errato → scambia
-          ok=ymdValid(m[1],m[3],m[2]);
-          if(ok)return ok;
-          return "";
+          return ymdValid(m[1],m[3],m[2])||"";
         }
-
-        // dd/mm/yyyy o dd.mm.yyyy (formato italiano prioritario)
         m=s.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4})$/);
         if(m){
           var a=parseInt(m[1],10),b=parseInt(m[2],10);
           var yy=m[3].length===2?("20"+m[3]):m[3];
-          // se a>12 → a è giorno (dd/mm)
           if(a>12&&b>=1&&b<=12)return ymdValid(yy,b,a);
-          // se b>12 → b è giorno (mm/dd americano)
           if(b>12&&a>=1&&a<=12)return ymdValid(yy,a,b);
-          // entrambi <=12: preferisci italiano dd/mm/yyyy
-          var it=ymdValid(yy,b,a);
-          if(it)return it;
-          return ymdValid(yy,a,b);
+          return ymdValid(yy,b,a);
         }
-
-        // non usare new Date(string) ambigua
         return "";
+      }
+      function rawCell(row,idx){
+        if(idx==null||idx<0||!row||idx>=row.length)return null;
+        return row[idx];
       }
       function isEmptyFilterVal(v){
         var t=String(v||"").trim();
@@ -5119,7 +5110,9 @@ async function runExcelImport(file,clienteId,dpcMode){
           return n>=1&&n<=99999;
         }
         var seenKeys={};
+        var payload=[];
         for(var r=cami.dataStart;r<rows.length;r++){
+        try{
           var row=rows[r];
           if(!row||!row.length)continue;
           var anyCell=false;
@@ -5155,18 +5148,18 @@ async function runExcelImport(file,clienteId,dpcMode){
             if(errors.length<40)errors.push("Riga "+(r+1)+": duplicato Pos/chiave ("+posRaw+" "+mat+" / "+idd+")");
             continue;
           }
-          var already=equipment.find(function(x){
-            if(x.clienteId!==clienteId)return false;
-            if(hasPos){
-              var note=String(x.note||"");
-              if(note.indexOf("Pos "+String(posRaw).trim()+" ")===0||note.indexOf("Pos "+String(posRaw).trim()+"·")>-1||note.indexOf("Pos."+String(posRaw).trim())>-1)return true;
-            }
-            if(hasId&&hasMat){
-              return String(x.idDispositivo||"").toLowerCase()===String(idd).toLowerCase()
-                && String(x.matricola||"").toLowerCase()===String(mat).toLowerCase();
-            }
-            return false;
-          });
+          var already=null;
+          if(dpcMode!=="overwrite"){
+            already=equipment.find(function(x){
+              if(x.clienteId!==clienteId)return false;
+              if(hasId&&hasMat){
+                return String(x.idDispositivo||"").toLowerCase()===String(idd).toLowerCase()
+                  && String(x.matricola||"").toLowerCase()===String(mat).toLowerCase()
+                  && String(x.acronimo||"").toUpperCase()===String(acrRaw||"").toUpperCase();
+              }
+              return false;
+            });
+          }
           if(already){
             skipDup++;
             if(errors.length<40)errors.push("Riga "+(r+1)+": già in anagrafica ("+mat+" / "+idd+")");
@@ -5199,9 +5192,9 @@ async function runExcelImport(file,clienteId,dpcMode){
             var qty=cell(row,sc.qty);
             var tipol=cell(row,sc.tipologia);
             var corr=cell(row,sc.correlazione);
-            var dataInst=parseExcelDate(cell(row,sc.data));
+            var dataInst=parseExcelDate(rawCell(row,sc.data));
             var durata=cell(row,sc.durata);
-            var prox=parseExcelDate(cell(row,sc.prox));
+            var prox=parseExcelDate(rawCell(row,sc.prox));
             var statusRaw=cell(row,sc.status);
             // salta solo se TUTTI i campi utili sono vuoti
             if(isEmptyFilterVal(codice)&&isEmptyFilterVal(misure)&&isEmptyFilterVal(tipol)&&isEmptyFilterVal(tipo)&&isEmptyFilterVal(dataInst)&&isEmptyFilterVal(prox)&&isEmptyFilterVal(qty))return;
@@ -5249,7 +5242,7 @@ async function runExcelImport(file,clienteId,dpcMode){
             if(extra&&extra.length>1)cadenza=(cadenza+" "+extra).trim();
           }
 
-          var ultimaMan=cami.ultimaData>=0?parseExcelDate(cell(row,cami.ultimaData)):"";
+          var ultimaMan=cami.ultimaData>=0?parseExcelDate(rawCell(row,cami.ultimaData)):"";
           var noteExtra=[];
           if(cami.noteFiltro>=0&&cell(row,cami.noteFiltro))noteExtra.push(cell(row,cami.noteFiltro));
           if(cami.div>=0&&cell(row,cami.div))noteExtra.push("Divisione: "+cell(row,cami.div));
@@ -5279,25 +5272,47 @@ async function runExcelImport(file,clienteId,dpcMode){
             ultima_man:ultimaMan||null,
             prossima_man:null
           };
-
-          try{
-            var res=await sb.from("equipment").insert([insertRow]);
-            if(res.error){
-              if((res.error.message||"").indexOf("dipartimento")>-1){
-                delete insertRow.dipartimento;
-                res=await sb.from("equipment").insert([insertRow]);
+          payload.push({rowNum:r+1,pos:posRaw,data:insertRow});
+        }catch(exRow){
+          skipErr++;
+          errors.push("Riga "+(r+1)+" Pos "+posRaw+": "+(exRow&&exRow.message?exRow.message:exRow));
+        }
+        }
+        toast("Inserimento "+payload.length+" DPC in corso...");
+        for(var pi=0;pi<payload.length;pi+=25){
+          var chunk=payload.slice(pi,pi+25);
+          var rowsIns=chunk.map(function(x){return x.data;});
+          var res=null;
+          try{res=await sb.from("equipment").insert(rowsIns);}catch(ex){res={error:ex};}
+          if(res&&res.error&&String(res.error.message||"").indexOf("dipartimento")>-1){
+            rowsIns.forEach(function(rr){delete rr.dipartimento;});
+            try{res=await sb.from("equipment").insert(rowsIns);}catch(ex2){res={error:ex2};}
+          }
+          if(!res||res.error){
+            for(var j=0;j<chunk.length;j++){
+              try{
+                var one=chunk[j].data;
+                var r1=await sb.from("equipment").insert([one]);
+                if(r1.error){
+                  if(String(r1.error.message||"").indexOf("dipartimento")>-1){
+                    delete one.dipartimento;
+                    r1=await sb.from("equipment").insert([one]);
+                  }
+                  if(r1.error){skipErr++;errors.push("Riga "+chunk[j].rowNum+" Pos "+chunk[j].pos+": "+r1.error.message);}
+                  else ok++;
+                }else ok++;
+              }catch(ex3){
+                skipErr++;
+                errors.push("Riga "+chunk[j].rowNum+" Pos "+chunk[j].pos+": "+(ex3.message||ex3));
               }
-              if(res.error){skipErr++;errors.push("Riga "+(r+1)+" Pos "+posRaw+": "+res.error.message);}
-              else ok++;
-            }else ok++;
-          }catch(ex){
-            skipErr++;
-            errors.push("Riga "+(r+1)+" Pos "+posRaw+": "+(ex.message||ex));
+            }
+          }else{
+            ok+=chunk.length;
           }
         }
         skip=skipEmpty+skipDup+skipErr;
         await logAudit("IMPORT",null,"Import CAMI Excel -> "+clienteName(clienteId)+" - "+ok+" DPC foglio "+chosen);
-        alert("Import CAMI completato\n\nFoglio: "+chosen+"\nInseriti: "+ok+
+        alert("Import CAMI completato\n\nFoglio: "+chosen+"\nDPC trovati nel file: "+payload.length+"\nInseriti: "+ok+
           "\nDuplicati saltati: "+skipDup+
           "\nErrori inserimento: "+skipErr+
           "\nRighe non-DPC ignorate: "+skipEmpty+
