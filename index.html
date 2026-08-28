@@ -139,12 +139,25 @@ body{font-family:Inter,system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min
 #stickySpacer{height:160px;flex-shrink:0}
 .table-scroll thead th{background:#f8fafc}
 .header{background:linear-gradient(to right,#1e3a5f,#1e293b);color:#fff}
-.header-inner{max-width:1900px;margin:0 auto;padding:.9rem 1.1rem;display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;justify-content:space-between}
+.header-inner{max-width:1900px;margin:0 auto;padding:.75rem 1.1rem;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;justify-content:space-between}
+.header-actions{display:flex;flex-wrap:wrap;gap:.35rem;align-items:center;margin-left:auto;justify-content:flex-end}
+.user-badge{background:rgba(255,255,255,.12);padding:.32rem .7rem;border-radius:.4rem;font-size:.78rem;white-space:nowrap}
+.hero-row{display:flex;gap:.7rem;align-items:stretch;margin-bottom:.55rem}
+.hero-row .expiry-alert{display:none;flex:0 1 320px;border:1px solid #fecaca;border-radius:.65rem;background:#fef2f2;color:#991b1b;font-size:.82rem}
+.hero-row .expiry-alert.show{display:flex}
+.hero-row .expiry-alert-inner{padding:.7rem .85rem;max-width:none;width:100%}
+.hero-row .stats{flex:1;margin-bottom:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.55rem}
+@media(max-width:1100px){
+  .hero-row{flex-direction:column}
+  .hero-row .expiry-alert{flex:1 1 auto}
+  .hero-row .stats{grid-template-columns:repeat(2,1fr)}
+}
+@media(min-width:1000px){.stats{grid-template-columns:repeat(5,1fr)}}
 .logo{display:flex;gap:.65rem;align-items:center}
 .logo-icon{background:rgba(59,130,246,.25);padding:.5rem;border-radius:.6rem}
 .logo h1{font-size:1.1rem}.logo p{font-size:.72rem;color:#94a3b8}
-.header-actions{display:flex;flex-wrap:wrap;gap:.35rem;align-items:center}
-.user-badge{background:rgba(255,255,255,.1);padding:.3rem .65rem;border-radius:.4rem;font-size:.78rem}
+.header-actions{display:flex;flex-wrap:wrap;gap:.35rem;align-items:center;margin-left:auto;justify-content:flex-end}
+.user-badge{background:rgba(255,255,255,.12);padding:.32rem .7rem;border-radius:.4rem;font-size:.78rem;white-space:nowrap}
 .btn{display:inline-flex;align-items:center;gap:.3rem;padding:.4rem .7rem;border:none;border-radius:.4rem;color:#fff;font-size:.78rem;cursor:pointer}
 .btn-secondary{background:#334155}.btn-primary{background:#1d4ed8}.btn-danger{background:#dc2626}
 .btn-excel{background:#15803d}.btn-email{background:#7c3aed}.btn-audit{background:#0f766e}
@@ -155,7 +168,7 @@ body{font-family:Inter,system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min
 .expiry-alert .btn-sm{background:#dc2626;color:#fff;border:none;padding:.28rem .6rem;border-radius:.3rem;font-size:.72rem;cursor:pointer}
 .main{max-width:1900px;margin:0 auto;padding:1.1rem 1.15rem 2rem}
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:.55rem;margin-bottom:.85rem}
-@media(min-width:1000px){.stats{grid-template-columns:repeat(6,1fr)}}
+@media(min-width:1000px){.stats{grid-template-columns:repeat(5,1fr)}}
 .stat-card{background:#fff;border:1px solid #e2e8f0;border-radius:.6rem;padding:.7rem}
 .stat-value{font-size:1.25rem;font-weight:700}.stat-label{font-size:.68rem;color:#64748b}
 .stat-red{color:#dc2626}.stat-orange{color:#ea580c}
@@ -481,9 +494,8 @@ html.ui-only-dpc #commesseChrome{display:none!important}
   <header class="header"><div class="header-inner">
     <div class="logo"><div class="logo-icon"><i class="fas fa-flask"></i></div><div><h1>Gestionale CAMI <span class="sync-badge">Multi</span></h1><p>DPC - Stadi dinamici</p></div></div>
     <div class="header-actions">
-      <div class="user-badge"><span id="currentUserName">-</span> <span id="currentUserRole"></span></div>
       <div class="bell-wrap"><button class="btn bell-btn" id="btnBell" title="Notifiche" onclick="toggleBell()"><i class="fas fa-bell"></i><span class="bell-count" id="bellCount">0</span></button><div class="bell-panel" id="bellPanel"></div></div>
-
+      <div class="user-badge"><span id="currentUserName">-</span> <span id="currentUserRole"></span></div>
       <button class="btn btn-secondary" id="btnDpcHome" style="display:none" onclick="showDpcPage()"><i class="fas fa-flask"></i> DPC</button>
       <button class="btn btn-primary" id="btnCommesse" onclick="showCommessePage()"><i class="fas fa-folder-open"></i> Commesse</button>
       <button class="btn btn-secondary" id="btnToolsNav" style="display:none" onclick="showToolsPage()"><i class="fas fa-toolbox"></i> Strumenti</button>
@@ -529,10 +541,12 @@ html.ui-only-dpc #commesseChrome{display:none!important}
     </div>
   </div>
   </header>
-  <div id="expiryAlert" class="expiry-alert"><div class="expiry-alert-inner"><i class="fas fa-exclamation-triangle"></i><div id="expiryAlertText"></div><button class="btn-sm" onclick="filterExpiring()">Mostra</button></div></div>
     <div class="page-chrome show" id="dpcChrome">
-    <div id="permBanner" class="info-banner"></div>
-    <div class="stats" id="statsContainer"></div>
+    <div class="hero-row">
+      <div id="expiryAlert" class="expiry-alert"><div class="expiry-alert-inner"><i class="fas fa-exclamation-triangle"></i><div id="expiryAlertText"></div><button class="btn-sm" onclick="filterExpiring()">Mostra</button></div></div>
+      <div class="stats" id="statsContainer"></div>
+    </div>
+    <div id="permBanner" class="info-banner" hidden></div>
     <div class="client-stats" id="clientStats"></div>
     <div class="filters"><div class="filters-inner">
       <div class="search-wrap"><i class="fas fa-search"></i><input id="searchInput" placeholder="Cerca..." oninput="renderTable()"></div>
@@ -2954,7 +2968,7 @@ function commessaGeneraRit(id){
 
 
 async function loadAll(){var c=await sb.from("clienti").select("*").order("nome");if(c.error)throw c.error;clientiAll=c.data||[];clienti=(clientiAll||[]).filter(function(x){return !x.deleted_at;});var e=await sb.from("equipment").select("*").order("matricola");if(e.error)throw e.error;equipment=(e.data||[]).map(mapEquip);var u=await sb.from("users").select("*").order("username");if(u.error)throw u.error;users=u.data||[];try{var tc=await sb.from("tecnico_clienti").select("*");tecnicoClienti=(tc&&!tc.error)?(tc.data||[]):[];}catch(ex){tecnicoClienti=[];}if(currentUser&&isTecnico()){currentUser.clienteIds=tecnicoClienti.filter(function(x){return x.user_id===currentUser.id;}).map(function(x){return x.cliente_id;});if(!currentUser.clienteIds.length&&currentUser.clienteId)currentUser.clienteIds=[currentUser.clienteId];}fillFilters();updatePermBanner();renderStats();renderClientStats();renderTable();updateExpiry();}
-function updatePermBanner(){var el=document.getElementById("permBanner");if(!el)return;if(isSuper())el.textContent="Super admin – gestione completa.";else if(isBackOfficer())el.textContent="Back Officer – clienti, DPC, interventi, strumenti e assegnazione tecnici.";else if(isTecnico()){var ids=userClienteIds();var names=ids.map(clienteName).filter(Boolean).join(", ");el.textContent=names?("Tecnico – puoi modificare: "+names+" (gli altri clienti sono in sola lettura)."):"Tecnico – nessun cliente assegnato (sola lettura).";}else el.textContent="Accesso limitato";}
+function updatePermBanner(){var el=document.getElementById("permBanner");var txt="";if(isSuper())txt="gestione completa";else if(isBackOfficer())txt="Back Officer";else if(isTecnico()){var ids=userClienteIds();var names=ids.map(clienteName).filter(Boolean).join(", ");txt=names?("modifica: "+names):"sola lettura";}else txt="accesso limitato";if(el){el.textContent=txt;el.hidden=true;}var ub=document.querySelector(".user-badge");if(ub)ub.title=txt;}
 function fillFilters(){var fc=document.getElementById("filterCliente"),cur=fc.value;fc.innerHTML='<option value="">Tutti i clienti</option>';clienti.forEach(function(c){fc.innerHTML+='<option value="'+c.id+'">'+c.nome+'</option>';});fc.value=cur;var ac={},se={};equipment.forEach(function(e){if(e.acronimo)ac[e.acronimo]=1;if(e.sede)se[e.sede]=1;});var fa=document.getElementById("filterAcronimo"),ca=fa.value;fa.innerHTML='<option value="">Acronimi</option>';Object.keys(ac).sort().forEach(function(a){fa.innerHTML+='<option value="'+a+'">'+labelAcronimo(a,'full')+'</option>';});fa.value=ca;var fs=document.getElementById("filterSede"),cs=fs.value;fs.innerHTML='<option value="">Sedi</option>';Object.keys(se).sort().forEach(function(s){fs.innerHTML+='<option>'+s+'</option>';});fs.value=cs;var sel=document.getElementById("clienteId");if(sel){var v=sel.value;sel.innerHTML='<option value="">Seleziona...</option>';clienti.forEach(function(c){sel.innerHTML+='<option value="'+c.id+'">'+c.nome+'</option>';});sel.value=v;}var uc=document.getElementById("userClienteId");if(uc){uc.innerHTML='<option value="">- nessuno -</option>';clienti.forEach(function(c){uc.innerHTML+='<option value="'+c.id+'">'+c.nome+'</option>';});}}
 function renderStats(){
   var sc=0,so=0;
