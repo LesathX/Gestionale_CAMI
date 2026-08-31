@@ -354,6 +354,18 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
 .todo-item .todo-meta{font-size:.78rem;color:#64748b;margin-top:.15rem}
 .todo-tag{display:inline-block;font-size:.65rem;font-weight:800;padding:.12rem .4rem;border-radius:999px;background:#e2e8f0;margin-right:.3rem}
 @media(max-width:800px){.todo-stats{grid-template-columns:repeat(3,1fr)}}
+.piano-wrap{padding:.15rem 0 1.5rem}
+.piano-head h2{margin:0 0 .25rem;font-size:1.15rem;color:#1e3a8a}
+.piano-head p{margin:0 0 .7rem;color:#64748b;font-size:.82rem}
+.piano-toolbar{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin-bottom:.75rem}
+.piano-toolbar select,.piano-toolbar input{padding:.4rem .55rem;border:1px solid #cbd5e1;border-radius:8px;background:#fff}
+.piano-day{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:.65rem .8rem;margin-bottom:.45rem}
+.piano-day h4{margin:0 0 .35rem;font-size:.88rem;color:#0f172a}
+.piano-job{font-size:.8rem;padding:.2rem 0;border-top:1px dashed #e2e8f0;color:#334155}
+.piano-mat table{width:100%;border-collapse:collapse;font-size:.8rem;background:#fff;border-radius:10px;overflow:hidden}
+.piano-mat th,.piano-mat td{padding:.4rem .55rem;border-bottom:1px solid #f1f5f9;text-align:left}
+.piano-mat th{background:#f8fafc;font-size:.7rem;text-transform:uppercase;color:#64748b}
+.piano-sec{margin:1rem 0 .4rem;font-size:.92rem;color:#1e3a8a}
 
 .comm-actions{display:flex;flex-wrap:wrap;gap:.3rem}
 .comm-actions .btn{font-size:.7rem;padding:.28rem .5rem}
@@ -606,6 +618,7 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       <button class="btn btn-primary" id="btnDashboard" style="display:none" onclick="openDashboardModal()"><i class="fas fa-chart-pie"></i> Dashboard scadenze</button>
       <button class="btn btn-oggi" id="btnOggi" style="display:none" onclick="openOggiModal()"><i class="fas fa-tasks"></i> Cosa fare oggi</button>
       <button class="btn btn-primary" id="btnTodo" style="display:none" onclick="showTodoPage()"><i class="fas fa-check-square"></i> TO DO</button>
+      <button class="btn btn-secondary" id="btnPiano" style="display:none" onclick="showPianoPage()"><i class="fas fa-calendar-alt"></i> Piano +2 mesi</button>
       <div class="altro-wrap" id="altroWrap">
         <button type="button" class="btn btn-secondary" id="btnAltro" onclick="toggleAltroMenu(event)"><i class="fas fa-ellipsis-h"></i> Altro <i class="fas fa-caret-down"></i></button>
         <div class="altro-menu" id="altroMenu">
@@ -758,6 +771,28 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       </div>
       <div id="todoList"></div>
       <div id="todoEmpty" class="empty" style="display:none"><p>Nessuna attivita in elenco</p></div>
+    </div>
+  </div>
+
+  <div id="pagePiano" class="page-panel">
+    <div class="piano-wrap">
+      <div class="piano-head">
+        <h2><i class="fas fa-calendar-alt"></i> Piano +2 mesi</h2>
+        <p>Al 1° del mese il programma prepara il lavoro di <strong>due mesi dopo</strong> (es. gennaio → marzo): cosa fare, in che giorno, e quali materiali servono per cliente.</p>
+      </div>
+      <div class="piano-toolbar">
+        <label>Mese da pianificare <select id="pianoMese" onchange="renderPianoPage()"></select></label>
+        <label>Max DPC / giorno <input id="pianoMaxDay" type="number" min="1" max="30" value="6" style="width:4.5rem" onchange="renderPianoPage(true)"></label>
+        <button class="btn btn-primary" onclick="renderPianoPage(true)"><i class="fas fa-sync"></i> Rigenera</button>
+        <button class="btn btn-excel" onclick="exportPianoExcel()"><i class="fas fa-file-excel"></i> Excel</button>
+        <button class="btn btn-email" onclick="emailPianoMensile()"><i class="fas fa-envelope"></i> Invia piano</button>
+      </div>
+      <div class="todo-stats" id="pianoStats"></div>
+      <h3 class="piano-sec">Materiali per cliente</h3>
+      <div class="piano-mat" id="pianoMat"></div>
+      <h3 class="piano-sec">Pianificazione giorno per giorno (lun–ven)</h3>
+      <div id="pianoDays"></div>
+      <div id="pianoEmpty" class="empty" style="display:none"><p>Nessuna attivita in questo mese</p></div>
     </div>
   </div>
 
@@ -2350,7 +2385,7 @@ function applyAutoClientCode(inputId){
 /* ===== COMMESSE ===== */
 var commesse=[];
 function hideAllPages(){
-  ["pageDpc","pageCommesse","pageTools","pageTodo"].forEach(function(id){
+  ["pageDpc","pageCommesse","pageTools","pageTodo","pagePiano"].forEach(function(id){
     var el=document.getElementById(id);if(el)el.classList.remove("active");
   });
   var dc=document.getElementById("dpcChrome");if(dc)dc.style.display="none";
@@ -2410,6 +2445,19 @@ function showTodoPage(){
   if(bc)bc.style.display=(UI_STANDBY_ONLY_DPC?"none":"inline-flex");
   if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
   try{renderTodoList();}catch(e){}
+  try{window.scrollTo(0,0);}catch(e){}
+}
+function showPianoPage(){
+  hideAllPages();
+  var p=document.getElementById("pagePiano");if(p)p.classList.add("active");
+  var dc=document.getElementById("dpcChrome");if(dc)dc.style.display="none";
+  var cc=document.getElementById("commesseChrome");if(cc)cc.style.display="none";
+  var bd=document.getElementById("btnDpcHome"),bc=document.getElementById("btnCommesse"),bt=document.getElementById("btnToolsNav");
+  if(bd)bd.style.display="inline-flex";
+  if(bc)bc.style.display=(UI_STANDBY_ONLY_DPC?"none":"inline-flex");
+  if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
+  fillPianoMeseSelect();
+  try{renderPianoPage();}catch(e){}
   try{window.scrollTo(0,0);}catch(e){}
 }
 function showToolsPage(){
@@ -3358,6 +3406,7 @@ var UI_BTN_KEYS=[
   {id:"btnDashboard",label:"Dashboard scadenze"},
   {id:"btnOggi",label:"Cosa fare oggi"},
   {id:"btnTodo",label:"TO DO LIST"},
+  {id:"btnPiano",label:"Piano +2 mesi"},
   {id:"altroWrap",label:"Menu Altro"},
   {id:"btnExportExcelAlways",label:"Export Excel"},
   {id:"btnImportExcel",label:"Import Excel"},
@@ -3370,9 +3419,9 @@ var UI_ROLES=["superadmin","backofficer","tecnico"];
 function defaultColumns(){var o={};DPC_COLS.forEach(function(c){o[c.id]=true;});return o;}
 function defaultButtons(){
   return {
-    superadmin:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,btnTodo:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:true,btnEmail:true,btnUsers:true,btnClienti:true,btnAssegnaTecnico:true},
-    backofficer:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,btnTodo:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:false,btnEmail:true,btnUsers:true,btnClienti:true,btnAssegnaTecnico:true},
-    tecnico:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,btnTodo:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:false,btnEmail:true,btnUsers:false,btnClienti:false,btnAssegnaTecnico:false}
+    superadmin:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,btnTodo:true,btnPiano:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:true,btnEmail:true,btnUsers:true,btnClienti:true,btnAssegnaTecnico:true},
+    backofficer:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,btnTodo:true,btnPiano:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:false,btnEmail:true,btnUsers:true,btnClienti:true,btnAssegnaTecnico:true},
+    tecnico:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,btnTodo:true,btnPiano:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:false,btnEmail:true,btnUsers:false,btnClienti:false,btnAssegnaTecnico:false}
   };
 }
 function defaultUiPrefs(){
@@ -3771,6 +3820,7 @@ async function showApp(){document.getElementById("loginScreen").classList.add("h
   var bd=document.getElementById("btnDashboard");if(bd)bd.style.display=(s||a||t)?"inline-flex":"none";
   var bog=document.getElementById("btnOggi");if(bog)bog.style.display=(s||a||t)?"inline-flex":"none";
   var btd=document.getElementById("btnTodo");if(btd)btd.style.display=(s||a||t)?"inline-flex":"none";
+  var bpi=document.getElementById("btnPiano");if(bpi)bpi.style.display=(s||a||t)?"inline-flex":"none";
   var bt=document.getElementById("btnTools");if(bt)bt.style.display=(s||a||t)?"inline-flex":"none";
   window.__toolsNavVisible=!!(s||a||t);
   var btnNav=document.getElementById("btnToolsNav");
@@ -3787,6 +3837,7 @@ async function showApp(){document.getElementById("loginScreen").classList.add("h
   try{refreshAltroMenuVisibility();}catch(e){}
   setTimeout(refreshBell,500);await loadAll();
   try{await loadTodoDone();}catch(e){}
+  try{checkPianoMensileAuto();}catch(e){}
   try{await loadUiSettingsFromDb();}catch(e){}
   try{applyUiPrefs();}catch(e){}
   try{applyButtonPrefs();}catch(e){}
@@ -4651,6 +4702,206 @@ function renderTodoList(){
   });
   box.innerHTML=h;
 }
+function ymId(y,m){return y+"-"+String(m+1).padStart(2,"0");}
+function ymLabel(y,m){return ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"][m]+" "+y;}
+function defaultPianoTarget(){
+  var d=new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth()+2);
+  return {y:d.getFullYear(),m:d.getMonth()};
+}
+function fillPianoMeseSelect(){
+  var sel=document.getElementById("pianoMese");
+  if(!sel)return;
+  var cur=sel.value;
+  var now=new Date();
+  var html="";
+  for(var i=0;i<12;i++){
+    var d=new Date(now.getFullYear(), now.getMonth()+i, 1);
+    var id=ymId(d.getFullYear(), d.getMonth());
+    html+='<option value="'+id+'">'+ymLabel(d.getFullYear(), d.getMonth())+(i===2?" (default +2 mesi)":"")+"</option>";
+  }
+  sel.innerHTML=html;
+  var def=defaultPianoTarget();
+  sel.value=(cur && html.indexOf('value="'+cur+'"')>-1)?cur:ymId(def.y,def.m);
+}
+function isDateInMonth(iso,y,m){
+  if(!iso)return false;
+  var p=String(iso).slice(0,10).split("-");
+  if(p.length<2)return false;
+  return parseInt(p[0],10)===y && parseInt(p[1],10)===(m+1);
+}
+function isPrefiltroStage(s){
+  var t=String((s&&s.tipologia)||"").toLowerCase();
+  var c=String((s&&s.correlazione)||"").toLowerCase();
+  var k=String((s&&s.codice)||"").toLowerCase();
+  return t==="p"||t.indexOf("prefil")>-1||t.indexOf("particol")>-1||c.indexOf("prefil")>-1||k.indexOf("prefil")>-1;
+}
+function collectPianoJobs(y,m){
+  var jobs=[];
+  visibleEquipment().forEach(function(e){
+    if(isStatoSenzaScadenze(e))return;
+    if(!isTodoEseguito({id:e.id,kind:"man",date:e.prossimaMan}) && isDateInMonth(e.prossimaMan,y,m)){
+      jobs.push({id:e.id,clienteId:e.clienteId,cliente:clienteName(e.clienteId),sede:e.sede||"",acronimo:e.acronimo||"",matricola:e.matricola||"",tipo:"man",label:"Manutenzione",date:e.prossimaMan,accessori:e.accessori||""});
+    }
+    stageProxList(e).forEach(function(x){
+      var s=(e.filtriStadi&&e.filtriStadi[String(x.stadio)])||{};
+      if(isTodoEseguito({id:e.id,kind:"fil-S"+x.stadio,date:x.prox}))return;
+      if(!isDateInMonth(x.prox,y,m))return;
+      var pre=isPrefiltroStage(s);
+      jobs.push({id:e.id,clienteId:e.clienteId,cliente:clienteName(e.clienteId),sede:e.sede||"",acronimo:e.acronimo||"",matricola:e.matricola||"",tipo:pre?"pre":"fil",label:(pre?"Prefiltro":"Filtro")+" S"+x.stadio+(x.codice?" "+x.codice:""),date:x.prox,codice:s.codice||x.codice||"",qty:parseInt(s.qty,10)||1,tipologia:s.tipologia||"",misure:s.misure||"",accessori:e.accessori||""});
+    });
+  });
+  return jobs;
+}
+function workingDaysOfMonth(y,m){
+  var out=[], d=new Date(y,m,1);
+  while(d.getMonth()===m){
+    var w=d.getDay();
+    if(w!==0&&w!==6){
+      var iso=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+      out.push(iso);
+    }
+    d.setDate(d.getDate()+1);
+  }
+  return out;
+}
+function buildPiano(y,m,maxDay){
+  maxDay=parseInt(maxDay,10)||6;
+  var jobs=collectPianoJobs(y,m);
+  jobs.sort(function(a,b){
+    if(a.cliente!==b.cliente)return a.cliente.localeCompare(b.cliente);
+    if(a.sede!==b.sede)return a.sede.localeCompare(b.sede);
+    return String(a.date).localeCompare(String(b.date));
+  });
+  var days=workingDaysOfMonth(y,m);
+  var plan=[];
+  days.forEach(function(iso){plan.push({date:iso,jobs:[]});});
+  var di=0;
+  jobs.forEach(function(job){
+    if(!plan.length)return;
+    while(di<plan.length && plan[di].jobs.length>=maxDay) di++;
+    if(di>=plan.length) plan[plan.length-1].jobs.push(job);
+    else {
+      var same=-1;
+      for(var k=di;k<plan.length;k++){
+        if(plan[k].jobs.length>=maxDay)continue;
+        if(!plan[k].jobs.length || plan[k].jobs[0].clienteId===job.clienteId){same=k;break;}
+      }
+      if(same<0)same=di;
+      plan[same].jobs.push(job);
+    }
+  });
+  var mat={};
+  jobs.forEach(function(j){
+    var k=j.clienteId||"_";
+    if(!mat[k])mat[k]={cliente:j.cliente,man:0,fil:0,pre:0,acc:0,filDett:[],preDett:[],accDett:[]};
+    if(j.tipo==="man")mat[k].man++;
+    else if(j.tipo==="pre"){mat[k].pre+=j.qty||1;mat[k].preDett.push((j.codice||"prefiltro")+" x"+(j.qty||1));}
+    else if(j.tipo==="fil"){mat[k].fil+=j.qty||1;mat[k].filDett.push((j.codice||"filtro")+" x"+(j.qty||1));}
+    if(j.accessori){mat[k].acc++; if(mat[k].accDett.indexOf(j.accessori)<0)mat[k].accDett.push(j.accessori);}
+  });
+  return {y:y,m:m,id:ymId(y,m),label:ymLabel(y,m),jobs:jobs,days:plan,mat:mat,maxDay:maxDay};
+}
+function parsePianoMese(){
+  var v=(document.getElementById("pianoMese")||{}).value||"";
+  var p=v.split("-");
+  if(p.length===2)return {y:parseInt(p[0],10),m:parseInt(p[1],10)-1};
+  return defaultPianoTarget();
+}
+async function renderPianoPage(){
+  var t=parsePianoMese();
+  var max=(document.getElementById("pianoMaxDay")||{}).value||6;
+  var piano=buildPiano(t.y,t.m,max);
+  window._piano=piano;
+  var st=document.getElementById("pianoStats");
+  var nMan=piano.jobs.filter(function(j){return j.tipo==="man";}).length;
+  var nFil=piano.jobs.filter(function(j){return j.tipo==="fil";}).length;
+  var nPre=piano.jobs.filter(function(j){return j.tipo==="pre";}).length;
+  var nCli={};piano.jobs.forEach(function(j){nCli[j.clienteId]=1;});
+  if(st)st.innerHTML=
+    '<div class="todo-stat"><b>'+piano.jobs.length+'</b><span>Attivita</span></div>'+
+    '<div class="todo-stat info"><b>'+nMan+'</b><span>Manutenzioni</span></div>'+
+    '<div class="todo-stat info"><b>'+nFil+'</b><span>Filtri</span></div>'+
+    '<div class="todo-stat warn"><b>'+nPre+'</b><span>Prefiltri</span></div>'+
+    '<div class="todo-stat"><b>'+Object.keys(nCli).length+'</b><span>Clienti</span></div>'+
+    '<div class="todo-stat"><b>'+piano.days.filter(function(d){return d.jobs.length;}).length+'</b><span>Giorni usati</span></div>';
+  var matEl=document.getElementById("pianoMat");
+  var mh='<table><thead><tr><th>Cliente</th><th>Manutenzioni</th><th>Filtri (pz)</th><th>Prefiltri (pz)</th><th>Accessori</th><th>Dettaglio</th></tr></thead><tbody>';
+  Object.keys(piano.mat).forEach(function(k){
+    var r=piano.mat[k];
+    mh+="<tr><td>"+escHtml(r.cliente)+"</td><td>"+r.man+"</td><td>"+r.fil+"</td><td>"+r.pre+"</td><td>"+r.acc+"</td><td>"+escHtml((r.filDett.concat(r.preDett,r.accDett)).join("; ")||"-")+"</td></tr>";
+  });
+  mh+="</tbody></table>";
+  if(matEl)matEl.innerHTML=Object.keys(piano.mat).length?mh:"<p class='client-home-sub'>Nessun materiale in questo mese.</p>";
+  var daysEl=document.getElementById("pianoDays");
+  var empty=document.getElementById("pianoEmpty");
+  var dh="";
+  piano.days.forEach(function(d){
+    if(!d.jobs.length)return;
+    var dt=d.date.split("-");
+    var wd=["Dom","Lun","Mar","Mer","Gio","Ven","Sab"][new Date(d.date+"T00:00:00").getDay()];
+    dh+='<div class="piano-day"><h4>'+wd+" "+dt[2]+"/"+dt[1]+" — "+d.jobs.length+" DPC</h4>";
+    d.jobs.forEach(function(j){
+      dh+='<div class="piano-job"><strong>'+escHtml(j.cliente)+"</strong> · "+escHtml(j.acronimo)+" "+escHtml(j.matricola)+" · "+escHtml(j.label)+(j.sede?" · "+escHtml(j.sede):"")+"</div>";
+    });
+    dh+="</div>";
+  });
+  if(daysEl)daysEl.innerHTML=dh;
+  if(empty)empty.style.display=piano.jobs.length?"none":"block";
+  try{
+    await sb.from("piani_mensili").upsert({id:piano.id,mese:piano.label,data:{id:piano.id,label:piano.label,jobs:piano.jobs,days:piano.days,mat:piano.mat},created_at:new Date().toISOString(),created_by:(currentUser&&currentUser.username)||""});
+  }catch(e){console.warn("piano save",e);}
+}
+function exportPianoExcel(){
+  var p=window._piano; if(!p){alert("Apri prima il piano");return;}
+  if(typeof XLSX==="undefined"){alert("Libreria Excel non caricata");return;}
+  var rows=[["Giorno","Cliente","Sede","Acronimo","Matricola","Tipo","Dettaglio","Codice","Qty"]];
+  p.days.forEach(function(d){
+    d.jobs.forEach(function(j){
+      rows.push([d.date,j.cliente,j.sede,j.acronimo,j.matricola,j.tipo,j.label,j.codice||"",j.qty||""]);
+    });
+  });
+  rows.push([]);
+  rows.push(["MATERIALI PER CLIENTE"]);
+  rows.push(["Cliente","Manutenzioni","Filtri pz","Prefiltri pz","Accessori","Dettaglio"]);
+  Object.keys(p.mat).forEach(function(k){
+    var r=p.mat[k];
+    rows.push([r.cliente,r.man,r.fil,r.pre,r.acc,(r.filDett.concat(r.preDett,r.accDett)).join("; ")]);
+  });
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Piano "+p.id);
+  XLSX.writeFile(wb,"piano_cami_"+p.id+".xlsx");
+}
+function emailPianoMensile(){
+  var p=window._piano; if(!p){alert("Apri prima il piano");return;}
+  var nMan=p.jobs.filter(function(j){return j.tipo==="man";}).length;
+  var nFil=p.jobs.filter(function(j){return j.tipo==="fil";}).length;
+  var nPre=p.jobs.filter(function(j){return j.tipo==="pre";}).length;
+  var msg="CAMI – Piano "+p.label+"\n\nAttivita: "+p.jobs.length+"\nManutenzioni: "+nMan+"\nFiltri: "+nFil+"\nPrefiltri: "+nPre+"\n\nPer cliente:\n";
+  Object.keys(p.mat).forEach(function(k){
+    var r=p.mat[k];
+    msg+="- "+r.cliente+": man "+r.man+", filtri "+r.fil+" pz, prefiltri "+r.pre+" pz"+(r.acc?(", accessori: "+r.accDett.join(", ")): "")+"\n";
+  });
+  msg+="\nApri Piano +2 mesi nel gestionale per il calendario.";
+  var o=getEmailSettings();
+  var list=(o.recipients||"").split(",").map(function(x){return x.trim();}).filter(Boolean);
+  if(!list.length){alert("Nessun destinatario in Strumenti → Email");return;}
+  sendEmailToList(list,"Piano CAMI "+p.label,msg);
+}
+async function checkPianoMensileAuto(){
+  try{
+    if(new Date().getDate()!==1)return;
+    var t=defaultPianoTarget();
+    var id=ymId(t.y,t.m);
+    var res=await sb.from("piani_mensili").select("id").eq("id",id).maybeSingle();
+    if(res&&res.data)return;
+    var piano=buildPiano(t.y,t.m,6);
+    await sb.from("piani_mensili").upsert({id:id,mese:piano.label,data:{id:piano.id,label:piano.label,jobs:piano.jobs,days:piano.days,mat:piano.mat},created_at:new Date().toISOString(),created_by:(currentUser&&currentUser.username)||"auto"});
+    toast("Piano "+piano.label+" generato (1 del mese)");
+  }catch(e){console.warn("piano auto",e);}
+}
+
 function loadEmailSent(){try{return JSON.parse(safeGetLocal("cami_email_sent_v1","{}")||"{}");}catch(e){return{};}}
 function saveEmailSent(m){try{safeSetLocal("cami_email_sent_v1",JSON.stringify(m));}catch(e){}}
 function emailItemKey(it){return String(it.id)+"|"+it.kind+"|"+String(it.date||"")+"|"+String(it.soglia);}
