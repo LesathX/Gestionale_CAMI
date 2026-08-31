@@ -445,6 +445,47 @@ html.modal-open .app-sticky{z-index:1!important}
 .login-screen{z-index:50400}
 
 /* Standby: solo lista DPC (il resto resta nel codice, nascosto) */
+.header{background:#071833;color:#fff}
+.logo p{display:none}
+#btnNuovo{background:#dc2626}
+#btnNuovo:hover{background:#b91c1c}
+
+.client-home{display:none;padding:.2rem .15rem 1.2rem}
+html.client-home-mode .client-home{display:block}
+html.client-home-mode #dpcFrozenHead,
+html.client-home-mode #pageDpc .table-wrap,
+html.client-home-mode .hero-row,
+html.client-home-mode #clientStats,
+html.client-home-mode #dpcListBar,
+html.client-home-mode #pageDpc .footer-note{display:none!important}
+html:not(.client-home-mode) .client-home{display:none!important}
+#dpcListBar{display:none;align-items:center;gap:.7rem;margin:0 0 .55rem;flex-wrap:wrap}
+html:not(.client-home-mode) #dpcListBar{display:flex}
+.dpc-back{background:#0f2744;color:#fff;border:none;border-radius:.45rem;padding:.4rem .75rem;cursor:pointer;font-size:.8rem}
+.dpc-back:hover{background:#1e3a5f}
+.client-home h2{font-size:1.55rem;margin:0 0 .2rem;color:#0f2744}
+.client-home-sub{color:#64748b;margin:0 0 1.1rem;font-size:.92rem}
+.client-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
+.cli-card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1.15rem 1.15rem 1rem;box-shadow:0 8px 24px rgba(15,23,42,.06);display:flex;flex-direction:column;gap:.45rem}
+.cli-card .cli-top{display:flex;align-items:center;gap:.7rem}
+.cli-ico{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.05rem}
+.cli-card.tone-red .cli-ico{background:#fee2e2;color:#dc2626}
+.cli-card.tone-orange .cli-ico{background:#ffedd5;color:#d97706}
+.cli-card.tone-green .cli-ico{background:#dcfce7;color:#16a34a}
+.cli-card h3{margin:0;font-size:1.15rem;color:#1e3a8a;letter-spacing:.01em}
+.cli-n{color:#334155;font-size:.95rem;font-weight:600;margin-top:.15rem}
+.traffic{display:flex;gap:.45rem;align-items:center;margin:.35rem 0 .15rem}
+.traffic span{width:14px;height:14px;border-radius:50%;background:#e2e8f0;display:inline-block}
+.traffic span.on.red{background:#ef4444;box-shadow:0 0 0 4px rgba(239,68,68,.18)}
+.traffic span.on.orange{background:#f59e0b;box-shadow:0 0 0 4px rgba(245,158,11,.18)}
+.traffic span.on.green{background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.18)}
+.cli-badge{display:inline-block;align-self:flex-start;font-size:.72rem;font-weight:700;padding:.22rem .55rem;border-radius:.4rem;margin:.15rem 0 .35rem}
+.cli-badge.red{background:#dc2626;color:#fff}
+.cli-badge.orange{background:#f59e0b;color:#fff}
+.cli-badge.green{background:#16a34a;color:#fff}
+.cli-card button.apri{margin-top:auto;width:100%;background:#0f2744;color:#fff;border:none;border-radius:.5rem;padding:.55rem .7rem;cursor:pointer;font-size:.85rem;font-weight:600}
+.cli-card button.apri:hover{background:#1e3a8a}
+
 html.ui-only-dpc #btnCommesse,
 html.ui-only-dpc #btnNuovoIntervento,
 html.ui-only-dpc #btnInterventiAssegnati,
@@ -495,7 +536,6 @@ html.ui-only-dpc #commesseChrome{display:none!important}
     <div class="logo"><div class="logo-icon"><i class="fas fa-flask"></i></div><div><h1>Gestionale CAMI <span class="sync-badge">Multi</span></h1><p>DPC - Stadi dinamici</p></div></div>
     <div class="header-actions">
       <div class="bell-wrap"><button class="btn bell-btn" id="btnBell" title="Notifiche" onclick="toggleBell()"><i class="fas fa-bell"></i><span class="bell-count" id="bellCount">0</span></button><div class="bell-panel" id="bellPanel"></div></div>
-      <div class="user-badge"><span id="currentUserName">-</span> <span id="currentUserRole"></span></div>
       <button class="btn btn-secondary" id="btnDpcHome" style="display:none" onclick="showDpcPage()"><i class="fas fa-flask"></i> DPC</button>
       <button class="btn btn-primary" id="btnCommesse" onclick="showCommessePage()"><i class="fas fa-folder-open"></i> Commesse</button>
       <button class="btn btn-secondary" id="btnToolsNav" style="display:none" onclick="showToolsPage()"><i class="fas fa-toolbox"></i> Strumenti</button>
@@ -504,7 +544,6 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       <button class="btn btn-secondary" id="btnInterventiAssegnati" style="display:none" onclick="openInterventiAssegnatiModal()"><i class="fas fa-clipboard-list"></i> Interventi assegnati</button>
       <button class="btn btn-primary" id="btnDashboard" style="display:none" onclick="openDashboardModal()"><i class="fas fa-chart-pie"></i> Dashboard scadenze</button>
       <button class="btn btn-oggi" id="btnOggi" style="display:none" onclick="openOggiModal()"><i class="fas fa-tasks"></i> Cosa fare oggi</button>
-
       <div class="altro-wrap" id="altroWrap">
         <button type="button" class="btn btn-secondary" id="btnAltro" onclick="toggleAltroMenu(event)"><i class="fas fa-ellipsis-h"></i> Altro <i class="fas fa-caret-down"></i></button>
         <div class="altro-menu" id="altroMenu">
@@ -535,9 +574,9 @@ html.ui-only-dpc #commesseChrome{display:none!important}
           </div>
         </div>
       </div>
-
       <button class="btn btn-secondary" id="btnInstallPwa" style="display:none" onclick="installPwaApp()"><i class="fas fa-download"></i> Installa app</button>
       <button class="btn btn-danger" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Esci</button>
+      <div class="user-badge"><span id="currentUserName">-</span> <span id="currentUserRole"></span></div>
     </div>
   </div>
   </header>
@@ -549,14 +588,23 @@ html.ui-only-dpc #commesseChrome{display:none!important}
     <div id="permBanner" class="info-banner" hidden></div>
     <div class="client-stats" id="clientStats"></div>
     <div class="filters"><div class="filters-inner">
-      <div class="search-wrap"><i class="fas fa-search"></i><input id="searchInput" placeholder="Cerca..." oninput="renderTable()"></div>
-      <select id="filterCliente" onchange="renderTable()"><option value="">Tutti i clienti</option></select>
-      <select id="filterAcronimo" onchange="renderTable()"><option value="">Acronimi</option></select>
-      <select id="filterSede" onchange="renderTable()"><option value="">Sedi</option></select>
-      <select id="filterStato" onchange="renderTable()"><option value="">Stati</option><option>OPERATIVA</option><option>IN PRODUZIONE</option><option>MANUTENZIONE</option><option>DA INSTALLARE</option><option>IN DISUSO</option><option>DISMESSA</option><option>NON DI COMPETENZA CAMI</option></select>
-      <select id="filterFiltro" onchange="renderTable()"><option value="">Filtro</option><option value="si">Si</option><option value="no">No</option></select>
-      <select id="filterScadenza" onchange="renderTable()"><option value="">Scadenze DPC</option><option value="scaduti">DPC scaduti</option><option value="d7">DPC scaduti + entro 7 gg</option><option value="d15">DPC scaduti + entro 15 gg</option><option value="d30">DPC scaduti + entro 30 gg</option><option value="in_scadenza">DPC in scadenza (1-30)</option><option value="ok">DPC in regola</option></select>
+      <div class="search-wrap"><i class="fas fa-search"></i><input id="searchInput" placeholder="Cerca..." oninput="onDpcSearch()"></div>
+      <select id="filterCliente" onchange="onDpcFiltersChange()"><option value="">Tutti i clienti</option></select>
+      <select id="filterAcronimo" onchange="onDpcFiltersChange()"><option value="">Acronimi</option></select>
+      <select id="filterSede" onchange="onDpcFiltersChange()"><option value="">Sedi</option></select>
+      <select id="filterStato" onchange="onDpcFiltersChange()"><option value="">Stati</option><option>OPERATIVA</option><option>IN PRODUZIONE</option><option>MANUTENZIONE</option><option>DA INSTALLARE</option><option>IN DISUSO</option><option>DISMESSA</option><option>NON DI COMPETENZA CAMI</option></select>
+      <select id="filterFiltro" onchange="onDpcFiltersChange()"><option value="">Filtro</option><option value="si">Si</option><option value="no">No</option></select>
+      <select id="filterScadenza" onchange="onDpcFiltersChange()"><option value="">Scadenze DPC</option><option value="scaduti">DPC scaduti</option><option value="d7">DPC scaduti + entro 7 gg</option><option value="d15">DPC scaduti + entro 15 gg</option><option value="d30">DPC scaduti + entro 30 gg</option><option value="in_scadenza">DPC in scadenza (1-30)</option><option value="ok">DPC in regola</option></select>
     </div></div>
+    <div id="clientHome" class="client-home">
+      <h2>I tuoi clienti</h2>
+      <p class="client-home-sub">Gestisci e monitora i tuoi clienti e lo stato delle loro pratiche DPC.</p>
+      <div id="clientCards" class="client-cards"></div>
+    </div>
+    <div id="dpcListBar">
+      <button type="button" class="dpc-back" onclick="showClientHome()"><i class="fas fa-arrow-left"></i> Clienti</button>
+      <strong id="dpcListTitle">Elenco DPC</strong>
+    </div>
     <div class="frozen-head" id="dpcFrozenHead">
       <div class="table-scroll-top" id="tableScrollTop" title="Scorri orizzontalmente"><div class="table-scroll-top-inner" id="tableScrollTopInner"></div></div>
       <div class="table-scroll" id="tableHeadScroll">
@@ -2200,6 +2248,7 @@ function showDpcPage(){
     if(bc)bc.style.display="none";
     if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
   }
+  try{showClientHome();}catch(e){}
   try{syncStickyChrome();}catch(e){}
   try{window.scrollTo(0,0);}catch(e){}
 }
@@ -2995,20 +3044,93 @@ function renderClientStats(){
   });
   var el=document.getElementById("clientStats");
   if(el)el.innerHTML=html;
+  try{renderClientCards();}catch(e){}
+}
+function escHtml(s){return String(s==null?"":s).replace(/&/g,"&").replace(/</g,"<").replace(/>/g,">").replace(/"/g,""").replace(/'/g,"&#39;");}
+function isClientHomeMode(){return document.documentElement.classList.contains("client-home-mode");}
+function showClientHome(){
+  document.documentElement.classList.add("client-home-mode");
+  var fc=document.getElementById("filterCliente");
+  if(fc)fc.value="";
+  try{renderClientCards();}catch(e){}
+  try{syncStickyChrome();}catch(e){}
+  try{window.scrollTo(0,0);}catch(e){}
+}
+function openClienteElenco(id){
+  document.documentElement.classList.remove("client-home-mode");
+  var fc=document.getElementById("filterCliente");
+  if(fc && id)fc.value=id;
+  var c=(clienti||[]).find(function(x){return x.id===id;});
+  var t=document.getElementById("dpcListTitle");
+  if(t)t.textContent=c?(c.nome+" — elenco DPC"):"Elenco DPC";
+  try{renderTable();}catch(e){}
+  try{syncStickyChrome();}catch(e){}
+  try{window.scrollTo(0,0);}catch(e){}
+}
+function renderClientCards(){
+  var el=document.getElementById("clientCards");
+  if(!el)return;
+  var q=((document.getElementById("searchInput")||{}).value||"").toLowerCase();
+  var fac=((document.getElementById("filterAcronimo")||{}).value)||"";
+  var fse=((document.getElementById("filterSede")||{}).value)||"";
+  var fst=((document.getElementById("filterStato")||{}).value)||"";
+  var ffi=((document.getElementById("filterFiltro")||{}).value)||"";
+  var fsc=((document.getElementById("filterScadenza")||{}).value)||"";
+  var html="";
+  (clienti||[]).forEach(function(c){
+    if(q && String(c.nome||"").toLowerCase().indexOf(q)<0 && String(c.codice||"").toLowerCase().indexOf(q)<0) return;
+    var eqs=equipment.filter(function(e){
+      if(e.clienteId!==c.id)return false;
+      if(fac && e.acronimo!==fac)return false;
+      if(fse && e.sede!==fse)return false;
+      if(fst && e.stato!==fst)return false;
+      if(ffi==="si" && e.haSistemaFiltrante!=="si")return false;
+      if(ffi==="no" && e.haSistemaFiltrante==="si")return false;
+      if(fsc){
+        var dest=deviceExpiryStatus(e),tier=deviceExpiryTier(e),ok=true;
+        if(fsc==="scaduti")ok=dest==="overdue";
+        else if(fsc==="in_scadenza")ok=dest==="soon";
+        else if(fsc==="d7")ok=tier==="overdue"||tier==="soon7";
+        else if(fsc==="d15")ok=tier==="overdue"||tier==="soon7"||tier==="soon15";
+        else if(fsc==="d30")ok=tier==="overdue"||tier==="soon7"||tier==="soon15"||tier==="soon30";
+        else if(fsc==="ok")ok=dest==="ok";
+        if(!ok)return false;
+      }
+      return true;
+    });
+    var overdue=0,soon=0;
+    (equipment||[]).forEach(function(e){
+      if(e.clienteId!==c.id)return;
+      var d=deviceExpiryStatus(e);
+      if(d==="overdue")overdue++;
+      else if(d==="soon")soon++;
+    });
+    var tone=overdue?"red":(soon?"orange":"green");
+    var badge=overdue?(overdue+" scaduti"):(soon?(soon+" in scadenza"):"tutto ok");
+    html+='<div class="cli-card tone-'+tone+'">'+
+      '<div class="cli-top"><div class="cli-ico"><i class="fas fa-building"></i></div><h3>'+escHtml(c.nome)+'</h3></div>'+
+      '<div class="cli-n">'+eqs.length+' DPC</div>'+
+      '<div class="traffic"><span class="'+(tone==="red"?"on red":"")+'"></span><span class="'+(tone==="orange"?"on orange":"")+'"></span><span class="'+(tone==="green"?"on green":"")+'"></span></div>'+
+      '<div class="cli-badge '+tone+'">'+escHtml(badge)+'</div>'+
+      '<button type="button" class="apri" onclick="openClienteElenco(\''+String(c.id).replace(/'/g,"")+'\' )"><i class="fas fa-list"></i> Apri elenco</button>'+
+    '</div>';
+  });
+  el.innerHTML=html||'<p class="client-home-sub">Nessun cliente trovato.</p>';
+}
+function onDpcSearch(){
+  if(isClientHomeMode())renderClientCards();
+  else renderTable();
+}
+function onDpcFiltersChange(){
+  var fc=document.getElementById("filterCliente");
+  if(fc && fc.value){openClienteElenco(fc.value);return;}
+  if(isClientHomeMode())renderClientCards();
+  else renderTable();
 }
 function filterByClienteChip(clienteId){
   if(!clienteId)return;
   try{showDpcPage();}catch(e){}
-  var fc=document.getElementById("filterCliente");
-  if(fc){
-    // toggle: secondo click sullo stesso cliente toglie il filtro
-    if(fc.value===clienteId)fc.value="";
-    else fc.value=clienteId;
-  }
-  // reset altri filtri leggeri? solo cliente come richiesto
-  try{renderTable();}catch(e){}
-  try{renderClientStats();}catch(e){}
-  try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){try{window.scrollTo(0,0);}catch(ex){}}
+  openClienteElenco(clienteId);
 }
 function updateExpiry(){
   var scMan=0,soMan=0,scFil=0,soFil=0,dpcSc=0,dpcSo=0;
@@ -3057,7 +3179,7 @@ if(!window.__stickyObs && typeof ResizeObserver!=="undefined"){
   });
 }
 window.addEventListener("resize",function(){try{syncStickyChrome();}catch(e){}});
-function filterExpiring(){var hasOver=equipment.some(function(e){return deviceExpiryStatus(e)==="overdue";});document.getElementById("filterScadenza").value=hasOver?"scaduti":"in_scadenza";renderTable();}
+function filterExpiring(){var hasOver=equipment.some(function(e){return deviceExpiryStatus(e)==="overdue";});document.getElementById("filterScadenza").value=hasOver?"scaduti":"in_scadenza";document.documentElement.classList.remove("client-home-mode");var t=document.getElementById("dpcListTitle");if(t)t.textContent="DPC in evidenza";renderTable();try{syncStickyChrome();}catch(e){}}
 
 function bindHScroll(a,b){
   if(!a||!b||a===b)return;
