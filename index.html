@@ -187,9 +187,15 @@ body{font-family:Inter,system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min
 .acro-miss{color:#dc2626!important;font-weight:800}
 .acr-miss,.acr-miss strong{color:#dc2626!important;font-weight:800!important}
 .miss-filtro,.modal input.miss-filtro,.modal select.miss-filtro,.stadio-grid input.miss-filtro,.stadio-grid select.miss-filtro{
-  border:2px solid #dc2626!important;
-  background:#fef2f2!important;
-  box-shadow:0 0 0 1px #fecaca;
+  border:3px solid #dc2626!important;
+  background:#fecaca!important;
+  box-shadow:0 0 0 1px #b91c1c;
+}
+#modal .is-miss,#stadiBox .is-miss,.form-group.is-miss,.req-fld.is-miss{
+  outline:3px solid #dc2626!important;
+  background:#fee2e2!important;
+  border-radius:8px;
+  padding:4px!important;
 }
 
 .frozen-head{margin-top:.45rem;background:#fff;border:1px solid #e2e8f0;border-bottom:0;border-radius:.6rem .6rem 0 0;overflow:hidden}
@@ -2269,7 +2275,6 @@ function dpcHasMissingData(e){
   }
   return false;
 }
-function buildStadiForm(){var box=document.getElementById("stadiBox");if(!box)return;var h="";for(var i=1;i<=4;i++){h+='<div class="stadio-card" id="stadioCard'+i+'" style="display:none"><h4>'+i+'° Stadio</h4><div class="stadio-grid"><div><label>Codice filtro</label><input id="s'+i+'_codice"></div><div><label>Misure (mm)</label><input id="s'+i+'_misure"></div><div><label>Tipologia</label><select id="s'+i+'_tipologia"><option value="">-</option><option value="P">P Particellare</option><option value="M">M Molecolare</option></select></div><div><label>Q.ta</label><input id="s'+i+'_qty"></div><div><label>Correlazione</label><input id="s'+i+'_correlazione"></div><div><label>Data install.</label><input type="date" id="s'+i+'_data"></div><div><label>Durata mesi</label><input id="s'+i+'_durata" type="number" min="1"></div><div><label>Prox. sostituz.</label><input type="date" id="s'+i+'_prox"></div><div><label>Status (auto)</label><input id="s'+i+'_status" readonly style="background:#f1f5f9;font-weight:600" placeholder="automatico"></div></div></div>';}box.innerHTML=h;bindStageAutoProx();updateStadiVisibility();}
 function updateStadiVisibility(){
   var on=String(val("haSistemaFiltrante")||"").toLowerCase()==="si";
   var n=on?parseNumStadi(val("stadiFiltranti")):0;
@@ -2285,21 +2290,58 @@ function updateStadiVisibility(){
   if(hint)hint.textContent=!on?"":(n>0?("Compila i "+n+" stadi filtranti dichiarati. Campi vuoti in rosso."):"Seleziona il N° stadi filtranti.");
   markMissingFilterFields();
 }
+function buildStadiForm(){
+  var box=document.getElementById("stadiBox");
+  if(!box)return;
+  var h="";
+  for(var i=1;i<=4;i++){
+    h+='<div class="stadio-card" id="stadioCard'+i+'" style="display:none"><h4>'+i+'° Stadio</h4><div class="stadio-grid">';
+    h+='<div class="req-fld"><label>Codice filtro</label><input id="s'+i+'_codice"></div>';
+    h+='<div class="req-fld"><label>Misure (mm)</label><input id="s'+i+'_misure"></div>';
+    h+='<div class="req-fld"><label>Tipologia</label><select id="s'+i+'_tipologia"><option value="">-</option><option value="P">P Particellare</option><option value="M">M Molecolare</option></select></div>';
+    h+='<div class="req-fld"><label>Q.ta</label><input id="s'+i+'_qty"></div>';
+    h+='<div class="req-fld"><label>Correlazione</label><input id="s'+i+'_correlazione"></div>';
+    h+='<div class="req-fld"><label>Data install.</label><input type="date" id="s'+i+'_data"></div>';
+    h+='<div class="req-fld"><label>Durata mesi</label><input id="s'+i+'_durata" type="number" min="1"></div>';
+    h+='<div class="req-fld"><label>Prox. sostituz.</label><input type="date" id="s'+i+'_prox"></div>';
+    h+='<div><label>Status (auto)</label><input id="s'+i+'_status" readonly style="background:#f1f5f9;font-weight:600" placeholder="automatico"></div>';
+    h+='</div></div>';
+  }
+  box.innerHTML=h;
+  bindStageAutoProx();
+  updateStadiVisibility();
+}
 function markMissingFilterFields(){
+  if(!document.getElementById("camiMissCss")){
+    var st=document.createElement("style");
+    st.id="camiMissCss";
+    st.textContent="#modal input.miss-filtro,#modal select.miss-filtro,#stadiBox input.miss-filtro,#stadiBox select.miss-filtro{border:3px solid #dc2626!important;background:#fecaca!important}#modal .is-miss,#stadiBox .is-miss{outline:3px solid #dc2626!important;background:#fee2e2!important;border-radius:8px;padding:4px!important}";
+    document.head.appendChild(st);
+  }
   var ids=["acronimo","costruttore","modello","matricola","idDispositivo","sede","dipartimento","edificio","laboratorio","piano","stanza","stato","responsabile","referenteContatto","cadenzaMan","ultimaMan","prossimaMan","indirizzo","accessori"];
   for(var i=0;i<ids.length;i++){
     var el=document.getElementById(ids[i]);
     if(!el)continue;
     paintMiss(el, isBlankDato(el.value));
   }
-  var on=String(val("haSistemaFiltrante")||"").toLowerCase()==="si";
-  var n=on?parseNumStadi(val("stadiFiltranti")):0;
-  var keys=["codice","misure","tipologia","qty","data","durata","prox"];
-  for(var i=1;i<=4;i++){
-    for(var k=0;k<keys.length;k++){
-      var el=document.getElementById("s"+i+"_"+keys[k]);
-      if(!el)continue;
-      paintMiss(el, on&&i<=n&&isBlankDato(el.value));
+  var on=String((document.getElementById("haSistemaFiltrante")||{}).value||"").toLowerCase()==="si";
+  var n=on?parseNumStadi((document.getElementById("stadiFiltranti")||{}).value||""):0;
+  var box=document.getElementById("stadiBox");
+  if(box){
+    var cards=box.querySelectorAll(".stadio-card");
+    for(var c=0;c<cards.length;c++){
+      var card=cards[c];
+      var vis=on && (c+1)<=n && card.style.display!=="none";
+      var any=false;
+      var els=card.querySelectorAll("input,select");
+      for(var j=0;j<els.length;j++){
+        var el=els[j];
+        if(el.readOnly || (el.id||"").indexOf("_status")>-1){paintMiss(el,false);continue;}
+        var miss=vis && isBlankDato(el.value);
+        if(miss)any=true;
+        paintMiss(el,miss);
+      }
+      card.style.boxShadow=any?"inset 0 0 0 3px #dc2626":"";
     }
   }
 }
@@ -2307,12 +2349,19 @@ function paintMiss(el, on){
   if(!el)return;
   if(on){
     el.classList.add("miss-filtro");
-    el.style.setProperty("border","2px solid #dc2626","important");
-    el.style.setProperty("background","#fef2f2","important");
+    el.style.setProperty("border","3px solid #dc2626","important");
+    el.style.setProperty("background","#fecaca","important");
+    el.style.setProperty("box-shadow","0 0 0 2px #b91c1c","important");
   }else{
     el.classList.remove("miss-filtro");
     el.style.removeProperty("border");
     el.style.removeProperty("background");
+    el.style.removeProperty("box-shadow");
+  }
+  var wrap=el.closest(".req-fld")||el.closest(".form-group");
+  if(wrap){
+    if(on)wrap.classList.add("is-miss");
+    else wrap.classList.remove("is-miss");
   }
 }
 document.addEventListener("input",function(ev){if(ev.target&&ev.target.closest&&ev.target.closest("#modal"))markMissingFilterFields();});
