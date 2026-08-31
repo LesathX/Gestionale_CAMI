@@ -639,7 +639,7 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       <button class="btn btn-primary" id="btnNuovo" style="display:none" onclick="openModal()"><i class="fas fa-plus"></i> Nuovo DPC</button>
       <button class="btn btn-oggi" id="btnNuovoIntervento" style="display:none" onclick="openNuovoInterventoModal()"><i class="fas fa-wrench"></i> Nuovo intervento</button>
       <button class="btn btn-secondary" id="btnInterventiAssegnati" style="display:none" onclick="openInterventiAssegnatiModal()"><i class="fas fa-clipboard-list"></i> Interventi assegnati</button>
-      <button class="btn btn-primary" id="btnDashboard" style="display:none" onclick="openDashboardModal()"><i class="fas fa-chart-pie"></i> Dashboard scadenze</button>
+      <button class="btn btn-primary" id="btnDashboard" style="display:none" onclick="showDashboardPage()"><i class="fas fa-chart-pie"></i> Dashboard scadenze</button>
       <button class="btn btn-oggi" id="btnOggi" style="display:none !important" onclick="openOggiModal()"><i class="fas fa-tasks"></i> Cosa fare oggi</button>
       <button class="btn btn-primary" id="btnTodo" style="display:none" onclick="showTodoPage()"><i class="fas fa-check-square"></i> TO DO</button>
       <button class="btn btn-secondary" id="btnPiano" style="display:none" onclick="showPianoPage()"><i class="fas fa-calendar-alt"></i> Piano +2 mesi</button>
@@ -841,7 +841,24 @@ html.ui-only-dpc #commesseChrome{display:none!important}
         <button class="btn btn-secondary" onclick="showPianoPage()"><i class="fas fa-calendar-alt"></i> Torna al piano</button>
       </div>
       <div id="piList"></div>
-      <div id="piEmpty" class="empty" style="display:none"><p>Nessun intervento piano. Generali da Piano +2 mesi → Crea interventi.</p></div>
+      <div id="piEmpty" class="empty" style="display:none"><p>Nessun intervento pianificato.<br>Aprili da <strong>Piano +2 mesi → Crea interventi</strong>.</p></div>
+    </div>
+  </div>
+
+  <div id="pageDashboard" class="page-panel">
+    <div class="piano-wrap">
+      <div class="piano-head">
+        <h2><i class="fas fa-chart-pie"></i> Dashboard scadenze</h2>
+        <p>Mese per mese: manutenzioni e filtri. Clicca un mese per l'elenco.</p>
+      </div>
+      <div class="dash-year">
+        <button type="button" onclick="dashShiftYear(-1)">‹</button>
+        <span id="dashYearLabel">2026</span>
+        <button type="button" onclick="dashShiftYear(1)">›</button>
+      </div>
+      <div id="dashMonths" class="dash-months"></div>
+      <div id="dashContractAlert" style="margin-bottom:.75rem"></div>
+      <div id="dashMonthDetail"></div>
     </div>
   </div>
 
@@ -1775,18 +1792,8 @@ html.ui-only-dpc #commesseChrome{display:none!important}
 </div>
 
 <div id="dashboardModal" class="modal-overlay"><div class="modal modal-lg">
-  <div class="modal-header"><h2>Dashboard scadenze mese per mese</h2><button class="modal-close" onclick="closeDashboardModal()">&times;</button></div>
-  <div class="modal-body">
-    <div class="device-info">Clicca un mese per vedere le scadenze di quel mese (manutenzioni e filtri).</div>
-    <div class="dash-year">
-      <button type="button" onclick="dashShiftYear(-1)">‹</button>
-      <span id="dashYearLabel">2026</span>
-      <button type="button" onclick="dashShiftYear(1)">›</button>
-    </div>
-    <div id="dashMonths" class="dash-months"></div>
-    <div id="dashContractAlert" style="margin-bottom:.75rem"></div>
-    <div id="dashMonthDetail"></div>
-  </div>
+  <div class="modal-header"><h2>Dashboard scadenze</h2><button class="modal-close" onclick="closeDashboardModal()">&times;</button></div>
+  <div class="modal-body"><p class="client-home-sub">Usa il pulsante Dashboard scadenze (pagina).</p></div>
 </div></div>
 
 <div id="printModal" class="modal-overlay"><div class="modal modal-lg">
@@ -2447,7 +2454,7 @@ function applyAutoClientCode(inputId){
 /* ===== COMMESSE ===== */
 var commesse=[];
 function hideAllPages(){
-  ["pageDpc","pageCommesse","pageTools","pageTodo","pagePiano","pagePianoInt"].forEach(function(id){
+  ["pageDpc","pageCommesse","pageTools","pageTodo","pagePiano","pagePianoInt","pageDashboard"].forEach(function(id){
     var el=document.getElementById(id);if(el)el.classList.remove("active");
   });
   var dc=document.getElementById("dpcChrome");if(dc)dc.style.display="none";
@@ -2507,6 +2514,18 @@ function showTodoPage(){
   if(bc)bc.style.display=(UI_STANDBY_ONLY_DPC?"none":"inline-flex");
   if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
   try{renderTodoList();}catch(e){}
+  try{window.scrollTo(0,0);}catch(e){}
+}
+function showDashboardPage(){
+  hideAllPages();
+  var p=document.getElementById("pageDashboard");if(p)p.classList.add("active");
+  var dc=document.getElementById("dpcChrome");if(dc)dc.style.display="none";
+  var cc=document.getElementById("commesseChrome");if(cc)cc.style.display="none";
+  var bd=document.getElementById("btnDpcHome"),bc=document.getElementById("btnCommesse"),bt=document.getElementById("btnToolsNav");
+  if(bd)bd.style.display="inline-flex";
+  if(bc)bc.style.display=(UI_STANDBY_ONLY_DPC?"none":"inline-flex");
+  if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
+  try{renderDashboard();}catch(e){console.warn(e);var d=document.getElementById("dashMonthDetail");if(d)d.textContent="Errore dashboard: "+(e&&e.message?e.message:e);}
   try{window.scrollTo(0,0);}catch(e){}
 }
 function showPianoPage(){
@@ -3647,7 +3666,7 @@ function applyHomepageByRole(){
     try{renderTable();}catch(e){}
   }else if(mode==="dashboard"){
     showClientHome();
-    try{openDashboardModal();}catch(e){}
+    try{showDashboardPage();}catch(e){}
   }else if(mode==="oggi"){
     try{showTodoPage();}catch(e){}
   }else if(mode==="todo"){
@@ -5246,18 +5265,8 @@ async function renderPianoIntPage(){
     '<div class="todo-stat"><b>'+Object.keys(sed).length+'</b><span>Sedi</span></div>';
   var box=document.getElementById("piList"), empty=document.getElementById("piEmpty");
   if(!view.length){
-    if(empty)empty.style.display="none";
-    if(box)box.innerHTML=
-      '<div class="todo-stats">'+
-      '<div class="todo-stat warn"><b>2</b><span>Da assegnare (anteprima)</span></div>'+
-      '<div class="todo-stat"><b>2</b><span>Sedi</span></div>'+
-      '<div class="todo-stat info"><b>10</b><span>DPC</span></div>'+
-      '</div>'+
-      '<div class="pi-card"><h4>Lun 03/03 · BO · 1 giorno lavoro · 2 giorni viaggio (fuori Lazio)</h4>'+
-      '<div class="pi-row"><div style="flex:1"><strong>AG. DOGANE</strong><div style="color:#64748b">3 DPC · Manutenzione / Cambio filtri</div></div><span class="pill-warn">DA ASSEGNARE</span><select disabled><option>DA ASSEGNARE</option></select></div></div>'+
-      '<div class="pi-card"><h4>Mar 04/03 · CASACCIA (RM) · 2 giorni lavoro · 0 viaggio (Lazio)</h4>'+
-      '<div class="pi-row"><div style="flex:1"><strong>ENEA</strong><div style="color:#64748b">7 DPC · sede Lazio, niente andata/ritorno</div></div><span class="pill-warn">DA ASSEGNARE</span><select disabled><option>DA ASSEGNARE</option></select></div></div>'+
-      '<p class="client-home-sub">Anteprima del layout. Premi <strong>Crea interventi</strong> in Piano +2 mesi per riempire questa pagina con i dati veri. Commesse e Interventi assegnati restano intatti.</p>';
+    if(empty)empty.style.display="block";
+    if(box)box.innerHTML="";
     return;
   }
   if(empty)empty.style.display="none";
@@ -8407,13 +8416,27 @@ function dashShiftYear(d){window._dashYear=(window._dashYear||new Date().getFull
 function dashPickMonth(m){window._dashMonth=m;renderDashboard();
   try{var el=document.getElementById("dashMonthDetail");if(el)el.scrollIntoView({block:"nearest",behavior:"smooth"});}catch(e){}
 }
+function openDashboardModal(){showDashboardPage();}
+function closeDashboardModal(){showDpcPage();}
+function collectEquipExpiry(e){
+  var out=[];
+  if(!e||isStatoSenzaScadenze(e))return out;
+  if(e.prossimaMan) out.push({date:e.prossimaMan,kind:"man",label:"Manutenzione"});
+  else if(e.ultimaMan && e.cadenzaMan){
+    var n=parseInt(String(e.cadenzaMan).replace(/[^\d]/g,""),10);
+    var px=calcProx(e.ultimaMan,n);
+    if(px) out.push({date:px,kind:"man",label:"Manutenzione (cadenza)"});
+  }
+  stageProxList(e).forEach(function(x){
+    if(x.prox) out.push({date:x.prox,kind:"fil",label:"Filtro S"+x.stadio+(x.codice?" "+x.codice:"")});
+  });
+  return out;
+}
 function collectScadenzeMese(y,m){
   var items=[];
-  (visibleEquipment()||[]).forEach(function(e){
-    if(isStatoSenzaScadenze(e))return;
-    if(isDateInMonth(e.prossimaMan,y,m))items.push({e:e,kind:"man",date:e.prossimaMan,label:"Manutenzione"});
-    stageProxList(e).forEach(function(x){
-      if(isDateInMonth(x.prox,y,m))items.push({e:e,kind:"fil",date:x.prox,label:"Filtro S"+x.stadio+(x.codice?" "+x.codice:"")});
+  (visibleEquipment()||equipment||[]).forEach(function(e){
+    collectEquipExpiry(e).forEach(function(x){
+      if(isDateInMonth(x.date,y,m)) items.push({e:e,kind:x.kind,date:x.date,label:x.label});
     });
   });
   return items;
@@ -8428,6 +8451,19 @@ function renderDashboard(){
     perMese[m]=its;
     totYear+=its.length;
     if(its.length>bestN){bestN=its.length;bestM=m;}
+  }
+  if(!totYear){
+    var years={};
+    (visibleEquipment()||equipment||[]).forEach(function(e){
+      collectEquipExpiry(e).forEach(function(x){
+        var p=parseYMD(x.date); if(p) years[p.y]=(years[p.y]||0)+1;
+      });
+    });
+    var keys=Object.keys(years).map(Number).sort();
+    if(keys.length && keys.indexOf(y)<0){
+      window._dashYear=keys[keys.length-1];
+      return renderDashboard();
+    }
   }
   var sel=window._dashMonth;
   if(sel==null || sel<0 || sel>11){
