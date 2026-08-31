@@ -336,7 +336,11 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
 .todo-stat.active{border-color:#1e3a8a;background:#eff6ff;box-shadow:0 0 0 2px #93c5fd}
 .dash-year{display:flex;align-items:center;justify-content:center;gap:.8rem;margin:.4rem 0 .8rem;font-weight:800;color:#1e3a8a}
 .dash-year button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:.25rem .7rem;cursor:pointer;font-size:1.1rem}
-.dash-months{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5rem;margin-bottom:.85rem}
+.dash-months{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.4rem;margin-bottom:.7rem}
+.dash-m{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:.4rem .45rem;cursor:pointer;text-align:left}
+.dash-m b{display:block;font-size:1.05rem;color:#0f172a}
+.dash-m span{font-size:.68rem;color:#64748b}
+@media(max-width:700px){.dash-months{grid-template-columns:repeat(3,1fr)}}
 .dash-m{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:.65rem .7rem;cursor:pointer;text-align:left}
 .dash-m:hover{border-color:#1e3a8a}
 .dash-m.active{border-color:#1e3a8a;box-shadow:0 0 0 2px #93c5fd;background:#eff6ff}
@@ -4847,11 +4851,25 @@ function fillPianoMeseSelect(){
   var def=defaultPianoTarget();
   sel.value=(cur && html.indexOf('value="'+cur+'"')>-1)?cur:ymId(def.y,def.m);
 }
+function parseYMD(d){
+  if(!d && d!==0)return null;
+  if(d instanceof Date && !isNaN(d.getTime())) return {y:d.getFullYear(),m:d.getMonth(),day:d.getDate(),iso:d.toISOString().slice(0,10)};
+  var s=String(d).trim();
+  if(!s||s==="-"||s.toLowerCase()==="n.a.")return null;
+  var m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m)return {y:+m[1],m:+m[2]-1,day:+m[3],iso:m[1]+"-"+String(+m[2]).padStart(2,"0")+"-"+String(+m[3]).padStart(2,"0")};
+  m=s.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4})/);
+  if(m){
+    var yy=+m[3]; if(yy<100)yy+=2000;
+    return {y:yy,m:+m[2]-1,day:+m[1],iso:yy+"-"+String(+m[2]).padStart(2,"0")+"-"+String(+m[1]).padStart(2,"0")};
+  }
+  var t=new Date(s);
+  if(!isNaN(t.getTime())) return {y:t.getFullYear(),m:t.getMonth(),day:t.getDate(),iso:t.toISOString().slice(0,10)};
+  return null;
+}
 function isDateInMonth(iso,y,m){
-  if(!iso)return false;
-  var p=String(iso).slice(0,10).split("-");
-  if(p.length<2)return false;
-  return parseInt(p[0],10)===y && parseInt(p[1],10)===(m+1);
+  var p=parseYMD(iso);
+  return !!(p && p.y===y && p.m===m);
 }
 function isSedeLazio(se){
   var s=normalizeHeader(se||"").replace(/[().,\/\-]/g," ").replace(/\s+/g," ").trim();
@@ -8380,16 +8398,18 @@ async function saveAssegnaTecnico(){
 /* ===== Dashboard clienti ===== */
 function openDashboardModal(){
   document.getElementById("dashboardModal").classList.add("show");
-  if(window._dashYear==null)window._dashYear=new Date().getFullYear();
-  if(window._dashMonth==null)window._dashMonth=new Date().getMonth();
+  window._dashYear=window._dashYear||new Date().getFullYear();
+  window._dashMonth=null;
   renderDashboard();
 }
 function closeDashboardModal(){document.getElementById("dashboardModal").classList.remove("show");}
-function dashShiftYear(d){window._dashYear=(window._dashYear||new Date().getFullYear())+d;renderDashboard();}
-function dashPickMonth(m){window._dashMonth=m;renderDashboard();}
+function dashShiftYear(d){window._dashYear=(window._dashYear||new Date().getFullYear())+d;window._dashMonth=null;renderDashboard();}
+function dashPickMonth(m){window._dashMonth=m;renderDashboard();
+  try{var el=document.getElementById("dashMonthDetail");if(el)el.scrollIntoView({block:"nearest",behavior:"smooth"});}catch(e){}
+}
 function collectScadenzeMese(y,m){
   var items=[];
-  visibleEquipment().forEach(function(e){
+  (visibleEquipment()||[]).forEach(function(e){
     if(isStatoSenzaScadenze(e))return;
     if(isDateInMonth(e.prossimaMan,y,m))items.push({e:e,kind:"man",date:e.prossimaMan,label:"Manutenzione"});
     stageProxList(e).forEach(function(x){
@@ -8400,52 +8420,55 @@ function collectScadenzeMese(y,m){
 }
 function renderDashboard(){
   var y=window._dashYear||new Date().getFullYear();
-  var sel=window._dashMonth;
-  var yl=document.getElementById("dashYearLabel");if(yl)yl.textContent=String(y);
   var mesi=["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+  var perMese=[];
+  var totYear=0, bestM=-1, bestN=-1;
+  for(var m=0;m<12;m++){
+    var its=collectScadenzeMese(y,m);
+    perMese[m]=its;
+    totYear+=its.length;
+    if(its.length>bestN){bestN=its.length;bestM=m;}
+  }
+  var sel=window._dashMonth;
+  if(sel==null || sel<0 || sel>11){
+    var cur=new Date().getMonth();
+    sel=(window._dashYear===new Date().getFullYear() && perMese[cur].length)?cur:(bestN>0?bestM:cur);
+    window._dashMonth=sel;
+  }
+  var yl=document.getElementById("dashYearLabel");if(yl)yl.textContent=String(y)+" · "+totYear+" scadenze";
   var box=document.getElementById("dashMonths");
   if(box){
     var h="";
-    for(var m=0;m<12;m++){
-      var its=collectScadenzeMese(y,m);
-      var nMan=its.filter(function(x){return x.kind==="man";}).length;
-      var nFil=its.filter(function(x){return x.kind==="fil";}).length;
-      h+='<div class="dash-m'+(sel===m?" active":"")+'" onclick="dashPickMonth('+m+')"><span>'+mesi[m]+'</span><b>'+its.length+'</b><span><span class="n-so">'+nMan+' man</span> · <span class="n-sc">'+nFil+' filtri</span></span></div>';
+    for(var i=0;i<12;i++){
+      var n=perMese[i].length;
+      var nMan=perMese[i].filter(function(x){return x.kind==="man";}).length;
+      var nFil=n-nMan;
+      h+='<div class="dash-m'+(sel===i?" active":"")+'" onclick="dashPickMonth('+i+')"><span>'+mesi[i]+'</span><b>'+n+'</b><span>'+nMan+' man · '+nFil+' filtri</span></div>';
     }
     box.innerHTML=h;
   }
   var det=document.getElementById("dashMonthDetail");
   if(!det)return;
-  if(sel==null){det.innerHTML="<p class='client-home-sub'>Clicca un mese.</p>";return;}
-  var items=collectScadenzeMese(y,sel);
-  var map={};
-  items.forEach(function(it){
-    var cid=it.e.clienteId||"_";
-    if(!map[cid])map[cid]={nome:clienteName(cid),man:0,fil:0,rows:[]};
-    if(it.kind==="man")map[cid].man++; else map[cid].fil++;
-    map[cid].rows.push(it);
-  });
+  var items=perMese[sel]||[];
   var html="<h3 class='piano-sec'>"+mesi[sel]+" "+y+" · "+items.length+" scadenze</h3>";
-  if(!items.length){html+="<p class='client-home-sub'>Nessuna scadenza in questo mese.</p>";det.innerHTML=html;return;}
-  html+="<div style='overflow:auto'><table class='tools-table'><thead><tr><th>Cliente</th><th>DPC</th><th>Tipo</th><th>Data</th><th>Sede</th></tr></thead><tbody>";
-  Object.keys(map).sort(function(a,b){return map[a].nome.localeCompare(map[b].nome,"it");}).forEach(function(cid){
-    map[cid].rows.sort(function(a,b){return String(a.date).localeCompare(String(b.date));}).forEach(function(it){
-      html+="<tr><td>"+escHtml(map[cid].nome)+"</td><td>"+escHtml((it.e.acronimo||"")+" "+(it.e.matricola||""))+"</td><td>"+escHtml(it.label)+"</td><td>"+fmt(it.date)+"</td><td>"+escHtml(it.e.sede||"")+"</td></tr>";
-    });
+  if(!totYear){
+    html+="<p class='client-home-sub'>Nessuna data di manutenzione o filtro nel "+y+". Controlla che i DPC abbiano <strong>prossima manutenzione</strong> o <strong>prox. filtro</strong>.</p>";
+    det.innerHTML=html;return;
+  }
+  if(!items.length){
+    html+="<p class='client-home-sub'>Nessuna scadenza in "+mesi[sel]+". Clicca un mese con numero diverso da 0.</p>";
+    det.innerHTML=html;return;
+  }
+  html+="<div style='overflow:auto;max-height:50vh'><table class='tools-table'><thead><tr><th>Cliente</th><th>DPC</th><th>Tipo</th><th>Data</th><th>Sede</th></tr></thead><tbody>";
+  items.sort(function(a,b){
+    var ca=clienteName(a.e.clienteId), cb=clienteName(b.e.clienteId);
+    if(ca!==cb)return ca.localeCompare(cb,"it");
+    return String(a.date).localeCompare(String(b.date));
+  }).forEach(function(it){
+    html+="<tr><td>"+escHtml(clienteName(it.e.clienteId))+"</td><td>"+escHtml((it.e.acronimo||"")+" "+(it.e.matricola||""))+"</td><td>"+escHtml(it.label)+"</td><td>"+fmt(it.date)+"</td><td>"+escHtml(it.e.sede||"")+"</td></tr>";
   });
   html+="</tbody></table></div>";
   det.innerHTML=html;
-  var ca=document.getElementById("dashContractAlert");
-  if(ca){
-    var alerts=[];
-    (clienti||[]).forEach(function(c){
-      if(!c.contratto_fine)return;
-      var p=String(c.contratto_fine).slice(0,7);
-      var want=y+"-"+String(sel+1).padStart(2,"0");
-      if(p===want)alerts.push(c.nome+" contratto "+fmt(c.contratto_fine));
-    });
-    ca.innerHTML=alerts.length?'<div class="soft-block">Contratti nel mese: '+alerts.join(" · ")+'</div>':"";
-  }
 }
 
 /* ===== Browser notifications (n.2) ===== */
