@@ -504,6 +504,21 @@ html.ui-cards-compact .client-cards{grid-template-columns:repeat(auto-fill,minma
 .admin-opt b{display:block;font-size:.88rem}
 .admin-opt span{display:block;font-size:.75rem;color:#64748b}
 
+.admin-tabs{display:flex;flex-wrap:wrap;gap:.3rem;margin:0 0 .85rem}
+.admin-tabs button{border:1px solid #cbd5e1;background:#fff;border-radius:.4rem;padding:.35rem .6rem;cursor:pointer;font-size:.78rem}
+.admin-tabs button.active{background:#0f2744;color:#fff;border-color:#0f2744}
+.admin-pane{display:none}.admin-pane.show{display:block}
+.col-checks{display:grid;grid-template-columns:1fr 1fr;gap:.2rem .7rem;font-size:.82rem}
+.col-checks label{display:flex;gap:.4rem;align-items:center}
+.brand-row{display:grid;grid-template-columns:1.2fr 90px 1fr auto;gap:.45rem;align-items:center;padding:.4rem 0;border-bottom:1px solid #f1f5f9;font-size:.82rem}
+.brand-row img{width:28px;height:28px;object-fit:cover;border-radius:.35rem;background:#f1f5f9}
+.btn-grid{width:100%;border-collapse:collapse;font-size:.75rem}
+.btn-grid th,.btn-grid td{border:1px solid #e2e8f0;padding:.3rem .4rem;text-align:center}
+.btn-grid th{background:#f8fafc}
+.btn-grid td:first-child,.btn-grid th:first-child{text-align:left}
+.sql-box{background:#0f172a;color:#e2e8f0;font-size:.72rem;padding:.7rem;border-radius:.45rem;white-space:pre-wrap;display:none}
+.cli-card{border-top:4px solid #cbd5e1}
+
 html.ui-only-dpc #btnCommesse,
 html.ui-only-dpc #btnNuovoIntervento,
 html.ui-only-dpc #btnInterventiAssegnati,
@@ -1555,22 +1570,58 @@ html.ui-only-dpc #commesseChrome{display:none!important}
   </div>
 </div></div>
 
-<div id="pannelloAdminModal" class="modal-overlay"><div class="modal" style="max-width:560px">
+<div id="pannelloAdminModal" class="modal-overlay"><div class="modal" style="max-width:860px">
   <div class="modal-header"><h2>Pannello amministrazione</h2><button class="modal-close" onclick="closePannelloAdmin()">&times;</button></div>
   <div class="modal-body">
-    <p class="client-home-sub" style="margin-top:0">Solo Super admin. Qui si regola come si vede il programma. Altre funzioni le aggiungiamo dopo.</p>
-    <label class="admin-opt"><input type="checkbox" id="uiShowFilteredList" onchange="saveUiPrefs()">
-      <div><b>Lista DPC sotto i clienti</b><span>Se usi un filtro in home, sotto le card compare l'elenco dei DPC trovati.</span></div></label>
-    <label class="admin-opt"><input type="checkbox" id="uiShowStatsHome" onchange="saveUiPrefs()">
-      <div><b>Contatori in home</b><span>Mostra DPC / scaduti / operative anche nella pagina clienti.</span></div></label>
-    <label class="admin-opt"><input type="checkbox" id="uiShowExpiryHome" onchange="saveUiPrefs()">
-      <div><b>Avviso scadenze in home</b><span>Barra rossa in alto nella pagina clienti.</span></div></label>
-    <label class="admin-opt"><input type="checkbox" id="uiCardsCompact" onchange="saveUiPrefs()">
-      <div><b>Card compatte</b><span>Card clienti più piccole, più visibili in una schermata.</span></div></label>
-    <div class="form-group" style="margin-top:.8rem"><label>Righe massime in lista filtrata</label>
-      <select id="uiHomeListMax" onchange="saveUiPrefs()"><option value="50">50</option><option value="100">100</option><option value="0">Tutte</option></select>
+    <p class="client-home-sub" style="margin-top:0">Solo Super admin. Le regole si salvano su Supabase e valgono su tutti i PC.</p>
+    <div id="uiSqlWarn" class="sql-box"></div>
+    <div class="admin-tabs">
+      <button type="button" class="active" onclick="adminTab('vis',this)">Visualizzazione</button>
+      <button type="button" onclick="adminTab('col',this)">Colonne lista</button>
+      <button type="button" onclick="adminTab('cli',this)">Colori / logo clienti</button>
+      <button type="button" onclick="adminTab('btn',this)">Tasti per ruolo</button>
+      <button type="button" onclick="adminTab('home',this)">Home per ruolo</button>
     </div>
-    <div class="form-actions"><button class="btn-save" onclick="closePannelloAdmin()">Chiudi</button></div>
+    <div id="pane-vis" class="admin-pane show">
+      <label class="admin-opt"><input type="checkbox" id="uiShowFilteredList">
+        <div><b>Lista DPC sotto i clienti</b><span>Con un filtro in home, sotto le card compare l'elenco dei DPC.</span></div></label>
+      <label class="admin-opt"><input type="checkbox" id="uiShowStatsHome">
+        <div><b>Contatori in home</b><span>Mostra DPC / scaduti / operative nella pagina clienti.</span></div></label>
+      <label class="admin-opt"><input type="checkbox" id="uiShowExpiryHome">
+        <div><b>Avviso scadenze in home</b><span>Barra rossa in alto nella pagina clienti.</span></div></label>
+      <label class="admin-opt"><input type="checkbox" id="uiCardsCompact">
+        <div><b>Card compatte</b><span>Card clienti più piccole.</span></div></label>
+      <div class="form-group" style="margin-top:.8rem"><label>Righe massime in lista filtrata</label>
+        <select id="uiHomeListMax"><option value="50">50</option><option value="100">100</option><option value="0">Tutte</option></select>
+      </div>
+    </div>
+    <div id="pane-col" class="admin-pane">
+      <p class="client-home-sub">Spunta le colonne visibili nella tabella DPC e nella lista filtrata in home.</p>
+      <div class="col-checks" id="uiColChecks"></div>
+    </div>
+    <div id="pane-cli" class="admin-pane">
+      <p class="client-home-sub">Colore e logo (max 200 KB) per ogni cliente. Compaino sulle card.</p>
+      <div id="uiBrandList"></div>
+    </div>
+    <div id="pane-btn" class="admin-pane">
+      <p class="client-home-sub">Quali tasti vede ogni ruolo. Il Super admin vede sempre il pannello admin.</p>
+      <div style="overflow:auto"><table class="btn-grid" id="uiBtnGrid"></table></div>
+    </div>
+    <div id="pane-home" class="admin-pane">
+      <p class="client-home-sub">Cosa vede ciascuno appena entra.</p>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr">
+        <div class="form-group"><label>Super admin</label>
+          <select id="uiHome_superadmin"><option value="cards">Card clienti</option><option value="elenco">Elenco DPC</option><option value="dashboard">Dashboard scadenze</option><option value="oggi">Cosa fare oggi</option></select></div>
+        <div class="form-group"><label>Back officer</label>
+          <select id="uiHome_backofficer"><option value="cards">Card clienti</option><option value="elenco">Elenco DPC</option><option value="dashboard">Dashboard scadenze</option><option value="oggi">Cosa fare oggi</option></select></div>
+        <div class="form-group"><label>Tecnico</label>
+          <select id="uiHome_tecnico"><option value="cards">Card clienti assegnati</option><option value="elenco">Elenco DPC</option><option value="dashboard">Dashboard scadenze</option><option value="oggi">Cosa fare oggi</option></select></div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-cancel" onclick="closePannelloAdmin()">Chiudi</button>
+      <button class="btn-save" onclick="saveUiPrefs(true)"><i class="fas fa-cloud"></i> Salva su tutti i PC</button>
+    </div>
   </div>
 </div>
 
@@ -1789,7 +1840,7 @@ function roleLabel(r){
   return {superadmin:"Super admin",backofficer:"Back Officer",tecnico:"Tecnico",admin:"Back Officer"}[r]||r||"-";
 }
 function clienteName(id){var c=clienti.find(function(x){return x.id===id;});return c?c.nome:"-";}
-function clienteBadge(id){var colors=["#dbeafe","#dcfce7","#fce7f3","#fef3c7","#e0e7ff","#ffedd5","#f3e8ff","#ccfbf1"];var i=0;if(id){for(var k=0;k<id.length;k++)i=(i+id.charCodeAt(k))%colors.length;}return '<span class="badge" style="background:'+colors[i]+';color:#1e293b">'+clienteName(id)+'</span>';}
+function clienteBadge(id){var br=clienteBrand(id);var colors=["#dbeafe","#dcfce7","#fce7f3","#fef3c7","#e0e7ff","#ffedd5","#f3e8ff","#ccfbf1"];var i=0;if(id){for(var k=0;k<id.length;k++)i=(i+id.charCodeAt(k))%colors.length;}var bg=br.color||colors[i];var logo=br.logo?('<img src="'+br.logo+'" alt="" style="width:14px;height:14px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:4px">'):"";return '<span class="badge" style="background:'+bg+'22;color:#1e293b;border:1px solid '+bg+'">'+logo+clienteName(id)+'</span>';}
 
 /* ===== Acronimi DPC (codice + descrizione) ===== */
 var ACRONIMI_DPC={
@@ -3121,8 +3172,14 @@ function renderClientCards(){
     });
     var tone=overdue?"red":(soon?"orange":"green");
     var badge=overdue?(overdue+" scaduti"):(soon?(soon+" in scadenza"):"tutto ok");
-    html+='<div class="cli-card tone-'+tone+'">'+
-      '<div class="cli-top"><div class="cli-ico"><i class="fas fa-building"></i></div><h3>'+escHtml(c.nome)+'</h3></div>'+
+    var br=clienteBrand(c.id);
+    var toneColor=tone==="red"?"#dc2626":(tone==="orange"?"#d97706":"#16a34a");
+    if(isTecnico() && !isSuper() && !isBackOfficer()){
+      var ids=userClienteIds();
+      if(ids.length && ids.indexOf(c.id)<0 && (loadUiPrefs().homepage||{}).tecnico==="cards") return;
+    }
+    html+='<div class="cli-card tone-'+tone+'" style="border-top-color:'+escHtml(br.color||toneColor)+'">'+
+      '<div class="cli-top"><div class="cli-ico" style="background:'+escHtml(br.color||toneColor)+'22;color:'+escHtml(br.color||toneColor)+'">'+(br.logo?('<img src="'+br.logo+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">'):'<i class="fas fa-building"></i>')+'</div><h3>'+escHtml(c.nome)+'</h3></div>'+
       '<div class="cli-n">'+eqs.length+' DPC</div>'+
       '<div class="traffic"><span class="'+(tone==="red"?"on red":"")+'"></span><span class="'+(tone==="orange"?"on orange":"")+'"></span><span class="'+(tone==="green"?"on green":"")+'"></span></div>'+
       '<div class="cli-badge '+tone+'">'+escHtml(badge)+'</div>'+
@@ -3213,40 +3270,233 @@ function onDpcFiltersChange(){
   else renderTable();
 }
 var UI_PREFS_KEY="cami_ui_prefs_v1";
-function defaultUiPrefs(){return {showFilteredList:true,showStatsHome:false,showExpiryHome:false,cardsCompact:false,homeListMax:100};}
+var UI_SQL="create table if not exists ui_settings (\n  id text primary key,\n  data jsonb not null default '{}'::jsonb,\n  updated_at timestamptz default now(),\n  updated_by text\n);\nalter table ui_settings enable row level security;\ndrop policy if exists ui_settings_all on ui_settings;\ncreate policy ui_settings_all on ui_settings for all using (true) with check (true);";
+var DPC_COLS=[
+  {id:"cliente",label:"Cliente"},{id:"acronimo",label:"Acronimo"},{id:"costruttore",label:"Costruttore"},{id:"modello",label:"Modello"},
+  {id:"matricola",label:"Matricola"},{id:"id",label:"ID"},{id:"ultima",label:"Ultima"},{id:"prossima",label:"Prossima"},
+  {id:"proxfiltro",label:"Prox filtro"},{id:"statusfiltro",label:"Status filtro"},{id:"sede",label:"Sede"},{id:"edificio",label:"Edificio"},
+  {id:"lab",label:"Lab"},{id:"piano",label:"Piano"},{id:"stanza",label:"Stanza"},{id:"stato",label:"Stato"},
+  {id:"referente",label:"Referente"},{id:"cadenza",label:"Cadenza"},{id:"attivita",label:"Attivita"},{id:"filtro",label:"Filtro"},
+  {id:"stadi",label:"Stadi"},{id:"accessori",label:"Accessori"},{id:"note",label:"Note"},{id:"azioni",label:"Azioni"}
+];
+var UI_BTN_KEYS=[
+  {id:"btnNuovo",label:"Nuovo DPC"},
+  {id:"btnToolsNav",label:"Strumenti"},
+  {id:"btnDashboard",label:"Dashboard scadenze"},
+  {id:"btnOggi",label:"Cosa fare oggi"},
+  {id:"altroWrap",label:"Menu Altro"},
+  {id:"btnExportExcelAlways",label:"Export Excel"},
+  {id:"btnImportExcel",label:"Import Excel"},
+  {id:"btnEmail",label:"Avviso email"},
+  {id:"btnUsers",label:"Utenti"},
+  {id:"btnClienti",label:"Clienti"},
+  {id:"btnAssegnaTecnico",label:"Assegna tecnico"}
+];
+var UI_ROLES=["superadmin","backofficer","tecnico"];
+function defaultColumns(){var o={};DPC_COLS.forEach(function(c){o[c.id]=true;});return o;}
+function defaultButtons(){
+  return {
+    superadmin:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:true,btnEmail:true,btnUsers:true,btnClienti:true,btnAssegnaTecnico:true},
+    backofficer:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:false,btnEmail:true,btnUsers:true,btnClienti:true,btnAssegnaTecnico:true},
+    tecnico:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:false,btnEmail:true,btnUsers:false,btnClienti:false,btnAssegnaTecnico:false}
+  };
+}
+function defaultUiPrefs(){
+  return {showFilteredList:true,showStatsHome:false,showExpiryHome:false,cardsCompact:false,homeListMax:100,columns:defaultColumns(),branding:{},buttons:defaultButtons(),homepage:{superadmin:"cards",backofficer:"cards",tecnico:"cards"}};
+}
 function loadUiPrefs(){
   try{
     var o=JSON.parse(localStorage.getItem(UI_PREFS_KEY)||"{}");
-    return Object.assign(defaultUiPrefs(), o||{});
+    var d=defaultUiPrefs();
+    var m=Object.assign({},d,o||{});
+    m.columns=Object.assign({},d.columns,o.columns||{});
+    m.buttons=Object.assign({},d.buttons,o.buttons||{});
+    UI_ROLES.forEach(function(r){m.buttons[r]=Object.assign({},d.buttons[r],(o.buttons&&o.buttons[r])||{});});
+    m.homepage=Object.assign({},d.homepage,o.homepage||{});
+    m.branding=o.branding||{};
+    return m;
   }catch(e){return defaultUiPrefs();}
+}
+function clienteBrand(id){var b=(loadUiPrefs().branding||{})[id]||{};return {color:b.color||"",logo:b.logo||""};}
+function adminTab(id,btn){
+  ["vis","col","cli","btn","home"].forEach(function(k){var p=document.getElementById("pane-"+k);if(p)p.classList.toggle("show",k===id);});
+  var tabs=document.querySelectorAll(".admin-tabs button");
+  for(var i=0;i<tabs.length;i++)tabs[i].classList.remove("active");
+  if(btn)btn.classList.add("active");
+}
+function fillAdminForm(){
+  var p=loadUiPrefs();
+  var a=document.getElementById("uiShowFilteredList"); if(a)a.checked=!!p.showFilteredList;
+  var b=document.getElementById("uiShowStatsHome"); if(b)b.checked=!!p.showStatsHome;
+  var c=document.getElementById("uiShowExpiryHome"); if(c)c.checked=!!p.showExpiryHome;
+  var d=document.getElementById("uiCardsCompact"); if(d)d.checked=!!p.cardsCompact;
+  var e=document.getElementById("uiHomeListMax"); if(e)e.value=String(p.homeListMax||100);
+  var hs=document.getElementById("uiHome_superadmin"); if(hs)hs.value=p.homepage.superadmin||"cards";
+  var hb=document.getElementById("uiHome_backofficer"); if(hb)hb.value=p.homepage.backofficer||"cards";
+  var ht=document.getElementById("uiHome_tecnico"); if(ht)ht.value=p.homepage.tecnico||"cards";
+  var col=document.getElementById("uiColChecks");
+  if(col){
+    col.innerHTML=DPC_COLS.map(function(x){return '<label><input type="checkbox" data-col="'+x.id+'" '+(p.columns[x.id]!==false?"checked":"")+'> '+x.label+"</label>";}).join("");
+  }
+  var bl=document.getElementById("uiBrandList");
+  if(bl){
+    bl.innerHTML=(clienti||[]).map(function(cl){
+      var br=p.branding[cl.id]||{};
+      return '<div class="brand-row" data-cid="'+cl.id+'"><div>'+escHtml(cl.nome)+'</div><input type="color" value="'+(br.color||"#1e3a8a")+'">'+(br.logo?('<img src="'+br.logo+'" alt="">'):"<span></span>")+'<input type="file" accept="image/*" onchange="onClienteLogo(this,\''+cl.id+'\')"></div>';
+    }).join("")||"<p>Nessun cliente.</p>";
+  }
+  var grid=document.getElementById("uiBtnGrid");
+  if(grid){
+    var h="<tr><th>Tasto</th><th>Super admin</th><th>Back officer</th><th>Tecnico</th></tr>";
+    UI_BTN_KEYS.forEach(function(k){
+      h+="<tr><td>"+k.label+"</td>";
+      UI_ROLES.forEach(function(r){
+        var on=p.buttons[r]&&p.buttons[r][k.id]!==false;
+        h+='<td><input type="checkbox" data-role="'+r+'" data-btn="'+k.id+'" '+(on?"checked":"")+"></td>";
+      });
+      h+="</tr>";
+    });
+    grid.innerHTML=h;
+  }
+}
+function collectUiPrefsFromForm(){
+  var p=loadUiPrefs();
+  p.showFilteredList=!!(document.getElementById("uiShowFilteredList")||{}).checked;
+  p.showStatsHome=!!(document.getElementById("uiShowStatsHome")||{}).checked;
+  p.showExpiryHome=!!(document.getElementById("uiShowExpiryHome")||{}).checked;
+  p.cardsCompact=!!(document.getElementById("uiCardsCompact")||{}).checked;
+  p.homeListMax=parseInt((document.getElementById("uiHomeListMax")||{}).value,10)||0;
+  p.homepage={
+    superadmin:(document.getElementById("uiHome_superadmin")||{}).value||"cards",
+    backofficer:(document.getElementById("uiHome_backofficer")||{}).value||"cards",
+    tecnico:(document.getElementById("uiHome_tecnico")||{}).value||"cards"
+  };
+  var cols=defaultColumns();
+  var checks=document.querySelectorAll("#uiColChecks input[data-col]");
+  for(var i=0;i<checks.length;i++) cols[checks[i].getAttribute("data-col")]=checks[i].checked;
+  p.columns=cols;
+  var brand=p.branding||{};
+  var rows=document.querySelectorAll("#uiBrandList .brand-row");
+  for(var j=0;j<rows.length;j++){
+    var cid=rows[j].getAttribute("data-cid");
+    var colEl=rows[j].querySelector('input[type="color"]');
+    brand[cid]=brand[cid]||{};
+    if(colEl)brand[cid].color=colEl.value;
+  }
+  p.branding=brand;
+  var btns=defaultButtons();
+  var bins=document.querySelectorAll("#uiBtnGrid input[data-role]");
+  for(var k=0;k<bins.length;k++){
+    var r=bins[k].getAttribute("data-role"), id=bins[k].getAttribute("data-btn");
+    if(!btns[r])btns[r]={};
+    btns[r][id]=bins[k].checked;
+  }
+  p.buttons=btns;
+  return p;
+}
+function onClienteLogo(input,cid){
+  var f=input.files&&input.files[0];
+  if(!f)return;
+  if(f.size>200000){alert("Logo troppo grande (max 200 KB)");input.value="";return;}
+  var r=new FileReader();
+  r.onload=function(){
+    var p=loadUiPrefs();
+    p.branding=p.branding||{};
+    p.branding[cid]=p.branding[cid]||{};
+    p.branding[cid].logo=r.result;
+    try{localStorage.setItem(UI_PREFS_KEY,JSON.stringify(p));}catch(e){}
+    fillAdminForm();
+  };
+  r.readAsDataURL(f);
+}
+function applyColumnVisibility(){
+  var prefs=(loadUiPrefs().columns)||{};
+  var hidden={};
+  DPC_COLS.forEach(function(c,i){hidden[i]=prefs[c.id]===false;});
+  function hide(tbl){
+    if(!tbl)return;
+    var trs=tbl.querySelectorAll("tr");
+    for(var r=0;r<trs.length;r++){
+      var cells=trs[r].children;
+      for(var i=0;i<cells.length && i<DPC_COLS.length;i++){
+        cells[i].style.display=hidden[i]?"none":"";
+      }
+    }
+  }
+  hide(document.getElementById("dpcHeadTable"));
+  var bot=document.getElementById("tableScroll");
+  hide(bot?bot.querySelector("table"):null);
+}
+function applyButtonPrefs(){
+  if(!currentUser)return;
+  var role=normalizeRole(currentUser.role);
+  var map=(loadUiPrefs().buttons||{})[role]||{};
+  UI_BTN_KEYS.forEach(function(k){
+    var el=document.getElementById(k.id);
+    if(!el)return;
+    if(map[k.id]===false) el.style.display="none";
+  });
+  var bpa=document.getElementById("btnPannelloAdmin");
+  if(bpa) bpa.style.display=isSuper()?"inline-flex":"none";
+}
+function applyHomepageByRole(){
+  var role=currentUser?normalizeRole(currentUser.role):"";
+  var mode=((loadUiPrefs().homepage)||{})[role]||"cards";
+  try{showDpcPage();}catch(e){}
+  if(mode==="elenco"){
+    document.documentElement.classList.remove("client-home-mode");
+    var t=document.getElementById("dpcListTitle");if(t)t.textContent="Elenco DPC";
+    try{renderTable();}catch(e){}
+  }else if(mode==="dashboard"){
+    showClientHome();
+    try{openDashboardModal();}catch(e){}
+  }else if(mode==="oggi"){
+    showClientHome();
+    try{openOggiModal();}catch(e){}
+  }else{
+    showClientHome();
+  }
 }
 function applyUiPrefs(){
   var p=loadUiPrefs();
   document.documentElement.classList.toggle("ui-show-stats", !!p.showStatsHome);
   document.documentElement.classList.toggle("ui-show-expiry", !!p.showExpiryHome);
   document.documentElement.classList.toggle("ui-cards-compact", !!p.cardsCompact);
-  var a=document.getElementById("uiShowFilteredList"); if(a)a.checked=!!p.showFilteredList;
-  var b=document.getElementById("uiShowStatsHome"); if(b)b.checked=!!p.showStatsHome;
-  var c=document.getElementById("uiShowExpiryHome"); if(c)c.checked=!!p.showExpiryHome;
-  var d=document.getElementById("uiCardsCompact"); if(d)d.checked=!!p.cardsCompact;
-  var e=document.getElementById("uiHomeListMax"); if(e)e.value=String(p.homeListMax||100);
-  try{if(isClientHomeMode())renderHomeFilteredList();}catch(ex){}
+  try{applyColumnVisibility();}catch(e){}
+  try{if(isClientHomeMode()){renderClientCards();renderHomeFilteredList();}}catch(ex){}
   try{syncStickyChrome();}catch(ex){}
 }
-function saveUiPrefs(){
-  var p={
-    showFilteredList:!!(document.getElementById("uiShowFilteredList")||{}).checked,
-    showStatsHome:!!(document.getElementById("uiShowStatsHome")||{}).checked,
-    showExpiryHome:!!(document.getElementById("uiShowExpiryHome")||{}).checked,
-    cardsCompact:!!(document.getElementById("uiCardsCompact")||{}).checked,
-    homeListMax:parseInt((document.getElementById("uiHomeListMax")||{}).value,10)||0
-  };
-  try{localStorage.setItem(UI_PREFS_KEY, JSON.stringify(p));}catch(e){}
+async function saveUiPrefs(publish){
+  var p=collectUiPrefsFromForm();
+  try{localStorage.setItem(UI_PREFS_KEY,JSON.stringify(p));}catch(e){}
   applyUiPrefs();
+  try{applyButtonPrefs();}catch(e){}
+  if(!publish)return;
+  var box=document.getElementById("uiSqlWarn");
+  try{
+    var res=await sb.from("ui_settings").upsert({id:"default",data:p,updated_at:new Date().toISOString(),updated_by:currentUser&&currentUser.username});
+    if(res&&res.error){
+      if(box){box.style.display="block";box.textContent="Tabella assente. Esegui in SQL Editor:\n\n"+UI_SQL+"\n\nErrore: "+res.error.message;}
+      toast("Salvato in locale. Crea la tabella su Supabase.");
+      return;
+    }
+    if(box)box.style.display="none";
+    toast("Regole pubblicate su tutti i PC");
+  }catch(e){
+    if(box){box.style.display="block";box.textContent="Errore: "+(e.message||e)+"\n\n"+UI_SQL;}
+  }
+}
+async function loadUiSettingsFromDb(){
+  try{
+    var res=await sb.from("ui_settings").select("data").eq("id","default").maybeSingle();
+    if(res&&!res.error&&res.data&&res.data.data){
+      try{localStorage.setItem(UI_PREFS_KEY,JSON.stringify(res.data.data));}catch(e){}
+    }
+  }catch(e){}
 }
 function openPannelloAdmin(){
   if(!isSuper()){alert("Solo Super admin");return;}
-  applyUiPrefs();
+  fillAdminForm();
   document.getElementById("pannelloAdminModal").classList.add("show");
 }
 function closePannelloAdmin(){document.getElementById("pannelloAdminModal").classList.remove("show");}
@@ -3396,6 +3646,7 @@ function syncTableScrollbars(){
     ctop.scrollLeft=cbot.scrollLeft;
     if(chead)chead.scrollLeft=cbot.scrollLeft;
   }
+  try{applyColumnVisibility();}catch(e){}
   try{syncStickyChrome();}catch(e){}
 }
 window.addEventListener("resize",function(){try{syncTableScrollbars();}catch(e){}});
@@ -3443,8 +3694,11 @@ async function showApp(){document.getElementById("loginScreen").classList.add("h
   try{refreshAltroMenuVisibility();}catch(e){}
   try{applyUiStandbyMode();}catch(e){}
   try{refreshAltroMenuVisibility();}catch(e){}
-  try{applyUiPrefs();}catch(e){}
   setTimeout(refreshBell,500);await loadAll();
+  try{await loadUiSettingsFromDb();}catch(e){}
+  try{applyUiPrefs();}catch(e){}
+  try{applyButtonPrefs();}catch(e){}
+  try{applyHomepageByRole();}catch(e){}
   try{await loadDbNotifiche();refreshBell();}catch(e){}
   try{startNotificheRealtime();}catch(e){console.warn(e);}
   if(s||a||t)setTimeout(function(){sendExpiryEmail(false);},2000);if(s)setTimeout(checkAutoBackup,2500);requestNotifyPermission();setTimeout(notifyExpiringOnLogin,3000);setTimeout(showPendingInAppNotifications,1500);
