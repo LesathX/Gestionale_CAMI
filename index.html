@@ -287,7 +287,11 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
 .bell-btn{background:#334155;position:relative}
 .bell-count{position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:.6rem;font-weight:700;min-width:16px;height:16px;border-radius:999px;display:none;align-items:center;justify-content:center;padding:0 4px}
 .bell-count.show{display:flex}
-.bell-panel{display:none;position:absolute;right:0;left:auto;top:110%;width:320px;max-width:min(320px, calc(100vw - 16px));max-height:360px;overflow-y:auto;overflow-x:hidden;background:#fff;color:#1e293b;border:1px solid #e2e8f0;border-radius:.6rem;box-shadow:0 12px 30px rgba(0,0,0,.15);z-index:80}
+.bell-panel{display:none;position:absolute;right:0;left:auto;top:110%;width:360px;max-width:min(360px, calc(100vw - 16px));max-height:420px;overflow-y:auto;overflow-x:hidden;background:#fff;color:#1e293b;border:1px solid #e2e8f0;border-radius:.6rem;box-shadow:0 12px 30px rgba(0,0,0,.15);z-index:80}
+.bell-tabs{display:flex;gap:.25rem;align-items:center;padding:.3rem .4rem;border-bottom:1px solid #e2e8f0;font-size:.72rem;position:sticky;top:0;background:#fff;z-index:1}
+.bell-tab{border:0;background:transparent;color:#64748b;cursor:pointer;padding:.2rem .4rem;border-radius:6px;font-weight:700}
+.bell-tab.on{background:#1e3a8a;color:#fff}
+.bell-item.storico{opacity:.85;cursor:default}
 .bell-panel.show{display:block}
 .bell-item{padding:.55rem .7rem;border-bottom:1px solid #f1f5f9;font-size:.78rem;cursor:pointer}
 .bell-item:hover{background:#f8fafc}
@@ -774,10 +778,13 @@ html.ui-only-dpc #commesseChrome{display:none!important}
     <div class="todo-wrap">
       <div class="todo-head">
         <h2><i class="fas fa-check-square"></i> TO DO LIST</h2>
-        <p>Solo <strong>preparazione</strong>: documenti, ordini filtri/prefiltri, accessori. Le attivita sul campo stanno in <strong>Piano +2 mesi</strong>. Spunta ESEGUITO quando il materiale/documento e pronto (niente mail dopo).</p>
+        <p>Solo <strong>preparazione</strong> per il mese scelto (default: tra 2 mesi). Le attivita sul campo stanno in <strong>Piano +2 mesi</strong>. Spunta ESEGUITO quando il materiale/documento e pronto.</p>
       </div>
       <div class="todo-stats" id="todoStats"></div>
       <div class="todo-filters">
+        <label style="font-size:.78rem;color:#475569">Mese da preparare
+          <select id="todoMese" onchange="renderTodoList()"></select>
+        </label>
         <select id="todoFiltroSoglia" onchange="renderTodoList()">
           <option value="">Tutte le scadenze</option>
           <option value="0">Scadute</option>
@@ -2513,6 +2520,7 @@ function showTodoPage(){
   if(bd)bd.style.display="inline-flex";
   if(bc)bc.style.display=(UI_STANDBY_ONLY_DPC?"none":"inline-flex");
   if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
+  try{fillMeseSelect("todoMese");}catch(e){}
   try{renderTodoList();}catch(e){}
   try{window.scrollTo(0,0);}catch(e){}
 }
@@ -4698,7 +4706,7 @@ function updateEmailStatus(){
 function isSoonDays(d,days){var x=daysUntil(d);return x!==null&&x>=0&&x<=days;}
 function collectWorkItems(days){
   days=days||DAYS_WARN_60;
-  var t=(typeof defaultPianoTarget==="function")?defaultPianoTarget():{y:new Date().getFullYear(),m:new Date().getMonth()};
+  var t=parseTodoMese();
   var jobs=(typeof collectPianoJobs==="function")?collectPianoJobs(t.y,t.m):[];
   var start=t.y+"-"+String(t.m+1).padStart(2,"0")+"-01";
   var du=daysUntil(start);
@@ -4855,8 +4863,8 @@ function defaultPianoTarget(){
   d.setMonth(d.getMonth()+2);
   return {y:d.getFullYear(),m:d.getMonth()};
 }
-function fillPianoMeseSelect(){
-  var sel=document.getElementById("pianoMese");
+function fillMeseSelect(selId){
+  var sel=document.getElementById(selId);
   if(!sel)return;
   var cur=sel.value;
   var now=new Date();
@@ -4869,6 +4877,13 @@ function fillPianoMeseSelect(){
   sel.innerHTML=html;
   var def=defaultPianoTarget();
   sel.value=(cur && html.indexOf('value="'+cur+'"')>-1)?cur:ymId(def.y,def.m);
+}
+function fillPianoMeseSelect(){ fillMeseSelect("pianoMese"); }
+function parseTodoMese(){
+  var v=(document.getElementById("todoMese")||{}).value||"";
+  var p=v.split("-");
+  if(p.length===2)return {y:parseInt(p[0],10),m:parseInt(p[1],10)-1};
+  return defaultPianoTarget();
 }
 function parseYMD(d){
   if(!d && d!==0)return null;
@@ -5641,20 +5656,37 @@ function isBellDismissed(it){
   var m=window._bellDismiss||loadBellDismiss();
   return !!(m&&m[bellDismissKey(it)]);
 }
+function loadBellStorico(){
+  try{return JSON.parse(safeGetLocal("cami_bell_storico_v1","[]")||"[]");}catch(e){return[];}
+}
+function saveBellStorico(a){
+  try{safeSetLocal("cami_bell_storico_v1",JSON.stringify((a||[]).slice(0,250)));}catch(e){}
+}
 async function markAllNotificheLette(ev){
   try{if(ev)ev.stopPropagation();}catch(e){}
-  var m=loadBellDismiss();
-  (buildNotifications(true)||[]).forEach(function(it){
-    if(it.kind==="equip") m[bellDismissKey(it)]=1;
+  var live=buildNotifications()||[];
+  var st=loadBellStorico();
+  var now=new Date().toISOString();
+  live.forEach(function(it){
+    st.unshift({text:it.text,tier:it.tier,id:it.id,kind:it.kind,date:it.date||"",lettoAt:now});
   });
+  saveBellStorico(st);
+  var m=loadBellDismiss();
+  live.forEach(function(it){ m[bellDismissKey(it)]=1; });
   window._bellDismiss=m;
   saveBellDismiss(m);
   if(currentUser){
     try{await sb.from("notifiche").update({letto:true}).eq("user_id",currentUser.id).eq("letto",false);}catch(e){}
   }
   _dbNotifiche=[];
+  window._bellView="storico";
   refreshBell();
-  toast("Notifiche segnate come lette");
+  toast("Spostate nello storico ("+live.length+")");
+}
+function setBellView(v,ev){
+  try{if(ev)ev.stopPropagation();}catch(e){}
+  window._bellView=v==="storico"?"storico":"live";
+  refreshBell();
 }
 
 function sendEmailToList(emails, subject, message, opts){
@@ -7401,19 +7433,33 @@ function buildNotifications(includeDismissed){
 }
 function refreshBell(){
   window._bellDismiss=window._bellDismiss||loadBellDismiss();
-  var items=buildNotifications();
+  var live=buildNotifications();
+  var storico=loadBellStorico();
+  var view=window._bellView==="storico"?"storico":"live";
   var cnt=document.getElementById("bellCount");
   var panel=document.getElementById("bellPanel");
   if(!cnt||!panel)return;
-  if(items.length){cnt.textContent=String(items.length>99?99:items.length);cnt.classList.add("show");}
+  if(live.length){cnt.textContent=String(live.length>99?99:live.length);cnt.classList.add("show");}
   else {cnt.classList.remove("show");}
-  if(!items.length){panel.innerHTML='<div class="bell-item">Nessuna notifica</div>';return;}
-  var head='<div style="display:flex;justify-content:space-between;align-items:center;padding:.35rem .5rem;border-bottom:1px solid #e2e8f0;font-size:.72rem"><span style="color:#64748b">Live</span><button type="button" class="btn btn-secondary" style="padding:.15rem .4rem;font-size:.7rem" onclick="event.stopPropagation();markAllNotificheLette()">Segna lette</button></div>';
-  panel.innerHTML=head+items.slice(0,40).map(function(it){
-    if(it.kind==="db"){
-      return '<div class="bell-item '+it.tier+'" onclick="toggleBell();if(\''+(it.notifId||'')+'\')markNotificaLetta(\''+(it.notifId||'')+'\')">'+it.text+'</div>';
+  var head='<div class="bell-tabs" onclick="event.stopPropagation()">'+
+    '<button type="button" class="bell-tab'+(view==="live"?" on":"")+'" onclick="setBellView(\'live\',event)">Live ('+live.length+')</button>'+
+    '<button type="button" class="bell-tab'+(view==="storico"?" on":"")+'" onclick="setBellView(\'storico\',event)">Storico ('+storico.length+')</button>'+
+    '<button type="button" class="btn btn-secondary" style="margin-left:auto;padding:.15rem .4rem;font-size:.7rem" onclick="event.stopPropagation();markAllNotificheLette(event)">Segna lette</button>'+
+    '</div>';
+  var items=view==="storico"?storico:live;
+  if(!items.length){
+    panel.innerHTML=head+'<div class="bell-item">'+(view==="storico"?"Storico vuoto":"Nessuna notifica da leggere")+'</div>';
+    return;
+  }
+  panel.innerHTML=head+items.slice(0,80).map(function(it){
+    var extra=view==="storico"&&it.lettoAt?('<div style="font-size:.65rem;color:#94a3b8">Letta '+new Date(it.lettoAt).toLocaleString("it-IT")+"</div>"):"";
+    if(view==="storico"){
+      return '<div class="bell-item storico '+ (it.tier||"") +'">'+it.text+extra+"</div>";
     }
-    return '<div class="bell-item '+it.tier+'" onclick="toggleBell();openFromOggi(\''+it.id+'\')">'+it.text+'</div>';
+    if(it.kind==="db"){
+      return '<div class="bell-item '+it.tier+'" onclick="toggleBell();if(\''+(it.notifId||'')+'\')markNotificaLetta(\''+(it.notifId||'')+'\')">'+it.text+"</div>";
+    }
+    return '<div class="bell-item '+it.tier+'" onclick="toggleBell();openFromOggi(\''+it.id+'\')">'+it.text+"</div>";
   }).join("");
 }
 function toggleBell(){
