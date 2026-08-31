@@ -306,7 +306,7 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
 .stadio-card{border:1px solid #e2e8f0;border-radius:.5rem;padding:.65rem;margin-bottom:.5rem;background:#f8fafc}
 .stadio-card h4{font-size:.78rem;margin-bottom:.45rem;color:#1e3a5f}
 .stadio-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.4rem}
-@media(min-width:700px){.stadio-grid{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:800px){.stadio-grid{grid-template-columns:repeat(5,1fr)}}
 .stadio-grid label{font-size:.68rem;color:#64748b;display:block;margin-bottom:.1rem}
 .stadio-grid input,.stadio-grid select{width:100%;padding:.35rem .45rem;border:1px solid #e2e8f0;border-radius:.35rem;font-size:.78rem}
 .foto-preview{max-width:160px;max-height:120px;border-radius:.4rem;border:1px solid #e2e8f0;margin-top:.4rem;display:none}
@@ -2296,13 +2296,14 @@ function buildStadiForm(){
   var h="";
   for(var i=1;i<=4;i++){
     h+='<div class="stadio-card" id="stadioCard'+i+'" style="display:none"><h4>'+i+'° Stadio</h4><div class="stadio-grid">';
-    h+='<div class="req-fld"><label>Codice filtro</label><input id="s'+i+'_codice"></div>';
-    h+='<div class="req-fld"><label>Misure (mm)</label><input id="s'+i+'_misure"></div>';
-    h+='<div class="req-fld"><label>Tipologia</label><select id="s'+i+'_tipologia"><option value="">-</option><option value="P">P Particellare</option><option value="M">M Molecolare</option></select></div>';
-    h+='<div class="req-fld"><label>Q.ta</label><input id="s'+i+'_qty"></div>';
-    h+='<div class="req-fld"><label>Correlazione</label><input id="s'+i+'_correlazione"></div>';
+    h+='<div class="req-fld"><label>Codice filtro</label><input id="s'+i+'_codice" placeholder="-"></div>';
+    h+='<div class="req-fld"><label>Misure (mm)</label><input id="s'+i+'_misure" placeholder="-"></div>';
+    h+='<div class="req-fld"><label>Tipologia</label><select id="s'+i+'_tipologiaP"><option value="">-</option><option value="P">P Particellare</option></select></div>';
+    h+='<div class="req-fld"><label>&nbsp;</label><select id="s'+i+'_tipologiaM"><option value="">-</option><option value="M">M Molecolare</option></select></div>';
+    h+='<div class="req-fld"><label>Q.ta</label><input id="s'+i+'_qty" placeholder="-"></div>';
+    h+='<div class="req-fld"><label>Correlazione</label><input id="s'+i+'_correlazione" placeholder="-"></div>';
     h+='<div class="req-fld"><label>Data install.</label><input type="date" id="s'+i+'_data"></div>';
-    h+='<div class="req-fld"><label>Durata mesi</label><input id="s'+i+'_durata" type="number" min="1"></div>';
+    h+='<div class="req-fld"><label>Durata mesi</label><input id="s'+i+'_durata" type="number" min="1" placeholder="-"></div>';
     h+='<div class="req-fld"><label>Prox. sostituz.</label><input type="date" id="s'+i+'_prox"></div>';
     h+='<div><label>Status (auto)</label><input id="s'+i+'_status" readonly style="background:#f1f5f9;font-weight:600" placeholder="automatico"></div>';
     h+='</div></div>';
@@ -2336,10 +2337,18 @@ function markMissingFilterFields(){
       var els=card.querySelectorAll("input,select");
       for(var j=0;j<els.length;j++){
         var el=els[j];
-        if(el.readOnly || (el.id||"").indexOf("_status")>-1){paintMiss(el,false);continue;}
+        if(el.readOnly || (el.id||"").indexOf("_status")>-1 || (el.id||"").indexOf("_correlazione")>-1){paintMiss(el,false);continue;}
         var miss=vis && isBlankDato(el.value);
         if(miss)any=true;
         paintMiss(el,miss);
+      }
+      var pEl=document.getElementById("s"+(c+1)+"_tipologiaP");
+      var mEl=document.getElementById("s"+(c+1)+"_tipologiaM");
+      if(pEl&&mEl){
+        var tipMiss=vis && isBlankDato(pEl.value) && isBlankDato(mEl.value);
+        paintMiss(pEl,tipMiss);
+        paintMiss(mEl,tipMiss);
+        if(tipMiss)any=true;
       }
       card.style.boxShadow=any?"inset 0 0 0 3px #dc2626":"";
     }
@@ -2366,7 +2375,7 @@ function paintMiss(el, on){
 }
 document.addEventListener("input",function(ev){if(ev.target&&ev.target.closest&&ev.target.closest("#modal"))markMissingFilterFields();});
 document.addEventListener("change",function(ev){if(ev.target&&ev.target.closest&&ev.target.closest("#modal"))markMissingFilterFields();});
-function bindStageAutoProx(){for(var i=1;i<=4;i++){(function(n){var dataEl=document.getElementById("s"+n+"_data"),durEl=document.getElementById("s"+n+"_durata"),proxEl=document.getElementById("s"+n+"_prox"),statusEl=document.getElementById("s"+n+"_status");if(!dataEl||!durEl||!proxEl)return;var applyStatus=function(){var st=autoFilterStatus(proxEl.value);if(statusEl){statusEl.value=st;statusEl.style.color=st==="SCADUTO"?"#dc2626":(st==="IN SCADENZA"?"#ea580c":(st==="TRA 2 MESI"?"#2563eb":(st==="OK"?"#047857":"#64748b")));}markMissingFilterFields();};var calc=function(){var p=calcProx(dataEl.value,durEl.value);if(p)proxEl.value=p;applyStatus();};dataEl.addEventListener("change",calc);durEl.addEventListener("change",calc);durEl.addEventListener("input",calc);proxEl.addEventListener("change",applyStatus);["codice","misure","tipologia","qty"].forEach(function(k){var el=document.getElementById("s"+n+"_"+k);if(el){el.addEventListener("input",markMissingFilterFields);el.addEventListener("change",markMissingFilterFields);}});})(i);}}
+function bindStageAutoProx(){for(var i=1;i<=4;i++){(function(n){var dataEl=document.getElementById("s"+n+"_data"),durEl=document.getElementById("s"+n+"_durata"),proxEl=document.getElementById("s"+n+"_prox"),statusEl=document.getElementById("s"+n+"_status");if(!dataEl||!durEl||!proxEl)return;var applyStatus=function(){var st=autoFilterStatus(proxEl.value);if(statusEl){statusEl.value=st;statusEl.style.color=st==="SCADUTO"?"#dc2626":(st==="IN SCADENZA"?"#ea580c":(st==="TRA 2 MESI"?"#2563eb":(st==="OK"?"#047857":"#64748b")));}markMissingFilterFields();};var calc=function(){var p=calcProx(dataEl.value,durEl.value);if(p)proxEl.value=p;applyStatus();};dataEl.addEventListener("change",calc);durEl.addEventListener("change",calc);durEl.addEventListener("input",calc);proxEl.addEventListener("change",applyStatus);["codice","misure","tipologiaP","tipologiaM","qty"].forEach(function(k){var el=document.getElementById("s"+n+"_"+k);if(el){el.addEventListener("input",markMissingFilterFields);el.addEventListener("change",markMissingFilterFields);}});})(i);}}
 function monthsBetweenIso(a,b){
   if(!a||!b)return null;
   var d1=new Date(a+"T00:00:00"), d2=new Date(b+"T00:00:00");
@@ -2393,14 +2402,24 @@ function syncManCadenza(src){
     }
   }finally{window.__cadenzaLock=false;}
 }
-function collectFiltriStadi(){var out={},n=parseNumStadi(val("stadiFiltranti")),max=n>0?n:0;for(var i=1;i<=max;i++){var s={codice:val("s"+i+"_codice"),misure:val("s"+i+"_misure"),tipologia:val("s"+i+"_tipologia"),qty:val("s"+i+"_qty"),correlazione:val("s"+i+"_correlazione"),data_install:val("s"+i+"_data"),durata_mesi:val("s"+i+"_durata"),prox:val("s"+i+"_prox"),status:""};if(!s.prox)s.prox=calcProx(s.data_install,s.durata_mesi);s.status=autoFilterStatus(s.prox);if(s.codice||s.misure||s.tipologia||s.qty||s.data_install||s.prox||s.status)out[String(i)]=s;}return out;}
-function fillFiltriStadi(data){data=data||{};for(var i=1;i<=4;i++){var s=data[String(i)]||emptyStage();setv("s"+i+"_codice",s.codice);setv("s"+i+"_misure",s.misure);setv("s"+i+"_tipologia",normalizeTipologiaFiltro(s.tipologia));setv("s"+i+"_qty",s.qty);setv("s"+i+"_correlazione",s.correlazione);setv("s"+i+"_data",s.data_install);setv("s"+i+"_durata",s.durata_mesi);var px=s.prox||calcProx(s.data_install,s.durata_mesi);setv("s"+i+"_prox",px);var st=autoFilterStatus(px);setv("s"+i+"_status",st);var statusEl=document.getElementById("s"+i+"_status");if(statusEl)statusEl.style.color=st==="SCADUTO"?"#dc2626":(st==="IN SCADENZA"?"#ea580c":(st==="TRA 2 MESI"?"#2563eb":(st==="OK"?"#047857":"#64748b")));}if(!val("stadiFiltranti")){var maxK=0;Object.keys(data).forEach(function(k){var num=parseInt(k,10);if(!isNaN(num)&&num>maxK)maxK=num;});if(maxK>0)setv("stadiFiltranti",String(maxK));}updateStadiVisibility();}
-function normalizeTipologiaFiltro(v){
-  var s=String(v||"").trim().toLowerCase();
-  if(!s)return "";
-  if(s==="p"||s.indexOf("partic")>-1)return "P";
-  if(s==="m"||s.indexOf("molec")>-1)return "M";
-  return String(v||"").trim();
+function collectFiltriStadi(){var out={},n=parseNumStadi(val("stadiFiltranti")),max=n>0?n:0;for(var i=1;i<=max;i++){var tip=joinTipologia(val("s"+i+"_tipologiaP"),val("s"+i+"_tipologiaM"));var s={codice:val("s"+i+"_codice"),misure:val("s"+i+"_misure"),tipologia:tip,qty:val("s"+i+"_qty"),correlazione:val("s"+i+"_correlazione"),data_install:val("s"+i+"_data"),durata_mesi:val("s"+i+"_durata"),prox:val("s"+i+"_prox"),status:""};if(!s.prox)s.prox=calcProx(s.data_install,s.durata_mesi);s.status=autoFilterStatus(s.prox);if(s.codice||s.misure||s.tipologia||s.qty||s.data_install||s.prox||s.status)out[String(i)]=s;}return out;}
+function fillFiltriStadi(data){data=data||{};for(var i=1;i<=4;i++){var s=data[String(i)]||emptyStage();setv("s"+i+"_codice",s.codice);setv("s"+i+"_misure",s.misure);var fl=flagsFromTipologia(s.tipologia);setv("s"+i+"_tipologiaP",fl.P?"P":"");setv("s"+i+"_tipologiaM",fl.M?"M":"");setv("s"+i+"_qty",s.qty);setv("s"+i+"_correlazione",s.correlazione);setv("s"+i+"_data",s.data_install);setv("s"+i+"_durata",s.durata_mesi);var px=s.prox||calcProx(s.data_install,s.durata_mesi);setv("s"+i+"_prox",px);var st=autoFilterStatus(px);setv("s"+i+"_status",st);var statusEl=document.getElementById("s"+i+"_status");if(statusEl)statusEl.style.color=st==="SCADUTO"?"#dc2626":(st==="IN SCADENZA"?"#ea580c":(st==="TRA 2 MESI"?"#2563eb":(st==="OK"?"#047857":"#64748b")));}if(!val("stadiFiltranti")){var maxK=0;Object.keys(data).forEach(function(k){var num=parseInt(k,10);if(!isNaN(num)&&num>maxK)maxK=num;});if(maxK>0)setv("stadiFiltranti",String(maxK));}updateStadiVisibility();}
+function flagsFromTipologia(t){
+  var s=String(t||"").toUpperCase().trim();
+  if(!s)return{P:false,M:false};
+  if(s==="P")return{P:true,M:false};
+  if(s==="M")return{P:false,M:true};
+  if(s==="PM"||s==="P+M"||s==="P/M"||s==="P-M"||s==="MP"||s==="M+P")return{P:true,M:true};
+  return{
+    P:/PARTIC/.test(s)||/(^|[^A-Z])P([^A-Z]|$)/.test(s),
+    M:/MOLEC/.test(s)||/(^|[^A-Z])M([^A-Z]|$)/.test(s)
+  };
+}
+function joinTipologia(p,m){
+  var a=[];
+  if(String(p||"").toUpperCase().indexOf("P")===0)a.push("P");
+  if(String(m||"").toUpperCase().indexOf("M")===0)a.push("M");
+  return a.join("+");
 }
 async function logAudit(azione,eq,dettagli){try{await sb.from("audit_log").insert([{equip_id:eq&&eq.id?eq.id:null,matricola:eq?eq.matricola||"":"",id_dispositivo:eq?eq.idDispositivo||"":"",username:currentUser?currentUser.username:"?",azione:azione,dettagli:dettagli||""}]);}catch(e){console.warn("audit",e);}}
 function checkAutoBackup(){try{var last=parseInt(safeGetLocal(LAST_BACKUP_KEY,"0")||"0",10);if(!last||(Date.now()-last)>BACKUP_DAYS*86400000){exportFullBackup({cloudOnly:true});}}catch(e){}}
