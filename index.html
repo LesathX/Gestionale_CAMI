@@ -486,6 +486,24 @@ html:not(.client-home-mode) #dpcListBar{display:flex}
 .cli-card button.apri{margin-top:auto;width:100%;background:#0f2744;color:#fff;border:none;border-radius:.5rem;padding:.55rem .7rem;cursor:pointer;font-size:.85rem;font-weight:600}
 .cli-card button.apri:hover{background:#1e3a8a}
 
+html.client-home-mode.ui-show-stats .hero-row{display:flex!important}
+html.ui-cards-compact .cli-card{padding:.75rem}
+html.ui-cards-compact .client-cards{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.home-filtered{margin-top:1.25rem;background:#fff;border:1px solid #e2e8f0;border-radius:.85rem;overflow:hidden;box-shadow:0 8px 24px rgba(15,23,42,.05)}
+.home-filtered-h{display:flex;justify-content:space-between;align-items:center;padding:.7rem .9rem;border-bottom:1px solid #e2e8f0;background:#f8fafc;gap:.5rem;flex-wrap:wrap}
+.home-filtered-h h3{margin:0;font-size:.95rem;color:#0f2744}
+.home-filtered table{width:100%;border-collapse:collapse;font-size:.8rem}
+.home-filtered th,.home-filtered td{padding:.45rem .6rem;border-bottom:1px solid #f1f5f9;text-align:left}
+.home-filtered th{background:#f8fafc;font-size:.7rem;text-transform:uppercase;letter-spacing:.03em;color:#64748b}
+.home-filtered tr:hover td{background:#f8fafc}
+.home-filtered .mini-ok{color:#16a34a;font-weight:700}
+.home-filtered .mini-bad{color:#dc2626;font-weight:700}
+.home-filtered .mini-soon{color:#d97706;font-weight:700}
+.admin-opt{display:flex;align-items:flex-start;gap:.65rem;padding:.65rem 0;border-bottom:1px solid #f1f5f9}
+.admin-opt input{margin-top:.2rem}
+.admin-opt b{display:block;font-size:.88rem}
+.admin-opt span{display:block;font-size:.75rem;color:#64748b}
+
 html.ui-only-dpc #btnCommesse,
 html.ui-only-dpc #btnNuovoIntervento,
 html.ui-only-dpc #btnInterventiAssegnati,
@@ -574,6 +592,7 @@ html.ui-only-dpc #commesseChrome{display:none!important}
           </div>
         </div>
       </div>
+      <button class="btn btn-secondary" id="btnPannelloAdmin" style="display:none" onclick="openPannelloAdmin()"><i class="fas fa-sliders-h"></i> Pannello admin</button>
       <button class="btn btn-secondary" id="btnInstallPwa" style="display:none" onclick="installPwaApp()"><i class="fas fa-download"></i> Installa app</button>
       <button class="btn btn-danger" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Esci</button>
       <div class="user-badge"><span id="currentUserName">-</span> <span id="currentUserRole"></span></div>
@@ -600,6 +619,7 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       <h2>I tuoi clienti</h2>
       <p class="client-home-sub">Gestisci e monitora i tuoi clienti e lo stato delle loro pratiche DPC.</p>
       <div id="clientCards" class="client-cards"></div>
+      <div id="homeFilteredWrap" class="home-filtered" style="display:none"></div>
     </div>
     <div id="dpcListBar">
       <button type="button" class="dpc-back" onclick="showClientHome()"><i class="fas fa-arrow-left"></i> Clienti</button>
@@ -1535,6 +1555,24 @@ html.ui-only-dpc #commesseChrome{display:none!important}
   </div>
 </div></div>
 
+<div id="pannelloAdminModal" class="modal-overlay"><div class="modal" style="max-width:560px">
+  <div class="modal-header"><h2>Pannello amministrazione</h2><button class="modal-close" onclick="closePannelloAdmin()">&times;</button></div>
+  <div class="modal-body">
+    <p class="client-home-sub" style="margin-top:0">Solo Super admin. Qui si regola come si vede il programma. Altre funzioni le aggiungiamo dopo.</p>
+    <label class="admin-opt"><input type="checkbox" id="uiShowFilteredList" onchange="saveUiPrefs()">
+      <div><b>Lista DPC sotto i clienti</b><span>Se usi un filtro in home, sotto le card compare l'elenco dei DPC trovati.</span></div></label>
+    <label class="admin-opt"><input type="checkbox" id="uiShowStatsHome" onchange="saveUiPrefs()">
+      <div><b>Contatori in home</b><span>Mostra DPC / scaduti / operative anche nella pagina clienti.</span></div></label>
+    <label class="admin-opt"><input type="checkbox" id="uiShowExpiryHome" onchange="saveUiPrefs()">
+      <div><b>Avviso scadenze in home</b><span>Barra rossa in alto nella pagina clienti.</span></div></label>
+    <label class="admin-opt"><input type="checkbox" id="uiCardsCompact" onchange="saveUiPrefs()">
+      <div><b>Card compatte</b><span>Card clienti più piccole, più visibili in una schermata.</span></div></label>
+    <div class="form-group" style="margin-top:.8rem"><label>Righe massime in lista filtrata</label>
+      <select id="uiHomeListMax" onchange="saveUiPrefs()"><option value="50">50</option><option value="100">100</option><option value="0">Tutte</option></select>
+    </div>
+    <div class="form-actions"><button class="btn-save" onclick="closePannelloAdmin()">Chiudi</button></div>
+  </div>
+</div>
 
 <div id="dashboardModal" class="modal-overlay"><div class="modal modal-lg">
   <div class="modal-header"><h2>Dashboard scadenze per cliente</h2><button class="modal-close" onclick="closeDashboardModal()">&times;</button></div>
@@ -3070,34 +3108,10 @@ function openClienteElenco(id){
 function renderClientCards(){
   var el=document.getElementById("clientCards");
   if(!el)return;
-  var q=((document.getElementById("searchInput")||{}).value||"").toLowerCase();
-  var fac=((document.getElementById("filterAcronimo")||{}).value)||"";
-  var fse=((document.getElementById("filterSede")||{}).value)||"";
-  var fst=((document.getElementById("filterStato")||{}).value)||"";
-  var ffi=((document.getElementById("filterFiltro")||{}).value)||"";
-  var fsc=((document.getElementById("filterScadenza")||{}).value)||"";
+  var f=getHomeFilters();
   var html="";
   (clienti||[]).forEach(function(c){
-    if(q && String(c.nome||"").toLowerCase().indexOf(q)<0 && String(c.codice||"").toLowerCase().indexOf(q)<0) return;
-    var eqs=equipment.filter(function(e){
-      if(e.clienteId!==c.id)return false;
-      if(fac && e.acronimo!==fac)return false;
-      if(fse && e.sede!==fse)return false;
-      if(fst && e.stato!==fst)return false;
-      if(ffi==="si" && e.haSistemaFiltrante!=="si")return false;
-      if(ffi==="no" && e.haSistemaFiltrante==="si")return false;
-      if(fsc){
-        var dest=deviceExpiryStatus(e),tier=deviceExpiryTier(e),ok=true;
-        if(fsc==="scaduti")ok=dest==="overdue";
-        else if(fsc==="in_scadenza")ok=dest==="soon";
-        else if(fsc==="d7")ok=tier==="overdue"||tier==="soon7";
-        else if(fsc==="d15")ok=tier==="overdue"||tier==="soon7"||tier==="soon15";
-        else if(fsc==="d30")ok=tier==="overdue"||tier==="soon7"||tier==="soon15"||tier==="soon30";
-        else if(fsc==="ok")ok=dest==="ok";
-        if(!ok)return false;
-      }
-      return true;
-    });
+    var eqs=equipment.filter(function(e){return e.clienteId===c.id && dpcMatchesHomeFilters(e,f);});
     var overdue=0,soon=0;
     (equipment||[]).forEach(function(e){
       if(e.clienteId!==c.id)return;
@@ -3116,17 +3130,126 @@ function renderClientCards(){
     '</div>';
   });
   el.innerHTML=html||'<p class="client-home-sub">Nessun cliente trovato.</p>';
+  try{renderHomeFilteredList();}catch(e){}
+}
+function getHomeFilters(){
+  return {
+    q:((document.getElementById("searchInput")||{}).value||"").toLowerCase(),
+    fcl:((document.getElementById("filterCliente")||{}).value)||"",
+    fac:((document.getElementById("filterAcronimo")||{}).value)||"",
+    fse:((document.getElementById("filterSede")||{}).value)||"",
+    fst:((document.getElementById("filterStato")||{}).value)||"",
+    ffi:((document.getElementById("filterFiltro")||{}).value)||"",
+    fsc:((document.getElementById("filterScadenza")||{}).value)||""
+  };
+}
+function homeFiltersActive(f){
+  f=f||getHomeFilters();
+  return !!(f.q||f.fcl||f.fac||f.fse||f.fst||f.ffi||f.fsc);
+}
+function dpcMatchesHomeFilters(e,f){
+  f=f||getHomeFilters();
+  if(f.fcl && e.clienteId!==f.fcl)return false;
+  if(f.fac && e.acronimo!==f.fac)return false;
+  if(f.fse && e.sede!==f.fse)return false;
+  if(f.fst && e.stato!==f.fst)return false;
+  if(f.ffi==="si" && e.haSistemaFiltrante!=="si")return false;
+  if(f.ffi==="no" && e.haSistemaFiltrante==="si")return false;
+  if(f.fsc){
+    var dest=deviceExpiryStatus(e),tier=deviceExpiryTier(e),ok=true;
+    if(f.fsc==="scaduti")ok=dest==="overdue";
+    else if(f.fsc==="in_scadenza")ok=dest==="soon";
+    else if(f.fsc==="d7")ok=tier==="overdue"||tier==="soon7";
+    else if(f.fsc==="d15")ok=tier==="overdue"||tier==="soon7"||tier==="soon15";
+    else if(f.fsc==="d30")ok=tier==="overdue"||tier==="soon7"||tier==="soon15"||tier==="soon30";
+    else if(f.fsc==="ok")ok=dest==="ok";
+    if(!ok)return false;
+  }
+  if(f.q){
+    var blob=[e.matricola,e.idDispositivo,e.modello,e.sede,e.acronimo,labelAcronimo(e.acronimo,"full"),clienteName(e.clienteId),e.responsabile].join(" ").toLowerCase();
+    if(blob.indexOf(f.q)<0)return false;
+  }
+  return true;
+}
+function renderHomeFilteredList(){
+  var wrap=document.getElementById("homeFilteredWrap");
+  if(!wrap)return;
+  var prefs=loadUiPrefs();
+  var f=getHomeFilters();
+  if(!prefs.showFilteredList || !homeFiltersActive(f) || !isClientHomeMode()){
+    wrap.style.display="none";wrap.innerHTML="";return;
+  }
+  var list=(visibleEquipment?visibleEquipment():equipment).filter(function(e){return dpcMatchesHomeFilters(e,f);});
+  var max=prefs.homeListMax|0;
+  var extra=max>0 && list.length>max ? list.length-max : 0;
+  if(max>0)list=list.slice(0,max);
+  var rows=list.map(function(e){
+    var st=deviceExpiryStatus(e);
+    var lab=st==="overdue"?"scaduto":(st==="soon"?"in scadenza":"ok");
+    var cls=st==="overdue"?"mini-bad":(st==="soon"?"mini-soon":"mini-ok");
+    return "<tr>"+
+      "<td>"+escHtml(clienteName(e.clienteId))+"</td>"+
+      "<td>"+escHtml(labelAcronimo(e.acronimo,"short")||e.acronimo||"")+"</td>"+
+      "<td>"+escHtml(e.matricola||"")+"</td>"+
+      "<td>"+escHtml(e.idDispositivo||"")+"</td>"+
+      "<td>"+escHtml(e.sede||"")+"</td>"+
+      "<td>"+escHtml(e.stato||"")+"</td>"+
+      "<td class=\""+cls+"\">"+lab+"</td>"+
+      "<td><button type=\"button\" class=\"dpc-back\" style=\"padding:.25rem .5rem\" onclick=\"openClienteElenco('"+String(e.clienteId||"").replace(/'/g,"")+"')\">Apri</button></td>"+
+    "</tr>";
+  }).join("");
+  wrap.style.display="block";
+  wrap.innerHTML='<div class="home-filtered-h"><h3>DPC trovati: '+(list.length+extra)+'</h3><span class="client-home-sub" style="margin:0">Filtri attivi</span></div>'+
+    '<div style="overflow:auto;max-height:420px"><table><thead><tr><th>Cliente</th><th>Acronimo</th><th>Matricola</th><th>ID</th><th>Sede</th><th>Stato</th><th>Scadenza</th><th></th></tr></thead><tbody>'+
+    (rows||"<tr><td colspan=\"8\">Nessun DPC con questi filtri.</td></tr>")+
+    "</tbody></table></div>"+(extra?('<div class="home-filtered-h"><span>... e altri '+extra+'. Alza il limite nel pannello admin.</span></div>'):"");
 }
 function onDpcSearch(){
   if(isClientHomeMode())renderClientCards();
   else renderTable();
 }
 function onDpcFiltersChange(){
-  var fc=document.getElementById("filterCliente");
-  if(fc && fc.value){openClienteElenco(fc.value);return;}
   if(isClientHomeMode())renderClientCards();
   else renderTable();
 }
+var UI_PREFS_KEY="cami_ui_prefs_v1";
+function defaultUiPrefs(){return {showFilteredList:true,showStatsHome:false,showExpiryHome:false,cardsCompact:false,homeListMax:100};}
+function loadUiPrefs(){
+  try{
+    var o=JSON.parse(localStorage.getItem(UI_PREFS_KEY)||"{}");
+    return Object.assign(defaultUiPrefs(), o||{});
+  }catch(e){return defaultUiPrefs();}
+}
+function applyUiPrefs(){
+  var p=loadUiPrefs();
+  document.documentElement.classList.toggle("ui-show-stats", !!p.showStatsHome);
+  document.documentElement.classList.toggle("ui-show-expiry", !!p.showExpiryHome);
+  document.documentElement.classList.toggle("ui-cards-compact", !!p.cardsCompact);
+  var a=document.getElementById("uiShowFilteredList"); if(a)a.checked=!!p.showFilteredList;
+  var b=document.getElementById("uiShowStatsHome"); if(b)b.checked=!!p.showStatsHome;
+  var c=document.getElementById("uiShowExpiryHome"); if(c)c.checked=!!p.showExpiryHome;
+  var d=document.getElementById("uiCardsCompact"); if(d)d.checked=!!p.cardsCompact;
+  var e=document.getElementById("uiHomeListMax"); if(e)e.value=String(p.homeListMax||100);
+  try{if(isClientHomeMode())renderHomeFilteredList();}catch(ex){}
+  try{syncStickyChrome();}catch(ex){}
+}
+function saveUiPrefs(){
+  var p={
+    showFilteredList:!!(document.getElementById("uiShowFilteredList")||{}).checked,
+    showStatsHome:!!(document.getElementById("uiShowStatsHome")||{}).checked,
+    showExpiryHome:!!(document.getElementById("uiShowExpiryHome")||{}).checked,
+    cardsCompact:!!(document.getElementById("uiCardsCompact")||{}).checked,
+    homeListMax:parseInt((document.getElementById("uiHomeListMax")||{}).value,10)||0
+  };
+  try{localStorage.setItem(UI_PREFS_KEY, JSON.stringify(p));}catch(e){}
+  applyUiPrefs();
+}
+function openPannelloAdmin(){
+  if(!isSuper()){alert("Solo Super admin");return;}
+  applyUiPrefs();
+  document.getElementById("pannelloAdminModal").classList.add("show");
+}
+function closePannelloAdmin(){document.getElementById("pannelloAdminModal").classList.remove("show");}
 function filterByClienteChip(clienteId){
   if(!clienteId)return;
   try{showDpcPage();}catch(e){}
@@ -3294,6 +3417,7 @@ async function showApp(){document.getElementById("loginScreen").classList.add("h
   var bia=document.getElementById("btnInterventiAssegnati");if(bia)bia.style.display=(s||a||t)?"inline-flex":"none";
   var bni=document.getElementById("btnNuovoIntervento");if(bni)bni.style.display=(s||a||t)?"inline-flex":"none";
   document.getElementById("btnUsers").style.display=canManageUsers()?"inline-flex":"none";
+  var bpa=document.getElementById("btnPannelloAdmin");if(bpa)bpa.style.display=s?"inline-flex":"none";
   document.getElementById("btnClienti").style.display=canManageClienti()?"inline-flex":"none";
   var bat=document.getElementById("btnAssegnaTecnico");if(bat)bat.style.display=canAssignTecnico()?"inline-flex":"none";
   document.getElementById("btnEmail").style.display=(s||a||t)?"inline-flex":"none";
@@ -3319,6 +3443,7 @@ async function showApp(){document.getElementById("loginScreen").classList.add("h
   try{refreshAltroMenuVisibility();}catch(e){}
   try{applyUiStandbyMode();}catch(e){}
   try{refreshAltroMenuVisibility();}catch(e){}
+  try{applyUiPrefs();}catch(e){}
   setTimeout(refreshBell,500);await loadAll();
   try{await loadDbNotifiche();refreshBell();}catch(e){}
   try{startNotificheRealtime();}catch(e){console.warn(e);}
