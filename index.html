@@ -4758,24 +4758,46 @@ function currentTodoSoglia(days){
   return null;
 }
 function todoActivityKey(it){return String(it.id)+"|"+it.kind+"|"+String(it.date||"");}
-function isTodoEseguito(it){return !!(window._todoDone&&window._todoDone[todoActivityKey(it)]);}
+function todoDoneInfo(it){
+  var v=window._todoDone&&window._todoDone[todoActivityKey(it)];
+  if(!v)return null;
+  if(v===true)return {da:"",at:""};
+  return {da:v.da||v.eseguito_da||"",at:v.at||v.eseguito_at||""};
+}
+function isTodoEseguito(it){return !!todoDoneInfo(it);}
 async function loadTodoDone(){
   window._todoDone={};
   try{
-    var res=await sb.from("todo_done").select("id,eseguito");
+    var res=await sb.from("todo_done").select("id,eseguito,eseguito_da,eseguito_at");
     if(res.error)throw res.error;
-    (res.data||[]).forEach(function(r){ if(r.eseguito!==false) window._todoDone[r.id]=true; });
+    (res.data||[]).forEach(function(r){
+      if(r.eseguito!==false) window._todoDone[r.id]={da:r.eseguito_da||"",at:r.eseguito_at||""};
+    });
   }catch(e){
-    try{window._todoDone=JSON.parse(safeGetLocal("cami_todo_done_v1","{}")||"{}");}catch(ex){window._todoDone={};}
+    try{
+      var raw=JSON.parse(safeGetLocal("cami_todo_done_v1","{}")||"{}");
+      Object.keys(raw||{}).forEach(function(k){
+        var v=raw[k];
+        window._todoDone[k]=(v&&typeof v==="object")?{da:v.da||"",at:v.at||""}:{da:"",at:""};
+      });
+    }catch(ex){window._todoDone={};}
   }
 }
 async function setTodoEseguito(key,on,meta){
   window._todoDone=window._todoDone||{};
-  if(on)window._todoDone[key]=true; else delete window._todoDone[key];
+  var chi=(currentUser&&(currentUser.nome||currentUser.username))||"";
+  var quando=new Date().toISOString();
+  if(on) window._todoDone[key]={da:chi,at:quando};
+  else delete window._todoDone[key];
   try{safeSetLocal("cami_todo_done_v1",JSON.stringify(window._todoDone));}catch(e){}
   try{
     if(on){
-      await sb.from("todo_done").upsert({id:key,equip_id:meta&&meta.id||null,kind:meta&&meta.kind||"",date_scadenza:meta&&meta.date||"",eseguito:true,eseguito_da:(currentUser&&currentUser.username)||"",eseguito_at:new Date().toISOString()});
+      var row={id:key,equip_id:meta&&meta.id||null,kind:meta&&meta.kind||"",date_scadenza:meta&&meta.date||"",eseguito:true,eseguito_da:chi,eseguito_at:quando};
+      var res=await sb.from("todo_done").upsert(row);
+      if(res&&res.error){
+        delete row.eseguito_da; delete row.eseguito_at;
+        await sb.from("todo_done").upsert(row);
+      }
     }else{
       await sb.from("todo_done").delete().eq("id",key);
     }
@@ -4845,7 +4867,15 @@ function renderTodoList(){
     h+='<div class="todo-item s'+it.soglia+(done?" done":"")+'">';
     h+='<label class="ese"><input type="checkbox" '+(done?"checked":"")+' data-key="'+encodeURIComponent(todoActivityKey(it))+'" data-eid="'+String(it.id)+'" data-kind="'+String(it.kind)+'" data-date="'+String(it.date||"")+'" onchange="setTodoEseguito(decodeURIComponent(this.getAttribute(\'data-key\')),this.checked,{id:this.getAttribute(\'data-eid\'),kind:this.getAttribute(\'data-kind\'),date:this.getAttribute(\'data-date\')})"><span>ESEGUITO</span></label>';
     h+='<div class="todo-body"><strong>'+it.cliente+' · '+(it.acronimo||"")+' · '+(it.matricola||"-")+'</strong>';
-    h+='<div class="todo-meta"><span class="todo-tag">'+stag+'</span>'+it.label+(it.sede?" · "+it.sede:"")+' · '+dtxt+'</div></div>';
+    h+='<div class="todo-meta"><span class="todo-tag">'+stag+'</span>'+it.label+(it.sede?" · "+it.sede:"")+' · '+dtxt+'</div>';
+    if(done){
+      var inf=todoDoneInfo(it)||{};
+      var chi=inf.da||"-";
+      var quando="";
+      try{if(inf.at)quando=new Date(inf.at).toLocaleString("it-IT");}catch(e){}
+      h+='<div class="todo-meta" style="color:#047857;font-weight:600">Eseguito da '+escHtml(chi)+(quando?" · "+quando:"")+"</div>";
+    }
+    h+="</div>";
     if(String(it.id).indexOf("prep-")!==0){
       h+='<button class="btn btn-secondary" style="padding:.3rem .55rem" onclick="openFromOggi(\''+it.id+'\')">Apri</button>';
     }
