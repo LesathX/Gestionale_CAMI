@@ -5628,11 +5628,33 @@ async function markNotificaLetta(id){
   _dbNotifiche=(_dbNotifiche||[]).filter(function(x){return x.id!==id;});
   refreshBell();
 }
-async function markAllNotificheLette(){
-  if(!currentUser)return;
-  try{await sb.from("notifiche").update({letto:true}).eq("user_id",currentUser.id).eq("letto",false);}catch(e){}
+function bellDismissKey(it){
+  return String(it.kind||"")+"|"+String(it.id||"")+"|"+String(it.date||"")+"|"+String(it.text||"");
+}
+function loadBellDismiss(){
+  try{return JSON.parse(safeGetLocal("cami_bell_dismiss_v1","{}")||"{}");}catch(e){return{};}
+}
+function saveBellDismiss(m){
+  try{safeSetLocal("cami_bell_dismiss_v1",JSON.stringify(m));}catch(e){}
+}
+function isBellDismissed(it){
+  var m=window._bellDismiss||loadBellDismiss();
+  return !!(m&&m[bellDismissKey(it)]);
+}
+async function markAllNotificheLette(ev){
+  try{if(ev)ev.stopPropagation();}catch(e){}
+  var m=loadBellDismiss();
+  (buildNotifications(true)||[]).forEach(function(it){
+    if(it.kind==="equip") m[bellDismissKey(it)]=1;
+  });
+  window._bellDismiss=m;
+  saveBellDismiss(m);
+  if(currentUser){
+    try{await sb.from("notifiche").update({letto:true}).eq("user_id",currentUser.id).eq("letto",false);}catch(e){}
+  }
   _dbNotifiche=[];
   refreshBell();
+  toast("Notifiche segnate come lette");
 }
 
 function sendEmailToList(emails, subject, message, opts){
@@ -7341,9 +7363,8 @@ function diffFiltriStadi(oldFs,newFs){
 }
 
 
-function buildNotifications(){
+function buildNotifications(includeDismissed){
   var items=[];
-  // 1) notifiche in-app da DB (interventi, assegnazioni, …)
   (_dbNotifiche||[]).forEach(function(n){
     if(n.letto)return;
     items.push({
@@ -7351,33 +7372,35 @@ function buildNotifications(){
       text: (n.title||"Notifica")+(n.body?(" — "+n.body):""),
       id: null,
       notifId: n.id||null,
-      kind: "db"
+      kind: "db",
+      date: n.created_at||""
     });
   });
-  // 2) scadenze DPC
   visibleEquipment().forEach(function(e){
     if(isStatoSenzaScadenze(e))return;
     if(!isTodoEseguito({id:e.id,kind:"man",date:e.prossimaMan})){
-    if(isOverdue(e.prossimaMan))items.push({tier:"overdue",text:"MAN scaduta: "+(e.acronimo||"")+" "+(e.matricola||"")+" ("+fmt(e.prossimaMan)+")",id:e.id,kind:"equip"});
-    else if(isSoonTier(e.prossimaMan,3))items.push({tier:"soon7",text:"MAN entro 3gg: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip"});
-    else if(isSoonTier(e.prossimaMan,DAYS_WARN_7))items.push({tier:"soon7",text:"MAN entro 7gg: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip"});
-    else if(isSoonTier(e.prossimaMan,DAYS_WARN_15))items.push({tier:"soon15",text:"MAN entro 15gg: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip"});
-    else if(isSoon(e.prossimaMan))items.push({tier:"soon30",text:"MAN entro 30gg: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip"});
-    else if(isSoonTier(e.prossimaMan,DAYS_WARN_60))items.push({tier:"soon60",text:"MAN entro 2 mesi: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip"});
+    if(isOverdue(e.prossimaMan))items.push({tier:"overdue",text:"MAN scaduta: "+(e.acronimo||"")+" "+(e.matricola||"")+" ("+fmt(e.prossimaMan)+")",id:e.id,kind:"equip",date:e.prossimaMan});
+    else if(isSoonTier(e.prossimaMan,3))items.push({tier:"soon7",text:"MAN entro 3gg: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip",date:e.prossimaMan});
+    else if(isSoonTier(e.prossimaMan,DAYS_WARN_7))items.push({tier:"soon7",text:"MAN entro 7gg: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip",date:e.prossimaMan});
+    else if(isSoonTier(e.prossimaMan,DAYS_WARN_15))items.push({tier:"soon15",text:"MAN entro 15gg: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip",date:e.prossimaMan});
+    else if(isSoon(e.prossimaMan))items.push({tier:"soon30",text:"MAN entro 30gg: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip",date:e.prossimaMan});
+    else if(isSoonTier(e.prossimaMan,DAYS_WARN_60))items.push({tier:"soon60",text:"MAN entro 2 mesi: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip",date:e.prossimaMan});
     }
     stageProxList(e).forEach(function(x){
       if(isTodoEseguito({id:e.id,kind:"fil-S"+x.stadio,date:x.prox}))return;
       var st=expStatusSimple(x.prox);
-      if(st==="overdue")items.push({tier:"overdue",text:"Filtro S"+x.stadio+" scaduto: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip"});
-      else if(isSoonTier(x.prox,DAYS_WARN_7))items.push({tier:"soon7",text:"Filtro S"+x.stadio+" entro 7gg: "+(e.matricola||""),id:e.id,kind:"equip"});
-      else if(isSoonTier(x.prox,DAYS_WARN_15))items.push({tier:"soon15",text:"Filtro S"+x.stadio+" entro 15gg: "+(e.matricola||""),id:e.id,kind:"equip"});
-      else if(isSoon(x.prox))items.push({tier:"soon30",text:"Filtro S"+x.stadio+" entro 30gg: "+(e.matricola||""),id:e.id,kind:"equip"});
-      else if(isSoonTier(x.prox,DAYS_WARN_60))items.push({tier:"soon60",text:"Filtro S"+x.stadio+" entro 2 mesi: "+(e.matricola||""),id:e.id,kind:"equip"});
+      if(st==="overdue")items.push({tier:"overdue",text:"Filtro S"+x.stadio+" scaduto: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip",date:x.prox});
+      else if(isSoonTier(x.prox,DAYS_WARN_7))items.push({tier:"soon7",text:"Filtro S"+x.stadio+" entro 7gg: "+(e.matricola||""),id:e.id,kind:"equip",date:x.prox});
+      else if(isSoonTier(x.prox,DAYS_WARN_15))items.push({tier:"soon15",text:"Filtro S"+x.stadio+" entro 15gg: "+(e.matricola||""),id:e.id,kind:"equip",date:x.prox});
+      else if(isSoon(x.prox))items.push({tier:"soon30",text:"Filtro S"+x.stadio+" entro 30gg: "+(e.matricola||""),id:e.id,kind:"equip",date:x.prox});
+      else if(isSoonTier(x.prox,DAYS_WARN_60))items.push({tier:"soon60",text:"Filtro S"+x.stadio+" entro 2 mesi: "+(e.matricola||""),id:e.id,kind:"equip",date:x.prox});
     });
   });
-  return items;
+  if(includeDismissed)return items;
+  return items.filter(function(it){return !isBellDismissed(it);});
 }
 function refreshBell(){
+  window._bellDismiss=window._bellDismiss||loadBellDismiss();
   var items=buildNotifications();
   var cnt=document.getElementById("bellCount");
   var panel=document.getElementById("bellPanel");
