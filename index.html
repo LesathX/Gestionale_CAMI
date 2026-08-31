@@ -186,6 +186,11 @@ body{font-family:Inter,system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min
 .filters-inner select{min-width:105px;padding:.45rem;border:1px solid #e2e8f0;border-radius:.4rem;font-size:.72rem;background:#fff}
 .acro-miss{color:#dc2626!important;font-weight:800}
 .acr-miss,.acr-miss strong{color:#dc2626!important;font-weight:800!important}
+.miss-filtro,.modal input.miss-filtro,.modal select.miss-filtro,.stadio-grid input.miss-filtro,.stadio-grid select.miss-filtro{
+  border:2px solid #dc2626!important;
+  background:#fef2f2!important;
+  box-shadow:0 0 0 1px #fecaca;
+}
 
 .frozen-head{margin-top:.45rem;background:#fff;border:1px solid #e2e8f0;border-bottom:0;border-radius:.6rem .6rem 0 0;overflow:hidden}
 .frozen-head .table-scroll{overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
@@ -2281,12 +2286,11 @@ function updateStadiVisibility(){
   markMissingFilterFields();
 }
 function markMissingFilterFields(){
-  var ids=["acronimo","costruttore","modello","matricola","idDispositivo","sede","dipartimento","edificio","laboratorio","piano","stanza","stato","responsabile","referenteContatto","cadenzaMan","ultimaMan","prossimaMan","indirizzo"];
+  var ids=["acronimo","costruttore","modello","matricola","idDispositivo","sede","dipartimento","edificio","laboratorio","piano","stanza","stato","responsabile","referenteContatto","cadenzaMan","ultimaMan","prossimaMan","indirizzo","accessori"];
   for(var i=0;i<ids.length;i++){
     var el=document.getElementById(ids[i]);
     if(!el)continue;
-    if(isBlankDato(el.value))el.classList.add("miss-filtro");
-    else el.classList.remove("miss-filtro");
+    paintMiss(el, isBlankDato(el.value));
   }
   var on=String(val("haSistemaFiltrante")||"").toLowerCase()==="si";
   var n=on?parseNumStadi(val("stadiFiltranti")):0;
@@ -2295,10 +2299,20 @@ function markMissingFilterFields(){
     for(var k=0;k<keys.length;k++){
       var el=document.getElementById("s"+i+"_"+keys[k]);
       if(!el)continue;
-      var empty=isBlankDato(el.value);
-      if(on&&i<=n&&empty)el.classList.add("miss-filtro");
-      else el.classList.remove("miss-filtro");
+      paintMiss(el, on&&i<=n&&isBlankDato(el.value));
     }
+  }
+}
+function paintMiss(el, on){
+  if(!el)return;
+  if(on){
+    el.classList.add("miss-filtro");
+    el.style.setProperty("border","2px solid #dc2626","important");
+    el.style.setProperty("background","#fef2f2","important");
+  }else{
+    el.classList.remove("miss-filtro");
+    el.style.removeProperty("border");
+    el.style.removeProperty("background");
   }
 }
 document.addEventListener("input",function(ev){if(ev.target&&ev.target.closest&&ev.target.closest("#modal"))markMissingFilterFields();});
@@ -4239,7 +4253,7 @@ if(id){var e=equipment.find(function(x){return x.id===id;});if(!e||!canEditAnagr
     document.getElementById("haSistemaFiltrante").value="si";
     if(!parseNumStadi(document.getElementById("stadiFiltranti").value))document.getElementById("stadiFiltranti").value=String(countStadi(e.filtriStadi));
   }
-  if(!parseCadenzaMesi(e.cadenzaMan)&&e.ultimaMan&&e.prossimaMan){try{syncManCadenza("prossima");}catch(ex){}}document.getElementById("fotoUrl").value=e.fotoUrl||"";document.getElementById("fotoPath").value=e.fotoPath||"";showFotoPreview(e.fotoUrl||"");}else {document.getElementById("modalTitle").textContent="Nuovo DPC";checkSoftBlock(null);}updateStadiVisibility();if(id){var ee=equipment.find(function(x){return x.id===id;});checkSoftBlock(ee);}else checkSoftBlock(null);}
+  if(!parseCadenzaMesi(e.cadenzaMan)&&e.ultimaMan&&e.prossimaMan){try{syncManCadenza("prossima");}catch(ex){}}document.getElementById("fotoUrl").value=e.fotoUrl||"";document.getElementById("fotoPath").value=e.fotoPath||"";showFotoPreview(e.fotoUrl||"");}else {document.getElementById("modalTitle").textContent="Nuovo DPC";checkSoftBlock(null);}updateStadiVisibility();if(id){var ee=equipment.find(function(x){return x.id===id;});checkSoftBlock(ee);}else checkSoftBlock(null);try{markMissingFilterFields();setTimeout(markMissingFilterFields,50);}catch(ex){}}
 function closeModal(){document.getElementById("modal").classList.remove("show");document.getElementById("clienteId").disabled=false;}
 function editEquipment(id){openModal(id);}
 async function saveEquipment(){var cliente_id=document.getElementById("clienteId").value;if(isTecnico()){var ids=userClienteIds();if(ids.length&&ids.indexOf(cliente_id)<0){alert("Puoi creare/modificare DPC solo sui clienti assegnati");return;}}if(!canEditAnagrafica(cliente_id)){alert("Non puoi modificare questo cliente");return;}var id=document.getElementById("editId").value;var acronimo=document.getElementById("acronimo").value,matricola=document.getElementById("matricola").value.trim(),idDispositivo=document.getElementById("idDispositivo").value.trim(),sede=document.getElementById("sede").value.trim();if(!cliente_id||!acronimo||!matricola||!idDispositivo||!sede){alert("Compila i campi obbligatori");return;}
