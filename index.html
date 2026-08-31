@@ -3046,7 +3046,7 @@ function renderClientStats(){
   if(el)el.innerHTML=html;
   try{renderClientCards();}catch(e){}
 }
-function escHtml(s){return String(s==null?"":s).replace(/&/g,"&").replace(/</g,"<").replace(/>/g,">").replace(/"/g,""").replace(/'/g,"&#39;");}
+function escHtml(s){return String(s==null?"":s).replace(/[<>]/g,"");}
 function isClientHomeMode(){return document.documentElement.classList.contains("client-home-mode");}
 function showClientHome(){
   document.documentElement.classList.add("client-home-mode");
