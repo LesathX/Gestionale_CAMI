@@ -798,7 +798,7 @@ html.ui-only-dpc #commesseChrome{display:none!important}
         <button class="btn btn-oggi" onclick="creaInterventiDaPiano()"><i class="fas fa-wrench"></i> Crea interventi</button>
       </div>
       <div class="todo-stats" id="pianoStats"></div>
-      <h3 class="piano-sec">Viaggi per sede</h3>
+      <h3 class="piano-sec">Lavoro e trasferte per sede</h3>
       <div class="piano-mat" id="pianoViaggi"></div>
       <h3 class="piano-sec">Lista spesa magazzino (codici da ordinare)</h3>
       <div class="piano-mat" id="pianoSpesa"></div>
@@ -4808,6 +4808,26 @@ function isDateInMonth(iso,y,m){
   if(p.length<2)return false;
   return parseInt(p[0],10)===y && parseInt(p[1],10)===(m+1);
 }
+function isSedeRoma(se){
+  var s=normalizeHeader(se||"").replace(/[().,]/g," ").replace(/\s+/g," ").trim();
+  if(!s)return false;
+  if(/\bcasaccia\b/.test(s)||/\bfrascati\b/.test(s)||/\bmonterotondo\b/.test(s))return false;
+  if(s==="roma"||s==="rm"||s==="roma rm")return true;
+  if(/^roma\b/.test(s))return true;
+  return false;
+}
+function countWorkTrips(daysObj){
+  var ds=Object.keys(daysObj||{}).sort();
+  if(!ds.length)return 0;
+  var trips=1;
+  for(var i=1;i<ds.length;i++){
+    var prev=new Date(ds[i-1]+"T00:00:00");
+    var cur=new Date(ds[i]+"T00:00:00");
+    var diff=Math.round((cur-prev)/86400000);
+    if(diff>3)trips++;
+  }
+  return trips;
+}
 function isPrefiltroStage(s){
   var t=String((s&&s.tipologia)||"").toLowerCase();
   var c=String((s&&s.correlazione)||"").toLowerCase();
@@ -4932,10 +4952,13 @@ async function renderPianoPage(){
   });
   var vg=document.getElementById("pianoViaggi");
   if(vg){
-    var vh='<table><thead><tr><th>Sede / citta</th><th>Giorni viaggio</th><th>DPC</th><th>Clienti</th></tr></thead><tbody>';
+    var vh='<table><thead><tr><th>Sede / citta</th><th>Giorni di lavoro</th><th>Trasferta A+R</th><th>DPC</th><th>Clienti</th></tr></thead><tbody>';
     Object.keys(viaggi).sort(function(a,b){return a.localeCompare(b,"it");}).forEach(function(se){
       var r=viaggi[se];
-      vh+="<tr><td>"+escHtml(r.sede)+"</td><td>"+Object.keys(r.days).length+"</td><td>"+Object.keys(r.dpc).length+"</td><td>"+escHtml(Object.keys(r.clienti).join(", "))+"</td></tr>";
+      var lavoro=Object.keys(r.days).length;
+      var trasf=isSedeRoma(r.sede)?0:(countWorkTrips(r.days)*2);
+      var nota=isSedeRoma(r.sede)?" (Roma, niente trasferta)":(" ("+countWorkTrips(r.days)+" viaggi × andata+ritorno)");
+      vh+="<tr><td>"+escHtml(r.sede)+"</td><td>"+lavoro+"</td><td><strong>"+trasf+"</strong>"+nota+"</td><td>"+Object.keys(r.dpc).length+"</td><td>"+escHtml(Object.keys(r.clienti).join(", "))+"</td></tr>";
     });
     vh+="</tbody></table>";
     vg.innerHTML=Object.keys(viaggi).length?vh:"<p class='client-home-sub'>Nessun viaggio.</p>";
@@ -5005,10 +5028,12 @@ function exportPianoExcel(){
   });
   rows.push([]);
   rows.push(["VIAGGI PER SEDE"]);
-  rows.push(["Sede","Giorni","DPC","Clienti"]);
+  rows.push(["Sede","Giorni di lavoro","Trasferta A+R","DPC","Clienti"]);
   Object.keys(p.viaggi||{}).forEach(function(se){
     var r=p.viaggi[se];
-    rows.push([r.sede,Object.keys(r.days||{}).length,Object.keys(r.dpc||{}).length,Object.keys(r.clienti||{}).join(", ")]);
+    var lav=Object.keys(r.days||{}).length;
+    var tr=isSedeRoma(r.sede)?0:(countWorkTrips(r.days||{})*2);
+    rows.push([r.sede,lav,tr,Object.keys(r.dpc||{}).length,Object.keys(r.clienti||{}).join(", ")]);
   });
   var wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Piano "+p.id);
@@ -5136,7 +5161,11 @@ async function renderPianoIntPage(){
     '<div class="todo-stat"><b>'+nF+'</b><span>Fatti</span></div>'+
     '<div class="todo-stat"><b>'+Object.keys(sed).length+'</b><span>Sedi</span></div>';
   var box=document.getElementById("piList"), empty=document.getElementById("piEmpty");
-  if(!view.length){if(box)box.innerHTML="";if(empty)empty.style.display="block";return;}
+  if(!view.length){
+    if(empty)empty.style.display="block";
+    if(box)box.innerHTML='<div class="pi-card"><h4>Lun 03/03 · BOLOGNA · anteprima</h4><div class="pi-row"><div style="flex:1"><strong>ABBVIE</strong><div style="color:#64748b">4 CC · 2 PAL · Manutenzione / Cambio filtri</div></div><span class="pill-warn">DA ASSEGNARE</span><select disabled><option>DA ASSEGNARE</option></select></div></div><div class="pi-card"><h4>Mar 04/03 · CASACCIA (RM) · anteprima</h4><div class="pi-row"><div style="flex:1"><strong>ENEA</strong><div style="color:#64748b">7 DPC · Trasferta A+R: 2 giorni (non Roma citta)</div></div><span class="pill-warn">DA ASSEGNARE</span><select disabled><option>DA ASSEGNARE</option></select></div></div><p class="client-home-sub">Questa e solo l\'anteprima del layout. Premi <strong>Crea interventi</strong> dal Piano +2 mesi per riempire la pagina vera.</p>';
+    return;
+  }
   if(empty)empty.style.display="none";
   var groups={};
   view.forEach(function(r){
