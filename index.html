@@ -187,15 +187,8 @@ body{font-family:Inter,system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min
 .acro-miss{color:#dc2626!important;font-weight:800}
 .acr-miss,.acr-miss strong{color:#dc2626!important;font-weight:800!important}
 .miss-filtro,.modal input.miss-filtro,.modal select.miss-filtro,.stadio-grid input.miss-filtro,.stadio-grid select.miss-filtro{
-  border:3px solid #dc2626!important;
-  background:#fecaca!important;
-  box-shadow:0 0 0 1px #b91c1c;
-}
-#modal .is-miss,#stadiBox .is-miss,.form-group.is-miss,.req-fld.is-miss{
-  outline:3px solid #dc2626!important;
-  background:#fee2e2!important;
-  border-radius:8px;
-  padding:4px!important;
+  border:2px solid #dc2626!important;
+  background:#fef2f2!important;
 }
 
 .frozen-head{margin-top:.45rem;background:#fff;border:1px solid #e2e8f0;border-bottom:0;border-radius:.6rem .6rem 0 0;overflow:hidden}
@@ -2318,7 +2311,7 @@ function markMissingFilterFields(){
   if(!document.getElementById("camiMissCss")){
     var st=document.createElement("style");
     st.id="camiMissCss";
-    st.textContent="#modal input.miss-filtro,#modal select.miss-filtro,#stadiBox input.miss-filtro,#stadiBox select.miss-filtro{border:3px solid #dc2626!important;background:#fecaca!important}#modal .is-miss,#stadiBox .is-miss{outline:3px solid #dc2626!important;background:#fee2e2!important;border-radius:8px;padding:4px!important}";
+    st.textContent="#modal input.miss-filtro,#modal select.miss-filtro,#stadiBox input.miss-filtro,#stadiBox select.miss-filtro{border:2px solid #dc2626!important;background:#fef2f2!important}";
     document.head.appendChild(st);
   }
   var ids=["acronimo","costruttore","modello","matricola","idDispositivo","sede","dipartimento","edificio","laboratorio","piano","stanza","stato","responsabile","referenteContatto","cadenzaMan","ultimaMan","prossimaMan","indirizzo","accessori"];
@@ -2344,7 +2337,7 @@ function markMissingFilterFields(){
         if(miss)any=true;
         paintMiss(el,miss);
       }
-      card.style.boxShadow=any?"inset 0 0 0 3px #dc2626":"";
+      card.style.boxShadow="";
     }
   }
 }
@@ -2352,9 +2345,8 @@ function paintMiss(el, on){
   if(!el)return;
   if(on){
     el.classList.add("miss-filtro");
-    el.style.setProperty("border","3px solid #dc2626","important");
-    el.style.setProperty("background","#fecaca","important");
-    el.style.setProperty("box-shadow","0 0 0 2px #b91c1c","important");
+    el.style.setProperty("border","2px solid #dc2626","important");
+    el.style.setProperty("background","#fef2f2","important");
   }else{
     el.classList.remove("miss-filtro");
     el.style.removeProperty("border");
@@ -2362,10 +2354,7 @@ function paintMiss(el, on){
     el.style.removeProperty("box-shadow");
   }
   var wrap=el.closest(".req-fld")||el.closest(".form-group");
-  if(wrap){
-    if(on)wrap.classList.add("is-miss");
-    else wrap.classList.remove("is-miss");
-  }
+  if(wrap)wrap.classList.remove("is-miss");
 }
 document.addEventListener("input",function(ev){if(ev.target&&ev.target.closest&&ev.target.closest("#modal"))markMissingFilterFields();});
 document.addEventListener("change",function(ev){if(ev.target&&ev.target.closest&&ev.target.closest("#modal"))markMissingFilterFields();});
