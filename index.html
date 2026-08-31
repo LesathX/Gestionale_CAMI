@@ -188,7 +188,9 @@ body{font-family:Inter,system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min
 .frozen-head{margin-top:.45rem;background:#fff;border:1px solid #e2e8f0;border-bottom:0;border-radius:.6rem .6rem 0 0;overflow:hidden}
 .frozen-head .table-scroll{overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
 .frozen-head .table-scroll::-webkit-scrollbar{height:0}
-.frozen-head table,.table-wrap.under-frozen table{margin:0;border-collapse:collapse;table-layout:fixed}
+.frozen-head table,.table-wrap.under-frozen table{
+  margin:0;border-collapse:collapse;table-layout:fixed!important
+}
 .frozen-head th,.table-wrap.under-frozen th,.table-wrap.under-frozen td{
   box-sizing:border-box;padding:.42rem .55rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle
 }
@@ -3635,22 +3637,14 @@ function onClienteLogo(input,cid){
   r.readAsDataURL(f);
 }
 function applyColumnVisibility(){
-  var prefs=(loadUiPrefs().columns)||{};
-  var hidden={};
-  DPC_COLS.forEach(function(c,i){hidden[i]=prefs[c.id]===false;});
-  function hide(tbl){
-    if(!tbl)return;
-    var trs=tbl.querySelectorAll("tr");
-    for(var r=0;r<trs.length;r++){
-      var cells=trs[r].children;
-      for(var i=0;i<cells.length && i<DPC_COLS.length;i++){
-        cells[i].style.display=hidden[i]?"none":"";
-      }
-    }
+  try{syncTableScrollbars();}catch(e){
+    var prefs=(loadUiPrefs().columns)||{};
+    var hidden={};
+    DPC_COLS.forEach(function(c,i){hidden[i]=prefs[c.id]===false;});
+    hideTableCols(document.getElementById("dpcHeadTable"), hidden);
+    var bot=document.getElementById("tableScroll");
+    hideTableCols(bot?bot.querySelector("table"):null, hidden);
   }
-  hide(document.getElementById("dpcHeadTable"));
-  var bot=document.getElementById("tableScroll");
-  hide(bot?bot.querySelector("table"):null);
 }
 function applyButtonPrefs(){
   if(!currentUser)return;
@@ -3816,42 +3810,51 @@ function applyColgroup(tbl, widths){
   var total=0;
   for(var i=0;i<widths.length;i++){
     var col=document.createElement("col");
-    col.style.width=widths[i]+"px";
+    var w=widths[i]||0;
+    col.style.width=w+"px";
+    col.style.minWidth=w+"px";
+    col.style.maxWidth=w+"px";
+    if(w===0) col.style.display="none";
     cg.appendChild(col);
-    total+=widths[i];
+    total+=w;
   }
   tbl.insertBefore(cg, tbl.firstChild);
   tbl.style.tableLayout="fixed";
-  tbl.style.width=total+"px";
-  tbl.style.minWidth=total+"px";
-  tbl.style.maxWidth="none";
+  tbl.style.setProperty("width", total+"px", "important");
+  tbl.style.setProperty("min-width", total+"px", "important");
+  tbl.style.setProperty("max-width", total+"px", "important");
 }
-function matchFrozenCols(headTbl, bodyTbl){
-  if(!headTbl||!bodyTbl)return;
-  var hths=headTbl.querySelectorAll("thead th");
-  var bths=bodyTbl.querySelectorAll("thead th");
-  var rows=bodyTbl.querySelectorAll("tbody tr");
-  var n=hths.length || (rows[0]?rows[0].children.length:0);
-  if(!n)return;
-  var mins=[96,130,120,130,110,120,100,100,130,120,140,100,160,70,90,110,130,90,140,70,70,110,90,110];
-  var widths=[];
-  for(var i=0;i<n;i++){
-    var w=mins[i]||90;
-    if(hths[i]){
-      hths[i].style.whiteSpace="nowrap";
-      w=Math.max(w, Math.ceil(hths[i].scrollWidth||0)+8);
-    }
-    if(bths[i]) w=Math.max(w, Math.ceil(bths[i].scrollWidth||0)+8);
-    var scan=Math.min(rows.length, 8);
-    for(var r=0;r<scan;r++){
-      var cell=rows[r]&&rows[r].children[i];
-      if(!cell)continue;
-      w=Math.max(w, Math.min(280, Math.ceil(cell.scrollWidth||0)+8));
-    }
-    widths.push(w);
+var DPC_COL_W=[120,150,140,150,130,120,100,110,140,130,120,110,110,80,90,120,130,90,140,80,80,120,140,150];
+var COMM_COL_W=[110,200,80,90,90,170,150,140,150,140,120,160,90,90,170];
+function dpcHiddenMap(){
+  var prefs=((typeof loadUiPrefs==="function"?loadUiPrefs():{})||{}).columns||{};
+  var hidden={};
+  if(typeof DPC_COLS!=="undefined"){
+    DPC_COLS.forEach(function(c,i){hidden[i]=prefs[c.id]===false;});
   }
+  return hidden;
+}
+function hideTableCols(tbl, hidden){
+  if(!tbl||!hidden)return;
+  var trs=tbl.querySelectorAll("tr");
+  for(var r=0;r<trs.length;r++){
+    var cells=trs[r].children;
+    for(var i=0;i<cells.length;i++){
+      cells[i].style.display=hidden[i]?"none":"";
+    }
+  }
+}
+function matchFrozenCols(headTbl, bodyTbl, allW, hidden){
+  hidden=hidden||{};
+  var widths=[];
+  for(var i=0;i<allW.length;i++) widths.push(hidden[i]?0:allW[i]);
   applyColgroup(headTbl, widths);
   applyColgroup(bodyTbl, widths);
+  hideTableCols(headTbl, hidden);
+  hideTableCols(bodyTbl, hidden);
+  var total=0;
+  for(var j=0;j<widths.length;j++) total+=widths[j];
+  return total;
 }
 function syncTableScrollbars(){
   var top=document.getElementById("tableScrollTop");
@@ -3861,10 +3864,8 @@ function syncTableScrollbars(){
   var headTbl=document.getElementById("dpcHeadTable");
   var bodyTbl=bot?bot.querySelector("table"):null;
   if(top&&bot&&inner&&bodyTbl){
-    matchFrozenCols(headTbl, bodyTbl);
-    var w=Math.max(bodyTbl.scrollWidth, bot.clientWidth, headTbl?headTbl.scrollWidth:0);
-    inner.style.width=w+"px";
-    if(headTbl){headTbl.style.minWidth=w+"px";headTbl.style.width=w+"px";}
+    var total=matchFrozenCols(headTbl, bodyTbl, DPC_COL_W, dpcHiddenMap());
+    inner.style.width=total+"px";
     bindHScroll(top,bot);bindHScroll(bot,top);
     if(head){bindHScroll(head,bot);bindHScroll(bot,head);bindHScroll(top,head);bindHScroll(head,top);}
     top.scrollLeft=bot.scrollLeft;
@@ -3877,16 +3878,13 @@ function syncTableScrollbars(){
   var cheadTbl=document.getElementById("commHeadTable");
   var cbodyTbl=cbot?cbot.querySelector("table"):null;
   if(ctop&&cbot&&cinner&&cbodyTbl){
-    matchFrozenCols(cheadTbl, cbodyTbl);
-    var cw=Math.max(cbodyTbl.scrollWidth, cbot.clientWidth, cheadTbl?cheadTbl.scrollWidth:0);
-    cinner.style.width=cw+"px";
-    if(cheadTbl)cheadTbl.style.minWidth=cw+"px";
+    var ctotal=matchFrozenCols(cheadTbl, cbodyTbl, COMM_COL_W, {});
+    cinner.style.width=ctotal+"px";
     bindHScroll(ctop,cbot);bindHScroll(cbot,ctop);
     if(chead){bindHScroll(chead,cbot);bindHScroll(cbot,chead);bindHScroll(ctop,chead);bindHScroll(chead,ctop);}
     ctop.scrollLeft=cbot.scrollLeft;
     if(chead)chead.scrollLeft=cbot.scrollLeft;
   }
-  try{applyColumnVisibility();}catch(e){}
   try{syncStickyChrome();}catch(e){}
 }
 window.addEventListener("resize",function(){try{syncTableScrollbars();}catch(e){}});
