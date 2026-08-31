@@ -2230,7 +2230,7 @@ function val(id){var el=document.getElementById(id);return el?el.value.trim():""
 function setv(id,v){var el=document.getElementById(id);if(el)el.value=v||"";}
 function emptyStage(){return{codice:"",misure:"",tipologia:"",classe:"",qty:"",correlazione:"",data_install:"",durata_mesi:"",prox:"",status:""};}
 var CLASSI_P=["GH","F7","F9","H10","H13","H14","U15","E10"];
-var CLASSI_M=["AS","BE","K","F","UG","AC","SC","RA","AN","RZ","RK","AL","NP"];
+var CLASSI_M=["AS","BE","K","F","UG","AC","SC","RA","AN","RZ","RK","AL","NP","TF"];
 function calcProx(di,dm){if(!di||!dm)return"";var m=parseInt(dm,10);if(isNaN(m)||m<=0)return"";var d=new Date(di+"T00:00:00");if(isNaN(d.getTime()))return"";d.setMonth(d.getMonth()+m);return d.toISOString().slice(0,10);}
 function autoFilterStatus(prox){if(!prox)return"";var days=daysUntil(prox);if(days===null)return"";if(days<0)return"SCADUTO";if(days<=DAYS_WARNING)return"IN SCADENZA";if(days<=DAYS_WARN_60)return"TRA 2 MESI";return"OK";}
 function refreshStageStatus(n){var proxEl=document.getElementById("s"+n+"_prox");var statusEl=document.getElementById("s"+n+"_status");if(!proxEl||!statusEl)return;var p=proxEl.value;statusEl.value=autoFilterStatus(p);}
@@ -2304,6 +2304,7 @@ function buildStadiForm(){
     h+='</div></div>';
   }
   box.innerHTML=h;
+  for(var j=1;j<=4;j++) fillClasseOptions(j,"","");
   bindStageAutoProx();
   updateStadiVisibility();
 }
@@ -2401,6 +2402,7 @@ function fillClasseOptions(i,tipo,sel){
   var h='<option value="">-</option>';
   for(var k=0;k<list.length;k++) h+='<option value="'+list[k]+'">'+list[k]+'</option>';
   el.innerHTML=h;
+  el.disabled=!list.length;
   el.value=(want && list.indexOf(want)>-1)?want:"";
 }
 function parseTipoClasse(s){
