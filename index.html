@@ -327,6 +327,34 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
 /* Commesse page */
 .page-panel{display:none}
 .page-panel.active{display:block}
+.todo-wrap{padding:.15rem 0 1.5rem}
+.todo-head h2{margin:0 0 .25rem;font-size:1.15rem;color:#1e3a8a}
+.todo-head p{margin:0 0 .75rem;color:#64748b;font-size:.82rem}
+.todo-stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.45rem;margin-bottom:.7rem}
+.todo-stat{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:.55rem .6rem;text-align:center}
+.todo-stat b{display:block;font-size:1.15rem;color:#0f172a}
+.todo-stat span{font-size:.68rem;color:#64748b;text-transform:uppercase;letter-spacing:.03em}
+.todo-stat.danger b{color:#dc2626}
+.todo-stat.warn b{color:#ea580c}
+.todo-stat.info b{color:#2563eb}
+.todo-filters{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin-bottom:.7rem}
+.todo-filters select{padding:.4rem .55rem;border:1px solid #cbd5e1;border-radius:8px;background:#fff}
+.todo-item{display:flex;gap:.7rem;align-items:flex-start;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:.7rem .85rem;margin-bottom:.45rem;border-left:5px solid #94a3b8}
+.todo-item.s0{border-left-color:#dc2626;background:#fef2f2}
+.todo-item.s3{border-left-color:#ea580c;background:#fff7ed}
+.todo-item.s7{border-left-color:#d97706}
+.todo-item.s15{border-left-color:#ca8a04}
+.todo-item.s30{border-left-color:#2563eb}
+.todo-item.s60{border-left-color:#0d9488}
+.todo-item.done{opacity:.55;border-left-color:#16a34a;background:#f0fdf4}
+.todo-item label.ese{display:flex;flex-direction:column;align-items:center;gap:.15rem;font-size:.62rem;font-weight:800;color:#166534;min-width:64px;cursor:pointer}
+.todo-item label.ese input{width:18px;height:18px}
+.todo-item .todo-body{flex:1;min-width:0}
+.todo-item .todo-body strong{display:block;color:#0f172a}
+.todo-item .todo-meta{font-size:.78rem;color:#64748b;margin-top:.15rem}
+.todo-tag{display:inline-block;font-size:.65rem;font-weight:800;padding:.12rem .4rem;border-radius:999px;background:#e2e8f0;margin-right:.3rem}
+@media(max-width:800px){.todo-stats{grid-template-columns:repeat(3,1fr)}}
+
 .comm-actions{display:flex;flex-wrap:wrap;gap:.3rem}
 .comm-actions .btn{font-size:.7rem;padding:.28rem .5rem}
 .stat-comm-open .stat-icon{background:#dbeafe;color:#1d4ed8}
@@ -577,6 +605,7 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       <button class="btn btn-secondary" id="btnInterventiAssegnati" style="display:none" onclick="openInterventiAssegnatiModal()"><i class="fas fa-clipboard-list"></i> Interventi assegnati</button>
       <button class="btn btn-primary" id="btnDashboard" style="display:none" onclick="openDashboardModal()"><i class="fas fa-chart-pie"></i> Dashboard scadenze</button>
       <button class="btn btn-oggi" id="btnOggi" style="display:none" onclick="openOggiModal()"><i class="fas fa-tasks"></i> Cosa fare oggi</button>
+      <button class="btn btn-primary" id="btnTodo" style="display:none" onclick="showTodoPage()"><i class="fas fa-check-square"></i> TO DO</button>
       <div class="altro-wrap" id="altroWrap">
         <button type="button" class="btn btn-secondary" id="btnAltro" onclick="toggleAltroMenu(event)"><i class="fas fa-ellipsis-h"></i> Altro <i class="fas fa-caret-down"></i></button>
         <div class="altro-menu" id="altroMenu">
@@ -702,6 +731,35 @@ html.ui-only-dpc #commesseChrome{display:none!important}
     <div id="emptyState" class="empty"><p>Nessun DPC</p></div></div>
     <p class="footer-note">Gestionale CAMI - Stadi filtri dinamici</p>
   </div><!-- /pageDpc -->
+
+  <div id="pageTodo" class="page-panel">
+    <div class="todo-wrap">
+      <div class="todo-head">
+        <h2><i class="fas fa-check-square"></i> TO DO LIST</h2>
+        <p>Promemoria a 60, 30, 15, 7 e 3 giorni (manutenzione e filtri). Se spunti <strong>ESEGUITO</strong> quella attivita sparisce e non parte piu la mail.</p>
+      </div>
+      <div class="todo-stats" id="todoStats"></div>
+      <div class="todo-filters">
+        <select id="todoFiltroSoglia" onchange="renderTodoList()">
+          <option value="">Tutte le scadenze</option>
+          <option value="0">Scadute</option>
+          <option value="3">Entro 3 giorni</option>
+          <option value="7">Entro 7 giorni</option>
+          <option value="15">Entro 15 giorni</option>
+          <option value="30">Entro 30 giorni</option>
+          <option value="60">Entro 60 giorni</option>
+        </select>
+        <select id="todoFiltroTipo" onchange="renderTodoList()">
+          <option value="">Tutti i tipi</option>
+          <option value="man">Manutenzione</option>
+          <option value="fil">Filtri</option>
+        </select>
+        <label style="font-size:.8rem;color:#475569;display:flex;gap:.35rem;align-items:center"><input type="checkbox" id="todoShowDone" onchange="renderTodoList()"> Mostra eseguiti</label>
+      </div>
+      <div id="todoList"></div>
+      <div id="todoEmpty" class="empty" style="display:none"><p>Nessuna attivita in elenco</p></div>
+    </div>
+  </div>
 
   <div id="pageCommesse" class="page-panel">
     <div class="table-wrap under-frozen">
@@ -1611,11 +1669,11 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       <p class="client-home-sub">Cosa vede ciascuno appena entra.</p>
       <div class="form-grid" style="grid-template-columns:1fr 1fr">
         <div class="form-group"><label>Super admin</label>
-          <select id="uiHome_superadmin"><option value="cards">Card clienti</option><option value="elenco">Elenco DPC</option><option value="dashboard">Dashboard scadenze</option><option value="oggi">Cosa fare oggi</option></select></div>
+          <select id="uiHome_superadmin"><option value="cards">Card clienti</option><option value="elenco">Elenco DPC</option><option value="dashboard">Dashboard scadenze</option><option value="oggi">Cosa fare oggi</option><option value="todo">TO DO LIST</option></select></div>
         <div class="form-group"><label>Back officer</label>
-          <select id="uiHome_backofficer"><option value="cards">Card clienti</option><option value="elenco">Elenco DPC</option><option value="dashboard">Dashboard scadenze</option><option value="oggi">Cosa fare oggi</option></select></div>
+          <select id="uiHome_backofficer"><option value="cards">Card clienti</option><option value="elenco">Elenco DPC</option><option value="dashboard">Dashboard scadenze</option><option value="oggi">Cosa fare oggi</option><option value="todo">TO DO LIST</option></select></div>
         <div class="form-group"><label>Tecnico</label>
-          <select id="uiHome_tecnico"><option value="cards">Card clienti</option><option value="cards_assigned">Card clienti assegnati</option><option value="elenco">Elenco DPC</option><option value="dashboard">Dashboard scadenze</option><option value="oggi">Cosa fare oggi</option></select></div>
+          <select id="uiHome_tecnico"><option value="cards">Card clienti</option><option value="cards_assigned">Card clienti assegnati</option><option value="elenco">Elenco DPC</option><option value="dashboard">Dashboard scadenze</option><option value="oggi">Cosa fare oggi</option><option value="todo">TO DO LIST</option></select></div>
       </div>
     </div>
     <div class="form-actions">
@@ -2292,7 +2350,7 @@ function applyAutoClientCode(inputId){
 /* ===== COMMESSE ===== */
 var commesse=[];
 function hideAllPages(){
-  ["pageDpc","pageCommesse","pageTools"].forEach(function(id){
+  ["pageDpc","pageCommesse","pageTools","pageTodo"].forEach(function(id){
     var el=document.getElementById(id);if(el)el.classList.remove("active");
   });
   var dc=document.getElementById("dpcChrome");if(dc)dc.style.display="none";
@@ -2340,6 +2398,18 @@ function showDpcPage(){
   }
   try{showClientHome();}catch(e){}
   try{syncStickyChrome();}catch(e){}
+  try{window.scrollTo(0,0);}catch(e){}
+}
+function showTodoPage(){
+  hideAllPages();
+  var p=document.getElementById("pageTodo");if(p)p.classList.add("active");
+  var dc=document.getElementById("dpcChrome");if(dc)dc.style.display="none";
+  var cc=document.getElementById("commesseChrome");if(cc)cc.style.display="none";
+  var bd=document.getElementById("btnDpcHome"),bc=document.getElementById("btnCommesse"),bt=document.getElementById("btnToolsNav");
+  if(bd)bd.style.display="inline-flex";
+  if(bc)bc.style.display=(UI_STANDBY_ONLY_DPC?"none":"inline-flex");
+  if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
+  try{renderTodoList();}catch(e){}
   try{window.scrollTo(0,0);}catch(e){}
 }
 function showToolsPage(){
@@ -3287,6 +3357,7 @@ var UI_BTN_KEYS=[
   {id:"btnToolsNav",label:"Strumenti"},
   {id:"btnDashboard",label:"Dashboard scadenze"},
   {id:"btnOggi",label:"Cosa fare oggi"},
+  {id:"btnTodo",label:"TO DO LIST"},
   {id:"altroWrap",label:"Menu Altro"},
   {id:"btnExportExcelAlways",label:"Export Excel"},
   {id:"btnImportExcel",label:"Import Excel"},
@@ -3299,9 +3370,9 @@ var UI_ROLES=["superadmin","backofficer","tecnico"];
 function defaultColumns(){var o={};DPC_COLS.forEach(function(c){o[c.id]=true;});return o;}
 function defaultButtons(){
   return {
-    superadmin:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:true,btnEmail:true,btnUsers:true,btnClienti:true,btnAssegnaTecnico:true},
-    backofficer:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:false,btnEmail:true,btnUsers:true,btnClienti:true,btnAssegnaTecnico:true},
-    tecnico:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:false,btnEmail:true,btnUsers:false,btnClienti:false,btnAssegnaTecnico:false}
+    superadmin:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,btnTodo:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:true,btnEmail:true,btnUsers:true,btnClienti:true,btnAssegnaTecnico:true},
+    backofficer:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,btnTodo:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:false,btnEmail:true,btnUsers:true,btnClienti:true,btnAssegnaTecnico:true},
+    tecnico:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,btnTodo:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:false,btnEmail:true,btnUsers:false,btnClienti:false,btnAssegnaTecnico:false}
   };
 }
 function defaultUiPrefs(){
@@ -3456,6 +3527,8 @@ function applyHomepageByRole(){
   }else if(mode==="oggi"){
     showClientHome();
     try{openOggiModal();}catch(e){}
+  }else if(mode==="todo"){
+    try{showTodoPage();}catch(e){}
   }else{
     showClientHome();
   }
@@ -3697,6 +3770,7 @@ async function showApp(){document.getElementById("loginScreen").classList.add("h
   var bcb=document.getElementById("btnCloudBackups");if(bcb)bcb.style.display=s?"inline-flex":"none";
   var bd=document.getElementById("btnDashboard");if(bd)bd.style.display=(s||a||t)?"inline-flex":"none";
   var bog=document.getElementById("btnOggi");if(bog)bog.style.display=(s||a||t)?"inline-flex":"none";
+  var btd=document.getElementById("btnTodo");if(btd)btd.style.display=(s||a||t)?"inline-flex":"none";
   var bt=document.getElementById("btnTools");if(bt)bt.style.display=(s||a||t)?"inline-flex":"none";
   window.__toolsNavVisible=!!(s||a||t);
   var btnNav=document.getElementById("btnToolsNav");
@@ -3712,6 +3786,7 @@ async function showApp(){document.getElementById("loginScreen").classList.add("h
   try{applyUiStandbyMode();}catch(e){}
   try{refreshAltroMenuVisibility();}catch(e){}
   setTimeout(refreshBell,500);await loadAll();
+  try{await loadTodoDone();}catch(e){}
   try{await loadUiSettingsFromDb();}catch(e){}
   try{applyUiPrefs();}catch(e){}
   try{applyButtonPrefs();}catch(e){}
@@ -4483,29 +4558,112 @@ function collectWorkItems(days){
       if(!date)return;
       var du=daysUntil(date);
       if(du===null)return;
-      var bucket=du<0?"overdue":(du<=30?"soon":(du<=days?"m60":null));
-      if(!bucket)return;
-      out.push({id:e.id,kind:kind,date:date,bucket:bucket,label:label,cliente:clienteName(e.clienteId),acronimo:e.acronimo||"",matricola:e.matricola||"",sede:e.sede||"",days:du});
+      var soglia=currentTodoSoglia(du);
+      if(soglia===null)return;
+      if(days<60 && soglia===60 && du>days)return;
+      var bucket=soglia===0?"overdue":(soglia<=30?"soon":"m60");
+      out.push({id:e.id,kind:kind,date:date,bucket:bucket,soglia:soglia,label:label,cliente:clienteName(e.clienteId),clienteId:e.clienteId,acronimo:e.acronimo||"",matricola:e.matricola||"",sede:e.sede||"",days:du});
     }
     add("man",e.prossimaMan,"Manutenzione");
     stageProxList(e).forEach(function(x){add("fil-S"+x.stadio,x.prox,"Filtro S"+x.stadio+(x.codice?" "+x.codice:""));});
   });
   return out;
 }
+var TODO_SOGLIE=[3,7,15,30,60];
+function currentTodoSoglia(days){
+  if(days===null||typeof days!=="number"||isNaN(days))return null;
+  if(days<0)return 0;
+  for(var i=0;i<TODO_SOGLIE.length;i++){ if(days<=TODO_SOGLIE[i]) return TODO_SOGLIE[i]; }
+  return null;
+}
+function todoActivityKey(it){return String(it.id)+"|"+it.kind+"|"+String(it.date||"");}
+function isTodoEseguito(it){return !!(window._todoDone&&window._todoDone[todoActivityKey(it)]);}
+async function loadTodoDone(){
+  window._todoDone={};
+  try{
+    var res=await sb.from("todo_done").select("id,eseguito");
+    if(res.error)throw res.error;
+    (res.data||[]).forEach(function(r){ if(r.eseguito!==false) window._todoDone[r.id]=true; });
+  }catch(e){
+    try{window._todoDone=JSON.parse(safeGetLocal("cami_todo_done_v1","{}")||"{}");}catch(ex){window._todoDone={};}
+  }
+}
+async function setTodoEseguito(key,on,meta){
+  window._todoDone=window._todoDone||{};
+  if(on)window._todoDone[key]=true; else delete window._todoDone[key];
+  try{safeSetLocal("cami_todo_done_v1",JSON.stringify(window._todoDone));}catch(e){}
+  try{
+    if(on){
+      await sb.from("todo_done").upsert({id:key,equip_id:meta&&meta.id||null,kind:meta&&meta.kind||"",date_scadenza:meta&&meta.date||"",eseguito:true,eseguito_da:(currentUser&&currentUser.username)||"",eseguito_at:new Date().toISOString()});
+    }else{
+      await sb.from("todo_done").delete().eq("id",key);
+    }
+  }catch(e){console.warn("todo_done",e);}
+  try{renderTodoList();}catch(e){}
+  try{refreshBell();}catch(e){}
+}
+function renderTodoList(){
+  var box=document.getElementById("todoList"), empty=document.getElementById("todoEmpty"), stats=document.getElementById("todoStats");
+  if(!box)return;
+  var items=collectWorkItems(60);
+  var showDone=!!(document.getElementById("todoShowDone")&&document.getElementById("todoShowDone").checked);
+  var fs=document.getElementById("todoFiltroSoglia"); fs=fs?fs.value:"";
+  var ft=document.getElementById("todoFiltroTipo"); ft=ft?ft.value:"";
+  var counts={0:0,3:0,7:0,15:0,30:0,60:0};
+  items.forEach(function(it){ if(!isTodoEseguito(it) && counts[it.soglia]!==undefined) counts[it.soglia]++; });
+  if(stats){
+    stats.innerHTML=
+      '<div class="todo-stat danger"><b>'+counts[0]+'</b><span>Scadute</span></div>'+
+      '<div class="todo-stat warn"><b>'+counts[3]+'</b><span>3 giorni</span></div>'+
+      '<div class="todo-stat warn"><b>'+counts[7]+'</b><span>7 giorni</span></div>'+
+      '<div class="todo-stat"><b>'+counts[15]+'</b><span>15 giorni</span></div>'+
+      '<div class="todo-stat info"><b>'+counts[30]+'</b><span>30 giorni</span></div>'+
+      '<div class="todo-stat info"><b>'+counts[60]+'</b><span>60 giorni</span></div>';
+  }
+  var view=items.filter(function(it){
+    var done=isTodoEseguito(it);
+    if(done&&!showDone)return false;
+    if(!done&&showDone){ /* keep both if showDone */ }
+    if(fs!=="" && String(it.soglia)!==String(fs))return false;
+    if(ft==="man" && it.kind!=="man")return false;
+    if(ft==="fil" && String(it.kind).indexOf("fil")!==0)return false;
+    return true;
+  });
+  view.sort(function(a,b){
+    if(!!isTodoEseguito(a)!==!!isTodoEseguito(b))return isTodoEseguito(a)?1:-1;
+    if(a.soglia!==b.soglia)return a.soglia-b.soglia;
+    return (a.days||0)-(b.days||0);
+  });
+  if(!view.length){box.innerHTML="";if(empty)empty.style.display="block";return;}
+  if(empty)empty.style.display="none";
+  var h="";
+  view.forEach(function(it){
+    var done=isTodoEseguito(it);
+    var key=todoActivityKey(it).replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+    var dtxt=it.days<0?("scaduta da "+Math.abs(it.days)+"g"):("tra "+it.days+"g");
+    var stag=it.soglia===0?"SCADUTA":("ENTRO "+it.soglia+"g");
+    h+='<div class="todo-item s'+it.soglia+(done?" done":"")+'">';
+    h+='<label class="ese"><input type="checkbox" '+(done?"checked":"")+' data-key="'+encodeURIComponent(todoActivityKey(it))+'" data-eid="'+String(it.id)+'" data-kind="'+String(it.kind)+'" data-date="'+String(it.date||"")+'" onchange="setTodoEseguito(decodeURIComponent(this.getAttribute(\'data-key\')),this.checked,{id:this.getAttribute(\'data-eid\'),kind:this.getAttribute(\'data-kind\'),date:this.getAttribute(\'data-date\')})"><span>ESEGUITO</span></label>';
+    h+='<div class="todo-body"><strong>'+it.cliente+' · '+(it.acronimo||"")+' · '+(it.matricola||"-")+'</strong>';
+    h+='<div class="todo-meta"><span class="todo-tag">'+stag+'</span>'+it.label+' · '+fmt(it.date)+' · '+dtxt+(it.sede?" · "+it.sede:"")+'</div></div>';
+    h+='<button class="btn btn-secondary" style="padding:.3rem .55rem" onclick="openFromOggi(\''+it.id+'\')">Apri</button>';
+    h+='</div>';
+  });
+  box.innerHTML=h;
+}
 function loadEmailSent(){try{return JSON.parse(safeGetLocal("cami_email_sent_v1","{}")||"{}");}catch(e){return{};}}
 function saveEmailSent(m){try{safeSetLocal("cami_email_sent_v1",JSON.stringify(m));}catch(e){}}
-function emailItemKey(it){return String(it.id)+"|"+it.kind+"|"+it.bucket+"|"+String(it.date||"");}
+function emailItemKey(it){return String(it.id)+"|"+it.kind+"|"+String(it.date||"")+"|"+String(it.soglia);}
 function buildShortExpiryMessage(items){
   if(!items||!items.length)return null;
-  var over=items.filter(function(x){return x.bucket==="overdue";});
-  var soon=items.filter(function(x){return x.bucket==="soon";});
-  var m60=items.filter(function(x){return x.bucket==="m60";});
   function line(it){return "- "+it.cliente+" "+it.acronimo+" mat."+(it.matricola||"-")+" · "+it.label+" "+fmt(it.date)+(it.days<0?(" (scaduto da "+Math.abs(it.days)+"g)"):(" (tra "+it.days+"g)"));}
-  var m="CAMI – da fare\n"+new Date().toLocaleDateString("it-IT")+"\n\n";
-  if(over.length)m+="SCADUTI ("+over.length+")\n"+over.map(line).join("\n")+"\n\n";
-  if(soon.length)m+="ENTRO 30 GIORNI ("+soon.length+")\n"+soon.map(line).join("\n")+"\n\n";
-  if(m60.length)m+="ENTRO 2 MESI ("+m60.length+")\n"+m60.map(line).join("\n")+"\n\n";
-  m+="Apri il gestionale per i dettagli.";
+  var m="CAMI – TO DO\n"+new Date().toLocaleDateString("it-IT")+"\n\n";
+  [0,3,7,15,30,60].forEach(function(sg){
+    var g=items.filter(function(x){return x.soglia===sg;});
+    if(!g.length)return;
+    m+=(sg===0?"SCADUTI":("ENTRO "+sg+" GIORNI"))+" ("+g.length+")\n"+g.map(line).join("\n")+"\n\n";
+  });
+  m+="Apri TO DO nel gestionale. Se e' gia' fatto, spunta ESEGUITO.";
   return m;
 }
 function buildExpiryMessage(){
@@ -4580,7 +4738,7 @@ function sendExpiryEmailDo(manual){
     var oDays=o.days||DAYS_WARN_60;
     var items=collectWorkItems(oDays);
     var sent=loadEmailSent();
-    items=items.filter(function(it){return !sent[emailItemKey(it)];});
+    items=items.filter(function(it){return !isTodoEseguito(it) && !sent[emailItemKey(it)];});
     if(!items.length)return;
     message=buildShortExpiryMessage(items);
     if(!message)return;
@@ -6504,12 +6662,16 @@ function buildNotifications(){
   // 2) scadenze DPC
   visibleEquipment().forEach(function(e){
     if(isStatoSenzaScadenze(e))return;
+    if(!isTodoEseguito({id:e.id,kind:"man",date:e.prossimaMan})){
     if(isOverdue(e.prossimaMan))items.push({tier:"overdue",text:"MAN scaduta: "+(e.acronimo||"")+" "+(e.matricola||"")+" ("+fmt(e.prossimaMan)+")",id:e.id,kind:"equip"});
+    else if(isSoonTier(e.prossimaMan,3))items.push({tier:"soon7",text:"MAN entro 3gg: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip"});
     else if(isSoonTier(e.prossimaMan,DAYS_WARN_7))items.push({tier:"soon7",text:"MAN entro 7gg: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip"});
     else if(isSoonTier(e.prossimaMan,DAYS_WARN_15))items.push({tier:"soon15",text:"MAN entro 15gg: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip"});
     else if(isSoon(e.prossimaMan))items.push({tier:"soon30",text:"MAN entro 30gg: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip"});
     else if(isSoonTier(e.prossimaMan,DAYS_WARN_60))items.push({tier:"soon60",text:"MAN entro 2 mesi: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip"});
+    }
     stageProxList(e).forEach(function(x){
+      if(isTodoEseguito({id:e.id,kind:"fil-S"+x.stadio,date:x.prox}))return;
       var st=expStatusSimple(x.prox);
       if(st==="overdue")items.push({tier:"overdue",text:"Filtro S"+x.stadio+" scaduto: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip"});
       else if(isSoonTier(x.prox,DAYS_WARN_7))items.push({tier:"soon7",text:"Filtro S"+x.stadio+" entro 7gg: "+(e.matricola||""),id:e.id,kind:"equip"});
