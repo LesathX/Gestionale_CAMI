@@ -3681,7 +3681,7 @@ function renderHomeFilteredList(){
       "<td>"+escHtml(e.sede||"")+"</td>"+
       "<td>"+escHtml(e.stato||"")+"</td>"+
       "<td class=\""+cls+"\">"+lab+"</td>"+
-      "<td><button type=\"button\" class=\"dpc-back\" style=\"padding:.25rem .5rem\" onclick=\"openClienteElenco('"+String(e.clienteId||"").replace(/'/g,"")+"')\">Apri</button></td>"+
+      "<td><button type=\"button\" class=\"dpc-back\" style=\"padding:.25rem .5rem\" onclick=\"editEquipment('"+String(e.id||"").replace(/'/g,"")+"')\">Apri</button></td>"+
     "</tr>";
   }).join("");
   wrap.style.display="block";
