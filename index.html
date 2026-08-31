@@ -331,7 +331,20 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
 .todo-head h2{margin:0 0 .25rem;font-size:1.15rem;color:#1e3a8a}
 .todo-head p{margin:0 0 .75rem;color:#64748b;font-size:.82rem}
 .todo-stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.45rem;margin-bottom:.7rem}
-.todo-stat{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:.55rem .6rem;text-align:center}
+.todo-stat{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:.55rem .6rem;text-align:center;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.todo-stat:hover{border-color:#1e3a8a;box-shadow:0 0 0 2px #dbeafe}
+.todo-stat.active{border-color:#1e3a8a;background:#eff6ff;box-shadow:0 0 0 2px #93c5fd}
+.dash-year{display:flex;align-items:center;justify-content:center;gap:.8rem;margin:.4rem 0 .8rem;font-weight:800;color:#1e3a8a}
+.dash-year button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:.25rem .7rem;cursor:pointer;font-size:1.1rem}
+.dash-months{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5rem;margin-bottom:.85rem}
+.dash-m{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:.65rem .7rem;cursor:pointer;text-align:left}
+.dash-m:hover{border-color:#1e3a8a}
+.dash-m.active{border-color:#1e3a8a;box-shadow:0 0 0 2px #93c5fd;background:#eff6ff}
+.dash-m b{display:block;font-size:1.2rem;color:#0f172a}
+.dash-m span{font-size:.72rem;color:#64748b}
+.dash-m .n-sc{color:#dc2626;font-weight:700}
+.dash-m .n-so{color:#ea580c;font-weight:700}
+@media(max-width:700px){.dash-months{grid-template-columns:repeat(2,1fr)}}
 .todo-stat b{display:block;font-size:1.15rem;color:#0f172a}
 .todo-stat span{font-size:.68rem;color:#64748b;text-transform:uppercase;letter-spacing:.03em}
 .todo-stat.danger b{color:#dc2626}
@@ -623,7 +636,7 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       <button class="btn btn-oggi" id="btnNuovoIntervento" style="display:none" onclick="openNuovoInterventoModal()"><i class="fas fa-wrench"></i> Nuovo intervento</button>
       <button class="btn btn-secondary" id="btnInterventiAssegnati" style="display:none" onclick="openInterventiAssegnatiModal()"><i class="fas fa-clipboard-list"></i> Interventi assegnati</button>
       <button class="btn btn-primary" id="btnDashboard" style="display:none" onclick="openDashboardModal()"><i class="fas fa-chart-pie"></i> Dashboard scadenze</button>
-      <button class="btn btn-oggi" id="btnOggi" style="display:none" onclick="openOggiModal()"><i class="fas fa-tasks"></i> Cosa fare oggi</button>
+      <button class="btn btn-oggi" id="btnOggi" style="display:none !important" onclick="openOggiModal()"><i class="fas fa-tasks"></i> Cosa fare oggi</button>
       <button class="btn btn-primary" id="btnTodo" style="display:none" onclick="showTodoPage()"><i class="fas fa-check-square"></i> TO DO</button>
       <button class="btn btn-secondary" id="btnPiano" style="display:none" onclick="showPianoPage()"><i class="fas fa-calendar-alt"></i> Piano +2 mesi</button>
       <button class="btn btn-oggi" id="btnPianoInt" style="display:none" onclick="showPianoIntPage()"><i class="fas fa-route"></i> Interventi pianificati</button>
@@ -799,7 +812,7 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       </div>
       <div class="todo-stats" id="pianoStats"></div>
       <h3 class="piano-sec">Lavoro e trasferte per sede</h3>
-      <p class="client-home-sub" style="margin:.15rem 0 .45rem">Giorni di lavoro = giorni sul posto. Giorni di viaggio = andata+ritorno (2) solo se la sede NON e in Lazio. Sedi Lazio (RM, LT, FR, VT, RI, Casaccia, Roma…) = 0 viaggio.</p>
+      <p class="client-home-sub" style="margin:.15rem 0 .45rem">Giorni di lavoro = giorni sul posto. Giorni di viaggio = andata+ritorno (2) solo se la trasferta e SI. Sul cliente: Automatico (Lazio=no) / SI / NO. Sull intervento pianificato puoi correggere a mano.</p>
       <div class="piano-mat" id="pianoViaggi"></div>
       <h3 class="piano-sec">Lista spesa magazzino (codici da ordinare)</h3>
       <div class="piano-mat" id="pianoSpesa"></div>
@@ -1239,6 +1252,13 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       <div class="form-group full"><label>Note *</label><input id="cliNote"></div>
       <div class="form-group"><label>Inizio contratto</label><input type="date" id="cliContrattoInizio"></div>
       <div class="form-group"><label>Fine contratto</label><input type="date" id="cliContrattoFine"></div>
+      <div class="form-group"><label>Trasferta</label>
+        <select id="cliTrasferta">
+          <option value="auto">Automatico (Lazio = no, extra Lazio = sì)</option>
+          <option value="si">SI – sempre trasferta (A+R)</option>
+          <option value="no">NO – mai trasferta</option>
+        </select>
+      </div>
       <div class="form-group full"><label>Note contratto</label><input id="cliContrattoNote" placeholder="es. rinnovo automatico, SLA..."></div>
     </div>
     <div class="form-actions" style="justify-content:flex-start;gap:.5rem;margin-bottom:1rem">
@@ -1736,11 +1756,11 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       <p class="client-home-sub">Cosa vede ciascuno appena entra.</p>
       <div class="form-grid" style="grid-template-columns:1fr 1fr">
         <div class="form-group"><label>Super admin</label>
-          <select id="uiHome_superadmin"><option value="cards">Card clienti</option><option value="elenco">Elenco DPC</option><option value="dashboard">Dashboard scadenze</option><option value="oggi">Cosa fare oggi</option><option value="todo">TO DO LIST</option></select></div>
+          <select id="uiHome_superadmin"><option value="cards">Card clienti</option><option value="elenco">Elenco DPC</option><option value="dashboard">Dashboard scadenze</option><option value="todo">TO DO LIST</option></select></div>
         <div class="form-group"><label>Back officer</label>
-          <select id="uiHome_backofficer"><option value="cards">Card clienti</option><option value="elenco">Elenco DPC</option><option value="dashboard">Dashboard scadenze</option><option value="oggi">Cosa fare oggi</option><option value="todo">TO DO LIST</option></select></div>
+          <select id="uiHome_backofficer"><option value="cards">Card clienti</option><option value="elenco">Elenco DPC</option><option value="dashboard">Dashboard scadenze</option><option value="todo">TO DO LIST</option></select></div>
         <div class="form-group"><label>Tecnico</label>
-          <select id="uiHome_tecnico"><option value="cards">Card clienti</option><option value="cards_assigned">Card clienti assegnati</option><option value="elenco">Elenco DPC</option><option value="dashboard">Dashboard scadenze</option><option value="oggi">Cosa fare oggi</option><option value="todo">TO DO LIST</option></select></div>
+          <select id="uiHome_tecnico"><option value="cards">Card clienti</option><option value="cards_assigned">Card clienti assegnati</option><option value="elenco">Elenco DPC</option><option value="dashboard">Dashboard scadenze</option><option value="todo">TO DO LIST</option></select></div>
       </div>
     </div>
     <div class="form-actions">
@@ -1751,11 +1771,17 @@ html.ui-only-dpc #commesseChrome{display:none!important}
 </div>
 
 <div id="dashboardModal" class="modal-overlay"><div class="modal modal-lg">
-  <div class="modal-header"><h2>Dashboard scadenze per cliente</h2><button class="modal-close" onclick="closeDashboardModal()">&times;</button></div>
+  <div class="modal-header"><h2>Dashboard scadenze mese per mese</h2><button class="modal-close" onclick="closeDashboardModal()">&times;</button></div>
   <div class="modal-body">
-    <div class="device-info">Riepilogo DPC scaduti / in scadenza / in regola per cliente (perimetro utente).</div>
+    <div class="device-info">Clicca un mese per vedere le scadenze di quel mese (manutenzioni e filtri).</div>
+    <div class="dash-year">
+      <button type="button" onclick="dashShiftYear(-1)">‹</button>
+      <span id="dashYearLabel">2026</span>
+      <button type="button" onclick="dashShiftYear(1)">›</button>
+    </div>
+    <div id="dashMonths" class="dash-months"></div>
     <div id="dashContractAlert" style="margin-bottom:.75rem"></div>
-    <div style="overflow:auto"><table class="tools-table"><thead><tr><th>Cliente</th><th>Totale</th><th>Scaduti</th><th>In scadenza</th><th>In regola</th><th>Contratto</th><th></th></tr></thead><tbody id="dashBody"></tbody></table></div>
+    <div id="dashMonthDetail"></div>
   </div>
 </div></div>
 
@@ -3464,9 +3490,9 @@ var UI_ROLES=["superadmin","backofficer","tecnico"];
 function defaultColumns(){var o={};DPC_COLS.forEach(function(c){o[c.id]=true;});return o;}
 function defaultButtons(){
   return {
-    superadmin:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,btnTodo:true,btnPiano:true,btnPianoInt:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:true,btnEmail:true,btnUsers:true,btnClienti:true,btnAssegnaTecnico:true},
-    backofficer:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,btnTodo:true,btnPiano:true,btnPianoInt:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:false,btnEmail:true,btnUsers:true,btnClienti:true,btnAssegnaTecnico:true},
-    tecnico:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,btnTodo:true,btnPiano:true,btnPianoInt:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:false,btnEmail:true,btnUsers:false,btnClienti:false,btnAssegnaTecnico:false}
+    superadmin:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:false,btnTodo:true,btnPiano:true,btnPianoInt:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:true,btnEmail:true,btnUsers:true,btnClienti:true,btnAssegnaTecnico:true},
+    backofficer:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:false,btnTodo:true,btnPiano:true,btnPianoInt:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:false,btnEmail:true,btnUsers:true,btnClienti:true,btnAssegnaTecnico:true},
+    tecnico:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:false,btnTodo:true,btnPiano:true,btnPianoInt:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:false,btnEmail:true,btnUsers:false,btnClienti:false,btnAssegnaTecnico:false}
   };
 }
 function defaultUiPrefs(){
@@ -3619,8 +3645,7 @@ function applyHomepageByRole(){
     showClientHome();
     try{openDashboardModal();}catch(e){}
   }else if(mode==="oggi"){
-    showClientHome();
-    try{openOggiModal();}catch(e){}
+    try{showTodoPage();}catch(e){}
   }else if(mode==="todo"){
     try{showTodoPage();}catch(e){}
   }else{
@@ -3863,7 +3888,7 @@ async function showApp(){document.getElementById("loginScreen").classList.add("h
   var blb=document.getElementById("btnLoadBackup");if(blb)blb.style.display=s?"inline-flex":"none";
   var bcb=document.getElementById("btnCloudBackups");if(bcb)bcb.style.display=s?"inline-flex":"none";
   var bd=document.getElementById("btnDashboard");if(bd)bd.style.display=(s||a||t)?"inline-flex":"none";
-  var bog=document.getElementById("btnOggi");if(bog)bog.style.display=(s||a||t)?"inline-flex":"none";
+  var bog=document.getElementById("btnOggi");if(bog)bog.style.display="none";
   var btd=document.getElementById("btnTodo");if(btd)btd.style.display=(s||a||t)?"inline-flex":"none";
   var bpi=document.getElementById("btnPiano");if(bpi)bpi.style.display=(s||a||t)?"inline-flex":"none";
   var bpit=document.getElementById("btnPianoInt");if(bpit)bpit.style.display=(s||a||t)?"inline-flex":"none";
@@ -3999,6 +4024,7 @@ function openClienteScheda(id){
   var a=document.getElementById("cliContrattoInizio");if(a)a.value=c.contratto_inizio||"";
   var b=document.getElementById("cliContrattoFine");if(b)b.value=c.contratto_fine||"";
   var n=document.getElementById("cliContrattoNote");if(n)n.value=c.contratto_note||"";
+  var tr=document.getElementById("cliTrasferta");if(tr)tr.value=c.trasferta||"auto";
   renderSchedaDpc(c.id);
   var box=document.getElementById("schedaIntMeseBox");if(box)box.style.display="none";
   var info=document.getElementById("schedaIntMeseInfo");if(info)info.textContent="";
@@ -4053,7 +4079,7 @@ async function showSchedaInterventiMese(){
   document.getElementById("schedaIntMeseBox").style.display="block";
 }
 
-function resetClienteForm(){document.getElementById("editClienteId").value="";document.getElementById("cliNome").value="";document.getElementById("cliCodice").value="";try{applyAutoClientCode("cliCodice");}catch(e){}document.getElementById("cliCitta").value="";document.getElementById("cliNote").value="";var se=document.getElementById("cliSede");if(se)se.value="";var dip=document.getElementById("cliDipartimento");if(dip)dip.value="";var a=document.getElementById("cliContrattoInizio");if(a)a.value="";var b=document.getElementById("cliContrattoFine");if(b)b.value="";var c=document.getElementById("cliContrattoNote");if(c)c.value="";}
+function resetClienteForm(){document.getElementById("editClienteId").value="";document.getElementById("cliNome").value="";document.getElementById("cliCodice").value="";try{applyAutoClientCode("cliCodice");}catch(e){}document.getElementById("cliCitta").value="";document.getElementById("cliNote").value="";var se=document.getElementById("cliSede");if(se)se.value="";var dip=document.getElementById("cliDipartimento");if(dip)dip.value="";var a=document.getElementById("cliContrattoInizio");if(a)a.value="";var b=document.getElementById("cliContrattoFine");if(b)b.value="";var c=document.getElementById("cliContrattoNote");if(c)c.value="";var tr=document.getElementById("cliTrasferta");if(tr)tr.value="auto";}
 function countDpc(cid){return equipment.filter(function(e){return e.clienteId===cid;}).length;}
 function renderClienti(){
   var html="";
@@ -4145,7 +4171,7 @@ async function deleteClientiSelected(){
   await loadAll();
   renderClienti();
 }
-function editCliente(id){var c=clienti.find(function(x){return x.id===id;});if(!c)return;document.getElementById("editClienteId").value=c.id;document.getElementById("cliNome").value=c.nome||"";document.getElementById("cliCodice").value=c.codice||"";document.getElementById("cliCitta").value=c.citta||"";document.getElementById("cliNote").value=c.note||"";var se=document.getElementById("cliSede");if(se)se.value=c.sede||"";var dip=document.getElementById("cliDipartimento");if(dip)dip.value=c.dipartimento||"";var a=document.getElementById("cliContrattoInizio");if(a)a.value=c.contratto_inizio||c.contrattoInizio||"";var b=document.getElementById("cliContrattoFine");if(b)b.value=c.contratto_fine||c.contrattoFine||"";var n=document.getElementById("cliContrattoNote");if(n)n.value=c.contratto_note||c.contrattoNote||"";}
+function editCliente(id){var c=clienti.find(function(x){return x.id===id;});if(!c)return;document.getElementById("editClienteId").value=c.id;document.getElementById("cliNome").value=c.nome||"";document.getElementById("cliCodice").value=c.codice||"";document.getElementById("cliCitta").value=c.citta||"";document.getElementById("cliNote").value=c.note||"";var se=document.getElementById("cliSede");if(se)se.value=c.sede||"";var dip=document.getElementById("cliDipartimento");if(dip)dip.value=c.dipartimento||"";var a=document.getElementById("cliContrattoInizio");if(a)a.value=c.contratto_inizio||c.contrattoInizio||"";var b=document.getElementById("cliContrattoFine");if(b)b.value=c.contratto_fine||c.contrattoFine||"";var n=document.getElementById("cliContrattoNote");if(n)n.value=c.contratto_note||c.contrattoNote||"";var tr=document.getElementById("cliTrasferta");if(tr)tr.value=c.trasferta||"auto";}
 async function saveClienteToDb(row, id){
   var attempt=0;
   while(attempt<8){
@@ -4175,6 +4201,7 @@ async function saveCliente(){
   if(ci&&ci.value)row.contratto_inizio=ci.value;
   if(cf&&cf.value)row.contratto_fine=cf.value;
   if(cn&&(cn.value||"").trim())row.contratto_note=(cn.value||"").trim();
+  var trEl=document.getElementById("cliTrasferta");if(trEl)row.trasferta=trEl.value||"auto";
   var res=await saveClienteToDb(Object.assign({},row), id||null);
   if(res.error){
     alert(res.error.message);
@@ -4727,6 +4754,18 @@ async function setTodoEseguito(key,on,meta){
   try{renderTodoList();}catch(e){}
   try{refreshBell();}catch(e){}
 }
+function clickTodoStat(tipo,soglia){
+  var ft=document.getElementById("todoFiltroTipo");
+  var fs=document.getElementById("todoFiltroSoglia");
+  if(tipo){
+    if(ft && ft.value===tipo) ft.value="";
+    else { if(ft)ft.value=tipo; if(fs)fs.value=""; }
+  }else{
+    if(fs && String(fs.value)===String(soglia)) fs.value="";
+    else { if(fs)fs.value=String(soglia); if(ft)ft.value=""; }
+  }
+  renderTodoList();
+}
 function renderTodoList(){
   var box=document.getElementById("todoList"), empty=document.getElementById("todoEmpty"), stats=document.getElementById("todoStats");
   if(!box)return;
@@ -4741,13 +4780,18 @@ function renderTodoList(){
     if(counts[it.soglia]!==undefined)counts[it.soglia]++;
   });
   if(stats){
+    var actT=ft, actS=fs;
+    function card(cls,n,label,tipo,soglia){
+      var on=(tipo&&actT===tipo&&!actS)||(soglia!==""&&actS===String(soglia)&&!actT);
+      return '<div class="todo-stat '+cls+(on?" active":"")+'" onclick="clickTodoStat(\''+tipo+'\',\''+soglia+'\')"><b>'+n+'</b><span>'+label+'</span></div>';
+    }
     stats.innerHTML=
-      '<div class="todo-stat warn"><b>'+counts.ord+'</b><span>Da ordinare</span></div>'+
-      '<div class="todo-stat info"><b>'+counts.doc+'</b><span>Documenti</span></div>'+
-      '<div class="todo-stat"><b>'+counts.acc+'</b><span>Accessori</span></div>'+
-      '<div class="todo-stat danger"><b>'+counts[0]+'</b><span>Scadute</span></div>'+
-      '<div class="todo-stat warn"><b>'+counts[7]+'</b><span>Entro 7g</span></div>'+
-      '<div class="todo-stat info"><b>'+counts[60]+'</b><span>Entro 60g</span></div>';
+      card("warn",counts.ord,"Da ordinare","ord","")+
+      card("info",counts.doc,"Documenti","doc","")+
+      card("",counts.acc,"Accessori","acc","")+
+      card("danger",counts[0],"Scadute","","0")+
+      card("warn",counts[7],"Entro 7g","","7")+
+      card("info",counts[60],"Entro 60g","","60");
   }
   var view=items.filter(function(it){
     var done=isTodoEseguito(it);
@@ -4818,6 +4862,20 @@ function isSedeLazio(se){
   return false;
 }
 function isSedeRoma(se){ return isSedeLazio(se); }
+function clienteTrasfertaMode(cid){
+  var c=(clienti||[]).find(function(x){return x.id===cid;})||(clientiAll||[]).find(function(x){return x.id===cid;});
+  var m=c&&(c.trasferta||c.trasferta_mode);
+  return (m==="si"||m==="no")?m:"auto";
+}
+function needsTrasferta(sede, clienteId, override){
+  var o=override||"auto";
+  if(o==="si")return true;
+  if(o==="no")return false;
+  var mode=clienteTrasfertaMode(clienteId);
+  if(mode==="si")return true;
+  if(mode==="no")return false;
+  return !isSedeLazio(sede);
+}
 function countWorkTrips(daysObj){
   var ds=Object.keys(daysObj||{}).sort();
   if(!ds.length)return 0;
@@ -4937,9 +4995,9 @@ async function renderPianoPage(){
   var viaggi={}, spesa={};
   piano.jobs.forEach(function(j){
     var se=j.sede||"(senza sede)";
-    if(!viaggi[se])viaggi[se]={sede:se,dpc:{},clienti:{},days:{}};
-    viaggi[se].dpc[j.id]=1;
-    viaggi[se].clienti[j.cliente]=1;
+    var vk=se+"|"+(j.clienteId||"");
+    if(!viaggi[vk])viaggi[vk]={sede:se,cliente:j.cliente,clienteId:j.clienteId,dpc:{},days:{}};
+    viaggi[vk].dpc[j.id]=1;
     if(j.tipo==="fil"||j.tipo==="pre"){
       var ck=(j.codice||"NO-COD")+"|"+j.tipo;
       if(!spesa[ck])spesa[ck]={codice:j.codice||"NO-COD",tipo:j.tipo==="pre"?"Prefiltro":"Filtro",qty:0,misure:j.misure||"",clienti:{}};
@@ -4948,21 +5006,23 @@ async function renderPianoPage(){
     }
   });
   piano.days.forEach(function(d){
-    var sedi={};
-    d.jobs.forEach(function(j){sedi[j.sede||"(senza sede)"]=1;});
-    Object.keys(sedi).forEach(function(se){ if(viaggi[se]) viaggi[se].days[d.date]=1; });
+    d.jobs.forEach(function(j){
+      var vk=(j.sede||"(senza sede)")+"|"+(j.clienteId||"");
+      if(viaggi[vk]) viaggi[vk].days[d.date]=1;
+    });
   });
   var vg=document.getElementById("pianoViaggi");
   if(vg){
-    var vh='<table><thead><tr><th>Sede / citta</th><th>Giorni di lavoro</th><th>Giorni di viaggio (A+R)</th><th>Lazio?</th><th>DPC</th><th>Clienti</th></tr></thead><tbody>';
-    Object.keys(viaggi).sort(function(a,b){return a.localeCompare(b,"it");}).forEach(function(se){
-      var r=viaggi[se];
+    var vh='<table><thead><tr><th>Sede / citta</th><th>Cliente</th><th>Giorni di lavoro</th><th>Giorni di viaggio (A+R)</th><th>Trasferta</th><th>DPC</th></tr></thead><tbody>';
+    Object.keys(viaggi).sort(function(a,b){return a.localeCompare(b,"it");}).forEach(function(k){
+      var r=viaggi[k];
       var lavoro=Object.keys(r.days).length;
-      var lazio=isSedeLazio(r.sede);
-      var trips=lazio?0:countWorkTrips(r.days);
+      var mode=clienteTrasfertaMode(r.clienteId);
+      var need=needsTrasferta(r.sede,r.clienteId,"auto");
+      var trips=need?countWorkTrips(r.days):0;
       var viaggio=trips*2;
-      var nota=lazio?"residente Lazio":(trips+" trasferta × andata+ritorno");
-      vh+="<tr><td>"+escHtml(r.sede)+"</td><td><strong>"+lavoro+"</strong></td><td><strong>"+viaggio+"</strong> <span style='color:#64748b;font-size:.75rem'>"+nota+"</span></td><td>"+(lazio?"SI":"NO")+"</td><td>"+Object.keys(r.dpc).length+"</td><td>"+escHtml(Object.keys(r.clienti).join(", "))+"</td></tr>";
+      var lab=mode==="si"?"SI (cliente)":(mode==="no"?"NO (cliente)":(need?"AUTO extra Lazio":"AUTO Lazio"));
+      vh+="<tr><td>"+escHtml(r.sede)+"</td><td>"+escHtml(r.cliente)+"</td><td><strong>"+lavoro+"</strong></td><td><strong>"+viaggio+"</strong></td><td>"+lab+"</td><td>"+Object.keys(r.dpc).length+"</td></tr>";
     });
     vh+="</tbody></table>";
     vg.innerHTML=Object.keys(viaggi).length?vh:"<p class='client-home-sub'>Nessun viaggio.</p>";
@@ -5032,13 +5092,13 @@ function exportPianoExcel(){
   });
   rows.push([]);
   rows.push(["VIAGGI PER SEDE"]);
-  rows.push(["Sede","Giorni di lavoro","Giorni di viaggio A+R","Lazio","DPC","Clienti"]);
-  Object.keys(p.viaggi||{}).forEach(function(se){
-    var r=p.viaggi[se];
+  rows.push(["Sede","Cliente","Giorni di lavoro","Giorni di viaggio A+R","Trasferta","DPC"]);
+  Object.keys(p.viaggi||{}).forEach(function(k){
+    var r=p.viaggi[k];
     var lav=Object.keys(r.days||{}).length;
-    var lazio=isSedeLazio(r.sede);
-    var tr=lazio?0:(countWorkTrips(r.days||{})*2);
-    rows.push([r.sede,lav,tr,lazio?"SI":"NO",Object.keys(r.dpc||{}).length,Object.keys(r.clienti||{}).join(", ")]);
+    var need=needsTrasferta(r.sede,r.clienteId,"auto");
+    var tr=need?(countWorkTrips(r.days||{})*2):0;
+    rows.push([r.sede,r.cliente,lav,tr,clienteTrasfertaMode(r.clienteId),Object.keys(r.dpc||{}).length]);
   });
   var wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Piano "+p.id);
@@ -5108,6 +5168,7 @@ async function creaInterventiDaPiano(){
       tecnico_ids:[],
       stato:"da_assegnare",
       note:"Piano "+p.id+" | DPC: "+labels.join("; "),
+      trasferta:"auto",
       created_by:currentUser?currentUser.username:""
     };
     var res=await sb.from("piano_interventi").insert([row]);
@@ -5201,6 +5262,12 @@ async function renderPianoIntPage(){
       h+='<div class="pi-row">';
       h+="<div style='flex:1;min-width:180px'><strong>"+escHtml(r.cliente_nome||"")+"</strong><div style='color:#64748b'>"+escHtml(r.acronimo||"")+" · "+escHtml(r.matricola||"")+" · "+escHtml(r.tipo||"")+"</div></div>";
       h+='<span class="'+pill+'">'+lab+"</span>";
+      var ov=r.trasferta||"auto";
+      var eff=needsTrasferta(r.sede,r.cliente_id,ov);
+      h+='<select title="Trasferta" data-id="'+r.id+'" onchange="setTrasfertaPianoInt(this.dataset.id,this.value)">';
+      h+='<option value="auto"'+(ov==="auto"?" selected":"")+'>Trasferta AUTO ('+(eff?"SI":"NO")+')</option>';
+      h+='<option value="si"'+(ov==="si"?" selected":"")+'>Trasferta SI</option>';
+      h+='<option value="no"'+(ov==="no"?" selected":"")+'>Trasferta NO</option></select>';
       h+='<select data-id="'+r.id+'" onchange="assegnaTecnicoPianoInt(this.dataset.id,this)">'+piTecOptions(selId)+"</select>";
       if(r.stato!=="fatto") h+='<button class="btn btn-save" style="padding:.25rem .5rem" data-id="'+r.id+'" onclick="setStatoPianoInt(this.dataset.id,\'fatto\')">Fatto</button>';
       else h+='<button class="btn btn-secondary" style="padding:.25rem .5rem" data-id="'+r.id+'" onclick="setStatoPianoInt(this.dataset.id,\'da_assegnare\')">Riapri</button>';
@@ -5210,6 +5277,12 @@ async function renderPianoIntPage(){
     h+="</div>";
   });
   if(box)box.innerHTML=h;
+}
+async function setTrasfertaPianoInt(id,val){
+  var res=await sb.from("piano_interventi").update({trasferta:val||"auto"}).eq("id",id);
+  if(res.error){alert(res.error.message);return;}
+  toast("Trasferta: "+(val==="si"?"SI":(val==="no"?"NO":"AUTO")));
+  renderPianoIntPage();
 }
 async function assegnaTecnicoPianoInt(id,sel){
   var opt=sel.options[sel.selectedIndex];
@@ -8307,38 +8380,72 @@ async function saveAssegnaTecnico(){
 /* ===== Dashboard clienti ===== */
 function openDashboardModal(){
   document.getElementById("dashboardModal").classList.add("show");
+  if(window._dashYear==null)window._dashYear=new Date().getFullYear();
+  if(window._dashMonth==null)window._dashMonth=new Date().getMonth();
   renderDashboard();
 }
 function closeDashboardModal(){document.getElementById("dashboardModal").classList.remove("show");}
-function renderDashboard(){
-  var map={};
+function dashShiftYear(d){window._dashYear=(window._dashYear||new Date().getFullYear())+d;renderDashboard();}
+function dashPickMonth(m){window._dashMonth=m;renderDashboard();}
+function collectScadenzeMese(y,m){
+  var items=[];
   visibleEquipment().forEach(function(e){
-    var k=e.clienteId||"_";
-    if(!map[k])map[k]={tot:0,sc:0,so:0,ok:0};
-    map[k].tot++;
-    var st=deviceExpiryStatus(e);
-    if(st==="overdue")map[k].sc++;
-    else if(st==="soon")map[k].so++;
-    else map[k].ok++;
+    if(isStatoSenzaScadenze(e))return;
+    if(isDateInMonth(e.prossimaMan,y,m))items.push({e:e,kind:"man",date:e.prossimaMan,label:"Manutenzione"});
+    stageProxList(e).forEach(function(x){
+      if(isDateInMonth(x.prox,y,m))items.push({e:e,kind:"fil",date:x.prox,label:"Filtro S"+x.stadio+(x.codice?" "+x.codice:"")});
+    });
   });
-  var h="", contractAlerts=[];
-  clienti.forEach(function(c){
-    if(!isSuper()&&currentUser.clienteId&&c.id!==currentUser.clienteId)return;
-    var m=map[c.id]||{tot:0,sc:0,so:0,ok:0};
-    var fine=c.contratto_fine||"";
-    var contr="-";
-    if(fine){
-      var d=daysUntil(fine);
-      if(d===null)contr=fmt(fine);
-      else if(d<0){contr='<span class="overdue">SCADUTO '+fmt(fine)+'</span>';contractAlerts.push(c.nome+" contratto scaduto");}
-      else if(d<=60){contr='<span class="soon">scade '+fmt(fine)+' ('+d+'g)</span>';contractAlerts.push(c.nome+" contratto in scadenza ("+d+"g)");}
-      else contr=fmt(fine);
+  return items;
+}
+function renderDashboard(){
+  var y=window._dashYear||new Date().getFullYear();
+  var sel=window._dashMonth;
+  var yl=document.getElementById("dashYearLabel");if(yl)yl.textContent=String(y);
+  var mesi=["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+  var box=document.getElementById("dashMonths");
+  if(box){
+    var h="";
+    for(var m=0;m<12;m++){
+      var its=collectScadenzeMese(y,m);
+      var nMan=its.filter(function(x){return x.kind==="man";}).length;
+      var nFil=its.filter(function(x){return x.kind==="fil";}).length;
+      h+='<div class="dash-m'+(sel===m?" active":"")+'" onclick="dashPickMonth('+m+')"><span>'+mesi[m]+'</span><b>'+its.length+'</b><span><span class="n-so">'+nMan+' man</span> · <span class="n-sc">'+nFil+' filtri</span></span></div>';
     }
-    h+="<tr><td><strong>"+c.nome+"</strong></td><td>"+m.tot+"</td><td class='"+(m.sc?"overdue":"")+"'>"+m.sc+"</td><td class='"+(m.so?"soon":"")+"'>"+m.so+"</td><td>"+m.ok+"</td><td>"+contr+"</td><td><button class='btn btn-primary' style='padding:.25rem .5rem;font-size:.72rem' onclick=\"closeDashboardModal();document.getElementById('filterCliente').value='"+c.id+"';document.getElementById('filterScadenza').value='d30';renderTable()\">Apri</button></td></tr>";
+    box.innerHTML=h;
+  }
+  var det=document.getElementById("dashMonthDetail");
+  if(!det)return;
+  if(sel==null){det.innerHTML="<p class='client-home-sub'>Clicca un mese.</p>";return;}
+  var items=collectScadenzeMese(y,sel);
+  var map={};
+  items.forEach(function(it){
+    var cid=it.e.clienteId||"_";
+    if(!map[cid])map[cid]={nome:clienteName(cid),man:0,fil:0,rows:[]};
+    if(it.kind==="man")map[cid].man++; else map[cid].fil++;
+    map[cid].rows.push(it);
   });
-  document.getElementById("dashBody").innerHTML=h||"<tr><td colspan='7'>Nessun cliente</td></tr>";
+  var html="<h3 class='piano-sec'>"+mesi[sel]+" "+y+" · "+items.length+" scadenze</h3>";
+  if(!items.length){html+="<p class='client-home-sub'>Nessuna scadenza in questo mese.</p>";det.innerHTML=html;return;}
+  html+="<div style='overflow:auto'><table class='tools-table'><thead><tr><th>Cliente</th><th>DPC</th><th>Tipo</th><th>Data</th><th>Sede</th></tr></thead><tbody>";
+  Object.keys(map).sort(function(a,b){return map[a].nome.localeCompare(map[b].nome,"it");}).forEach(function(cid){
+    map[cid].rows.sort(function(a,b){return String(a.date).localeCompare(String(b.date));}).forEach(function(it){
+      html+="<tr><td>"+escHtml(map[cid].nome)+"</td><td>"+escHtml((it.e.acronimo||"")+" "+(it.e.matricola||""))+"</td><td>"+escHtml(it.label)+"</td><td>"+fmt(it.date)+"</td><td>"+escHtml(it.e.sede||"")+"</td></tr>";
+    });
+  });
+  html+="</tbody></table></div>";
+  det.innerHTML=html;
   var ca=document.getElementById("dashContractAlert");
-  if(ca)ca.innerHTML=contractAlerts.length?'<div class="soft-block">Contratti: '+contractAlerts.join(" · ")+'</div>':"";
+  if(ca){
+    var alerts=[];
+    (clienti||[]).forEach(function(c){
+      if(!c.contratto_fine)return;
+      var p=String(c.contratto_fine).slice(0,7);
+      var want=y+"-"+String(sel+1).padStart(2,"0");
+      if(p===want)alerts.push(c.nome+" contratto "+fmt(c.contratto_fine));
+    });
+    ca.innerHTML=alerts.length?'<div class="soft-block">Contratti nel mese: '+alerts.join(" · ")+'</div>':"";
+  }
 }
 
 /* ===== Browser notifications (n.2) ===== */
