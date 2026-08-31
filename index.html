@@ -626,7 +626,7 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       <button class="btn btn-oggi" id="btnOggi" style="display:none" onclick="openOggiModal()"><i class="fas fa-tasks"></i> Cosa fare oggi</button>
       <button class="btn btn-primary" id="btnTodo" style="display:none" onclick="showTodoPage()"><i class="fas fa-check-square"></i> TO DO</button>
       <button class="btn btn-secondary" id="btnPiano" style="display:none" onclick="showPianoPage()"><i class="fas fa-calendar-alt"></i> Piano +2 mesi</button>
-      <button class="btn btn-oggi" id="btnPianoInt" style="display:none" onclick="showPianoIntPage()"><i class="fas fa-route"></i> Interventi piano</button>
+      <button class="btn btn-oggi" id="btnPianoInt" style="display:none" onclick="showPianoIntPage()"><i class="fas fa-route"></i> Interventi pianificati</button>
       <div class="altro-wrap" id="altroWrap">
         <button type="button" class="btn btn-secondary" id="btnAltro" onclick="toggleAltroMenu(event)"><i class="fas fa-ellipsis-h"></i> Altro <i class="fas fa-caret-down"></i></button>
         <div class="altro-menu" id="altroMenu">
@@ -799,6 +799,7 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       </div>
       <div class="todo-stats" id="pianoStats"></div>
       <h3 class="piano-sec">Lavoro e trasferte per sede</h3>
+      <p class="client-home-sub" style="margin:.15rem 0 .45rem">Giorni di lavoro = giorni sul posto. Giorni di viaggio = andata+ritorno (2) solo se la sede NON e in Lazio. Sedi Lazio (RM, LT, FR, VT, RI, Casaccia, Roma…) = 0 viaggio.</p>
       <div class="piano-mat" id="pianoViaggi"></div>
       <h3 class="piano-sec">Lista spesa magazzino (codici da ordinare)</h3>
       <div class="piano-mat" id="pianoSpesa"></div>
@@ -813,8 +814,8 @@ html.ui-only-dpc #commesseChrome{display:none!important}
   <div id="pagePianoInt" class="page-panel">
     <div class="piano-wrap">
       <div class="piano-head">
-        <h2><i class="fas fa-route"></i> Interventi piano</h2>
-        <p>Interventi creati dal piano mensile. <strong>Nessuna commessa</strong>. Assegna il tecnico qui, sede per sede.</p>
+        <h2><i class="fas fa-route"></i> Interventi pianificati</h2>
+        <p>Pagina a parte. Bozze dal Piano +2 mesi. <strong>Nessuna commessa</strong>. Non tocca Interventi assegnati. Assegna il tecnico qui.</p>
       </div>
       <div class="todo-stats" id="piStats"></div>
       <div class="piano-toolbar">
@@ -4808,14 +4809,15 @@ function isDateInMonth(iso,y,m){
   if(p.length<2)return false;
   return parseInt(p[0],10)===y && parseInt(p[1],10)===(m+1);
 }
-function isSedeRoma(se){
-  var s=normalizeHeader(se||"").replace(/[().,]/g," ").replace(/\s+/g," ").trim();
+function isSedeLazio(se){
+  var s=normalizeHeader(se||"").replace(/[().,\/\-]/g," ").replace(/\s+/g," ").trim();
   if(!s)return false;
-  if(/\bcasaccia\b/.test(s)||/\bfrascati\b/.test(s)||/\bmonterotondo\b/.test(s))return false;
-  if(s==="roma"||s==="rm"||s==="roma rm")return true;
-  if(/^roma\b/.test(s))return true;
+  if(/\b(rm|lt|fr|vt|ri|roma|lazio)\b/.test(s))return true;
+  var keys=["casaccia","frascati","monterotondo","fiumicino","latina","frosinone","viterbo","rieti","guidonia","pomezia","aprilia","tivoli","civitavecchia","ostia","anagni","cassino","albano","marino","velletri","ciampino","formia","gaeta","sabaudia","terracina","bracciano","mentana","colonna","fiano","palestrina","tivoli","netturno","anzio","ladispoli","cerveteri"];
+  for(var i=0;i<keys.length;i++){ if(s.indexOf(keys[i])>-1) return true; }
   return false;
 }
+function isSedeRoma(se){ return isSedeLazio(se); }
 function countWorkTrips(daysObj){
   var ds=Object.keys(daysObj||{}).sort();
   if(!ds.length)return 0;
@@ -4952,13 +4954,15 @@ async function renderPianoPage(){
   });
   var vg=document.getElementById("pianoViaggi");
   if(vg){
-    var vh='<table><thead><tr><th>Sede / citta</th><th>Giorni di lavoro</th><th>Trasferta A+R</th><th>DPC</th><th>Clienti</th></tr></thead><tbody>';
+    var vh='<table><thead><tr><th>Sede / citta</th><th>Giorni di lavoro</th><th>Giorni di viaggio (A+R)</th><th>Lazio?</th><th>DPC</th><th>Clienti</th></tr></thead><tbody>';
     Object.keys(viaggi).sort(function(a,b){return a.localeCompare(b,"it");}).forEach(function(se){
       var r=viaggi[se];
       var lavoro=Object.keys(r.days).length;
-      var trasf=isSedeRoma(r.sede)?0:(countWorkTrips(r.days)*2);
-      var nota=isSedeRoma(r.sede)?" (Roma, niente trasferta)":(" ("+countWorkTrips(r.days)+" viaggi × andata+ritorno)");
-      vh+="<tr><td>"+escHtml(r.sede)+"</td><td>"+lavoro+"</td><td><strong>"+trasf+"</strong>"+nota+"</td><td>"+Object.keys(r.dpc).length+"</td><td>"+escHtml(Object.keys(r.clienti).join(", "))+"</td></tr>";
+      var lazio=isSedeLazio(r.sede);
+      var trips=lazio?0:countWorkTrips(r.days);
+      var viaggio=trips*2;
+      var nota=lazio?"residente Lazio":(trips+" trasferta × andata+ritorno");
+      vh+="<tr><td>"+escHtml(r.sede)+"</td><td><strong>"+lavoro+"</strong></td><td><strong>"+viaggio+"</strong> <span style='color:#64748b;font-size:.75rem'>"+nota+"</span></td><td>"+(lazio?"SI":"NO")+"</td><td>"+Object.keys(r.dpc).length+"</td><td>"+escHtml(Object.keys(r.clienti).join(", "))+"</td></tr>";
     });
     vh+="</tbody></table>";
     vg.innerHTML=Object.keys(viaggi).length?vh:"<p class='client-home-sub'>Nessun viaggio.</p>";
@@ -5028,12 +5032,13 @@ function exportPianoExcel(){
   });
   rows.push([]);
   rows.push(["VIAGGI PER SEDE"]);
-  rows.push(["Sede","Giorni di lavoro","Trasferta A+R","DPC","Clienti"]);
+  rows.push(["Sede","Giorni di lavoro","Giorni di viaggio A+R","Lazio","DPC","Clienti"]);
   Object.keys(p.viaggi||{}).forEach(function(se){
     var r=p.viaggi[se];
     var lav=Object.keys(r.days||{}).length;
-    var tr=isSedeRoma(r.sede)?0:(countWorkTrips(r.days||{})*2);
-    rows.push([r.sede,lav,tr,Object.keys(r.dpc||{}).length,Object.keys(r.clienti||{}).join(", ")]);
+    var lazio=isSedeLazio(r.sede);
+    var tr=lazio?0:(countWorkTrips(r.days||{})*2);
+    rows.push([r.sede,lav,tr,lazio?"SI":"NO",Object.keys(r.dpc||{}).length,Object.keys(r.clienti||{}).join(", ")]);
   });
   var wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Piano "+p.id);
@@ -5162,8 +5167,18 @@ async function renderPianoIntPage(){
     '<div class="todo-stat"><b>'+Object.keys(sed).length+'</b><span>Sedi</span></div>';
   var box=document.getElementById("piList"), empty=document.getElementById("piEmpty");
   if(!view.length){
-    if(empty)empty.style.display="block";
-    if(box)box.innerHTML='<div class="pi-card"><h4>Lun 03/03 · BOLOGNA · anteprima</h4><div class="pi-row"><div style="flex:1"><strong>ABBVIE</strong><div style="color:#64748b">4 CC · 2 PAL · Manutenzione / Cambio filtri</div></div><span class="pill-warn">DA ASSEGNARE</span><select disabled><option>DA ASSEGNARE</option></select></div></div><div class="pi-card"><h4>Mar 04/03 · CASACCIA (RM) · anteprima</h4><div class="pi-row"><div style="flex:1"><strong>ENEA</strong><div style="color:#64748b">7 DPC · Trasferta A+R: 2 giorni (non Roma citta)</div></div><span class="pill-warn">DA ASSEGNARE</span><select disabled><option>DA ASSEGNARE</option></select></div></div><p class="client-home-sub">Questa e solo l\'anteprima del layout. Premi <strong>Crea interventi</strong> dal Piano +2 mesi per riempire la pagina vera.</p>';
+    if(empty)empty.style.display="none";
+    if(box)box.innerHTML=
+      '<div class="todo-stats">'+
+      '<div class="todo-stat warn"><b>2</b><span>Da assegnare (anteprima)</span></div>'+
+      '<div class="todo-stat"><b>2</b><span>Sedi</span></div>'+
+      '<div class="todo-stat info"><b>10</b><span>DPC</span></div>'+
+      '</div>'+
+      '<div class="pi-card"><h4>Lun 03/03 · BO · 1 giorno lavoro · 2 giorni viaggio (fuori Lazio)</h4>'+
+      '<div class="pi-row"><div style="flex:1"><strong>AG. DOGANE</strong><div style="color:#64748b">3 DPC · Manutenzione / Cambio filtri</div></div><span class="pill-warn">DA ASSEGNARE</span><select disabled><option>DA ASSEGNARE</option></select></div></div>'+
+      '<div class="pi-card"><h4>Mar 04/03 · CASACCIA (RM) · 2 giorni lavoro · 0 viaggio (Lazio)</h4>'+
+      '<div class="pi-row"><div style="flex:1"><strong>ENEA</strong><div style="color:#64748b">7 DPC · sede Lazio, niente andata/ritorno</div></div><span class="pill-warn">DA ASSEGNARE</span><select disabled><option>DA ASSEGNARE</option></select></div></div>'+
+      '<p class="client-home-sub">Anteprima del layout. Premi <strong>Crea interventi</strong> in Piano +2 mesi per riempire questa pagina con i dati veri. Commesse e Interventi assegnati restano intatti.</p>';
     return;
   }
   if(empty)empty.style.display="none";
