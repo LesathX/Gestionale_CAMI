@@ -16,6 +16,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 window.__emailjsReady=false;window.__emailjsLoadError=false;
 (function(){
@@ -1079,7 +1080,7 @@ html.ui-only-dpc #commesseChrome{display:none!important}
     <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr;max-width:800px">
       <div class="form-group"><label>Cliente</label><select id="dupCliente" onchange="fillDupDpc()"></select></div>
       <div class="form-group"><label>Data</label><input type="date" id="dupData"></div>
-      <div class="form-group"><label>Tipo</label><select id="dupTipo"><option value="">-</option><option>Manutenzione ordinaria</option><option>Manutenzione straordinaria</option><option>Controlli strumentali</option><option>Nuova installazione</option><option>Spostamento DPC</option><option>Cambio filtri</option><option>Verifica periodica</option><option>Smaltimento DPC</option><option>Sopralluogo</option><option>Altro</option></select></div>
+      <div class="form-group"><label>Tipo</label><select id="dupTipo"><option value="">-</option><option>Manutenzione preventiva</option><option>Manutenzione correttiva</option><option>Manutenzione straordinaria</option><option>Controlli strumentali</option><option>Nuova installazione</option><option>Nuova installazione impiantistica</option><option>Spostamento DPC</option><option>Cambio filtri</option><option>Smaltimento DPC</option><option>Sopralluogo</option><option>Altro</option></select></div>
       <div class="form-group"><label>Tecnico</label><input id="dupTecnico"></div>
       <div class="form-group"><label>Costo € (opz.)</label><input id="dupCosto" type="number" step="0.01" min="0"></div>
       
@@ -1099,7 +1100,11 @@ html.ui-only-dpc #commesseChrome{display:none!important}
 </div>
 
 <div id="modal" class="modal-overlay"><div class="modal">
-  <div class="modal-header"><h2 id="modalTitle">Nuovo DPC</h2><button class="modal-close" onclick="closeModal()">&times;</button></div>
+  <div class="modal-header" style="gap:.5rem;flex-wrap:wrap">
+    <h2 id="modalTitle">Nuovo DPC</h2>
+    <button type="button" class="btn btn-secondary" id="btnPianificaDpc" style="display:none;margin-left:auto;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;background:#0f2744" onclick="ideaPianificaDpc()"><i class="fas fa-calendar-plus"></i> Pianifica intervento per questo DPC</button>
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+  </div>
   <div class="modal-body">
     <div class="reminder-box">Se manca un dato usa <strong>N.A.</strong></div>
     <div id="softBlockAlert" class="soft-block" style="display:none"></div>
@@ -1186,26 +1191,27 @@ html.ui-only-dpc #commesseChrome{display:none!important}
         <datalist id="listReferenteContatto"></datalist>
       </div>
       <div class="form-group"><label>Cadenza</label><input id="cadenzaMan"></div>
-      <div class="form-group full"><label>Tipo attivita</label><div class="check-group">
-        <label class="check-option"><input type="checkbox" name="tipoAtt" value="Manutenzione ordinaria"> Manutenzione ordinaria</label>
+      <div class="form-group full"><label>Possibili attività da eseguire</label><div class="check-group" id="tipoAttChecks">
+        <label class="check-option"><input type="checkbox" name="tipoAtt" value="Manutenzione preventiva"> Manutenzione preventiva</label>
+        <label class="check-option"><input type="checkbox" name="tipoAtt" value="Manutenzione correttiva"> Manutenzione correttiva</label>
         <label class="check-option"><input type="checkbox" name="tipoAtt" value="Manutenzione straordinaria"> Manutenzione straordinaria</label>
         <label class="check-option"><input type="checkbox" name="tipoAtt" value="Controlli strumentali"> Controlli strumentali</label>
         <label class="check-option"><input type="checkbox" name="tipoAtt" value="Nuova installazione"> Nuova installazione</label>
+        <label class="check-option"><input type="checkbox" name="tipoAtt" value="Nuova installazione impiantistica"> Nuova installazione impiantistica</label>
         <label class="check-option"><input type="checkbox" name="tipoAtt" value="Spostamento DPC"> Spostamento DPC</label>
-        <label class="check-option"><input type="checkbox" name="tipoAtt" value="Cambio filtri"> Cambio filtri</label>
-        <label class="check-option"><input type="checkbox" name="tipoAtt" value="Verifica periodica"> Verifica periodica</label>
         <label class="check-option"><input type="checkbox" name="tipoAtt" value="Smaltimento DPC"> Smaltimento DPC</label>
+        <label class="check-option"><input type="checkbox" name="tipoAtt" value="Cambio filtri"> Cambio filtri</label>
         <label class="check-option"><input type="checkbox" name="tipoAtt" value="Sopralluogo"> Sopralluogo</label>
         <label class="check-option"><input type="checkbox" name="tipoAtt" value="Altro"> Altro</label>
       </div></div>
       <div class="form-group"><label>Sistema filtrante</label><select id="haSistemaFiltrante"><option value="no">No</option><option value="si">Si</option></select></div>
-      <div class="form-group"><label>N. Stadi</label>
+      <div class="form-group"><label>N° stadi filtranti</label>
         <select id="stadiFiltranti" onchange="updateStadiVisibility()">
           <option value="">-</option>
-          <option value="1">1 Stadio</option>
-          <option value="2">2 Stadio</option>
-          <option value="3">3 Stadio</option>
-          <option value="4">4 Stadio</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
         </select>
       </div>
       <div class="form-group"><label>Accessori</label><input id="accessori"></div>
@@ -1421,13 +1427,14 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       <div class="form-group"><label>Cadenza (mesi)</label><input id="commCadenza" readonly style="background:#f8fafc" placeholder="auto"></div>
       <div class="form-group full"><label>Tipo/i intervento * (seleziona uno o più)</label>
         <div id="commTipoChecks" style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.35rem">
-          <label class="check-option"><input type="checkbox" name="commTipo" value="Manutenzione ordinaria"> Manutenzione ordinaria</label>
+          <label class="check-option"><input type="checkbox" name="commTipo" value="Manutenzione preventiva"> Manutenzione preventiva</label>
+          <label class="check-option"><input type="checkbox" name="commTipo" value="Manutenzione correttiva"> Manutenzione correttiva</label>
           <label class="check-option"><input type="checkbox" name="commTipo" value="Manutenzione straordinaria"> Manutenzione straordinaria</label>
           <label class="check-option"><input type="checkbox" name="commTipo" value="Controlli strumentali"> Controlli strumentali</label>
           <label class="check-option"><input type="checkbox" name="commTipo" value="Nuova installazione"> Nuova installazione</label>
+          <label class="check-option"><input type="checkbox" name="commTipo" value="Nuova installazione impiantistica"> Nuova installazione impiantistica</label>
           <label class="check-option"><input type="checkbox" name="commTipo" value="Spostamento DPC"> Spostamento DPC</label>
           <label class="check-option"><input type="checkbox" name="commTipo" value="Cambio filtri"> Cambio filtri</label>
-          <label class="check-option"><input type="checkbox" name="commTipo" value="Verifica periodica"> Verifica periodica</label>
           <label class="check-option"><input type="checkbox" name="commTipo" value="Smaltimento DPC"> Smaltimento DPC</label>
           <label class="check-option"><input type="checkbox" name="commTipo" value="Sopralluogo"> Sopralluogo</label>
           <label class="check-option"><input type="checkbox" name="commTipo" value="Altro" onchange="onCommTipoAltroChange()"> Altro</label>
@@ -1612,13 +1619,14 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       <div class="form-group"><label>Sede <small style="font-weight:400;color:#64748b">(dalla commessa)</small></label><select id="niSede" onchange="fillNiDpc()" disabled style="background:#f8fafc"><option value="">Seleziona sede...</option></select></div>
       <div class="form-group full"><label>Tipo intervento * <small style="font-weight:400;color:#64748b">(solo tipi della commessa; puoi toglierne, non aggiungerne)</small></label>
         <div id="niTipoChecks" style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.35rem">
-          <label class="check-option"><input type="checkbox" name="niTipo" value="Manutenzione ordinaria"> Manutenzione ordinaria</label>
+          <label class="check-option"><input type="checkbox" name="niTipo" value="Manutenzione preventiva"> Manutenzione preventiva</label>
+          <label class="check-option"><input type="checkbox" name="niTipo" value="Manutenzione correttiva"> Manutenzione correttiva</label>
           <label class="check-option"><input type="checkbox" name="niTipo" value="Manutenzione straordinaria"> Manutenzione straordinaria</label>
           <label class="check-option"><input type="checkbox" name="niTipo" value="Controlli strumentali"> Controlli strumentali</label>
           <label class="check-option"><input type="checkbox" name="niTipo" value="Nuova installazione"> Nuova installazione</label>
+          <label class="check-option"><input type="checkbox" name="niTipo" value="Nuova installazione impiantistica"> Nuova installazione impiantistica</label>
           <label class="check-option"><input type="checkbox" name="niTipo" value="Spostamento DPC"> Spostamento DPC</label>
           <label class="check-option"><input type="checkbox" name="niTipo" value="Cambio filtri"> Cambio filtri</label>
-          <label class="check-option"><input type="checkbox" name="niTipo" value="Verifica periodica"> Verifica periodica</label>
           <label class="check-option"><input type="checkbox" name="niTipo" value="Smaltimento DPC"> Smaltimento DPC</label>
           <label class="check-option"><input type="checkbox" name="niTipo" value="Sopralluogo"> Sopralluogo</label>
           <label class="check-option"><input type="checkbox" name="niTipo" value="Altro"> Altro</label>
@@ -1667,7 +1675,7 @@ html.ui-only-dpc #commesseChrome{display:none!important}
         <div class="form-group"><label>Data *</label><input type="date" id="manData"></div>
         <div class="form-group"><label>Tecnico *</label><input id="manTecnico"></div>
         <div class="form-group"><label>Costo € (opz.)</label><input type="number" step="0.01" min="0" id="manCosto" placeholder="0.00"></div>
-        <div class="form-group"><label>Tipo *</label><select id="manTipo"><option value="">-</option><option>Manutenzione ordinaria</option><option>Manutenzione straordinaria</option><option>Controlli strumentali</option><option>Nuova installazione</option><option>Spostamento DPC</option><option>Cambio filtri</option><option>Verifica periodica</option><option>Smaltimento DPC</option><option>Sopralluogo</option><option>Altro</option></select></div>
+        <div class="form-group"><label>Tipo *</label><select id="manTipo"><option value="">-</option><option>Manutenzione preventiva</option><option>Manutenzione correttiva</option><option>Manutenzione straordinaria</option><option>Controlli strumentali</option><option>Nuova installazione</option><option>Nuova installazione impiantistica</option><option>Spostamento DPC</option><option>Cambio filtri</option><option>Smaltimento DPC</option><option>Sopralluogo</option><option>Altro</option></select></div>
         <div class="form-group full"><label>Allegato</label><input type="file" id="manFile" accept=".pdf,image/*"><input type="url" id="manAllegato" placeholder="oppure link"></div>
         <div class="form-group full"><label>Note</label><textarea id="manNote" rows="2"></textarea></div>
         <div class="form-group full"><label class="checkbox-row"><input type="checkbox" id="manAggiornaUltime" checked> Aggiorna ultima man.</label></div>
@@ -2092,7 +2100,7 @@ function acronimoOptionsHtml(selected){
 window.labelAcronimo=labelAcronimo;
 
 
-function mapEquip(r){return{id:r.id,clienteId:r.cliente_id,acronimo:r.acronimo||"",costruttore:r.costruttore||"",modello:r.modello||"",matricola:r.matricola||"",idDispositivo:r.id_dispositivo||"",ultimaMan:r.ultima_man||"",prossimaMan:r.prossima_man||"",sede:r.sede||"",edificio:r.edificio||"",laboratorio:r.laboratorio||"",piano:r.piano||"",stanza:r.stanza||"",stato:r.stato||"",responsabile:r.responsabile||"",cadenzaMan:r.cadenza_man||"",tipoAttivita:r.tipo_attivita||[],haSistemaFiltrante:r.ha_sistema_filtrante||"no",stadiFiltranti:r.stadi_filtranti||"",accessori:r.accessori||"",note:r.note||"",filtriStadi:r.filtri_stadi||{},fotoUrl:r.foto_url||"",fotoPath:r.foto_path||"",ultimaCert:r.ultima_cert||"",prossimaCert:r.prossima_cert||"",indirizzo:r.indirizzo||"",dipartimento:r.dipartimento||"",referenteContatto:r.referente_contatto||"",geoLat:r.geo_lat||"",geoLng:r.geo_lng||""};}
+function mapEquip(r){return{id:r.id,clienteId:r.cliente_id,acronimo:r.acronimo||"",costruttore:r.costruttore||"",modello:r.modello||"",matricola:r.matricola||"",idDispositivo:r.id_dispositivo||"",ultimaMan:r.ultima_man||"",prossimaMan:r.prossima_man||"",sede:r.sede||"",edificio:r.edificio||"",laboratorio:r.laboratorio||"",piano:r.piano||"",stanza:r.stanza||"",stato:r.stato||"",responsabile:r.responsabile||"",cadenzaMan:r.cadenza_man||"",tipoAttivita:normalizeAttivitaList(r.tipo_attivita||[]),haSistemaFiltrante:r.ha_sistema_filtrante||"no",stadiFiltranti:r.stadi_filtranti||"",accessori:r.accessori||"",note:r.note||"",filtriStadi:r.filtri_stadi||{},fotoUrl:r.foto_url||"",fotoPath:r.foto_path||"",ultimaCert:r.ultima_cert||"",prossimaCert:r.prossima_cert||"",indirizzo:r.indirizzo||"",dipartimento:r.dipartimento||"",referenteContatto:r.referente_contatto||"",geoLat:r.geo_lat||"",geoLng:r.geo_lng||"",excelStyles:r.excel_styles||{}};}
 function fmt(d){if(!d)return"-";var p=String(d).split("-");return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:d;}
 function daysUntil(d){if(!d)return null;var t=new Date(d),n=new Date();n.setHours(0,0,0,0);t.setHours(0,0,0,0);return Math.ceil((t-n)/86400000);}
 function isOverdue(d){var x=daysUntil(d);return x!==null&&x<0;}
@@ -2102,7 +2110,115 @@ function expStatus(d){if(!d)return"none";if(isOverdue(d))return"overdue";var x=d
 function expStatusSimple(d){var s=expStatus(d);if(s==="overdue")return"overdue";if(s==="soon7"||s==="soon15"||s==="soon30")return"soon";if(s==="soon60")return"soon60";if(s==="ok")return"ok";return"none";}
 function statusBadge(s){var m={"OPERATIVA":"badge-teal","IN PRODUZIONE":"badge-green","MANUTENZIONE":"badge-amber","DA INSTALLARE":"badge-blue","DISMESSA":"badge-rose"};return '<span class="badge '+(m[s]||"badge-gray")+'">'+(s||"-")+'</span>';}
 function getTipo(){var a=[];document.querySelectorAll('input[name="tipoAtt"]:checked').forEach(function(c){a.push(c.value);});return a;}
-function setTipo(arr){document.querySelectorAll('input[name="tipoAtt"]').forEach(function(c){c.checked=arr&&arr.indexOf(c.value)>-1;});}
+function setTipo(arr){arr=normalizeAttivitaList(arr);document.querySelectorAll('input[name="tipoAtt"]').forEach(function(c){c.checked=arr&&arr.indexOf(c.value)>-1;});}
+var ATTIVITA_LIST=["Manutenzione preventiva","Manutenzione correttiva","Manutenzione straordinaria","Controlli strumentali","Nuova installazione","Nuova installazione impiantistica","Spostamento DPC","Smaltimento DPC","Cambio filtri","Sopralluogo","Altro"];
+function normalizeOneAttivita(t){
+  var s=String(t||"").trim();
+  if(!s)return "";
+  if(/^MA$/i.test(s)||/manutenzione\s*ordinaria/i.test(s))return "Manutenzione preventiva";
+  if(/verifica\s*periodica/i.test(s))return "Controlli strumentali";
+  if(/^CS$/i.test(s))return "Controlli strumentali";
+  if(/^CF$/i.test(s)||/^FF$/i.test(s))return "Cambio filtri";
+  return s;
+}
+function normalizeAttivitaList(arr){
+  var out=[], seen={};
+  (arr||[]).forEach(function(t){
+    var n=normalizeOneAttivita(t);
+    if(!n||seen[n])return;
+    if(ATTIVITA_LIST.indexOf(n)<0 && n!=="Altro")return;
+    seen[n]=1; out.push(n);
+  });
+  return out;
+}
+function ideaPianificaDpc(){
+  var id=(document.getElementById("editId")||{}).value||"";
+  if(!id){toast("Salva prima il DPC, poi potrai pianificare l'intervento");return;}
+  toast("Idea salvata: pianifica intervento per questo DPC (tipo, data, tecnico – in arrivo)");
+}
+function xlStyle(e, field){
+  var st=(e&&e.excelStyles)?e.excelStyles[field]:null;
+  if(!st)return "";
+  var css=[];
+  if(st.font)css.push("font-family:'"+String(st.font).replace(/'/g,"")+"'");
+  if(st.size)css.push("font-size:"+st.size+"pt");
+  if(st.bold)css.push("font-weight:700");
+  if(st.italic)css.push("font-style:italic");
+  if(st.underline)css.push("text-decoration:underline");
+  if(st.color){
+    var c=String(st.color).replace(/^#/,"");
+    if(c.length===8)c=c.slice(-6);
+    if(/^[0-9A-Fa-f]{6}$/.test(c))css.push("color:#"+c);
+  }
+  return css.length?(' style="'+css.join(";")+'"'):"";
+}
+async function buildXlsxStyleIndex(buf){
+  var map={};
+  try{
+    if(!window.JSZip)return map;
+    var zip=await JSZip.loadAsync(buf);
+    var stFile=zip.file("xl/styles.xml");
+    if(!stFile)return map;
+    var xml=await stFile.async("string");
+    var fonts=[];
+    var fblock=(xml.match(/<fonts[^>]*>([\s\S]*?)<\/fonts>/)||[])[1]||"";
+    fblock.replace(/<font\b[\s\S]*?<\/font>/g,function(ft){
+      var o={bold:/<b[\s\/>]/.test(ft),italic:/<i[\s\/>]/.test(ft),underline:/<u[\s\/>]/.test(ft),font:"",size:"",color:""};
+      var nm=ft.match(/<name[^>]*val="([^"]+)"/); if(nm)o.font=nm[1];
+      var sz=ft.match(/<sz[^>]*val="([^"]+)"/); if(sz)o.size=sz[1];
+      var cl=ft.match(/<color[^>]*rgb="([^"]+)"/i); if(cl)o.color=cl[1];
+      fonts.push(o);
+      return ft;
+    });
+    var xfs=[];
+    var xblock=(xml.match(/<cellXfs[^>]*>([\s\S]*?)<\/cellXfs>/)||[])[1]||"";
+    xblock.replace(/<xf\b[^>]*>/g,function(xf){
+      var fi=xf.match(/fontId="(\d+)"/);
+      xfs.push(fi?parseInt(fi[1],10):0);
+      return xf;
+    });
+    var wbXml=await zip.file("xl/workbook.xml").async("string");
+    var rels=await zip.file("xl/_rels/workbook.xml.rels").async("string");
+    var ridToPath={};
+    rels.replace(/Id="([^"]+)"[^>]*Target="([^"]+)"/g,function(_,id,tg){
+      var t=String(tg).replace(/^\.\//,"");
+      ridToPath[id]=t.indexOf("xl/")===0?t:(t.indexOf("worksheets/")===0?("xl/"+t):("xl/"+t));
+      return _;
+    });
+    var sheetOrder=[];
+    wbXml.replace(/<sheet\b[^>]*>/g,function(sh){
+      sheetOrder.push({name:(sh.match(/name="([^"]+)"/)||[])[1]||"",path:ridToPath[(sh.match(/r:id="([^"]+)"/)||[])[1]||""]});
+      return sh;
+    });
+    for(var si=0;si<sheetOrder.length;si++){
+      var sh=sheetOrder[si]; if(!sh.path)continue;
+      var f=zip.file(sh.path); if(!f)continue;
+      var sxml=await f.async("string");
+      sxml.replace(/<c\b([^>]*)>/g,function(all,attrs){
+        var ref=(attrs.match(/\br="([A-Z]+[0-9]+)"/)||[])[1];
+        var sid=attrs.match(/\bs="(\d+)"/);
+        if(!ref||!sid)return all;
+        var addr=XLSX.utils.decode_cell(ref);
+        var font=fonts[xfs[parseInt(sid[1],10)]||0];
+        if(font) map[sh.name+"|"+addr.r+","+addr.c]=font;
+        return all;
+      });
+    }
+  }catch(ex){console.warn("xlsx styles",ex);}
+  return map;
+}
+function collectRowExcelStyles(idx, sheetName, r, cami){
+  var fields={acr:"acronimo",cost:"costruttore",mod:"modello",mat:"matricola",id:"id_dispositivo",sede:"sede",ed:"edificio",lab:"laboratorio",piano:"piano",stanza:"stanza",ref:"responsabile"};
+  var out={};
+  if(!idx||!cami)return out;
+  Object.keys(fields).forEach(function(k){
+    var col=cami[k];
+    if(col==null||col<0)return;
+    var st=idx[sheetName+"|"+r+","+col];
+    if(st&&(st.bold||st.italic||st.underline||st.font||st.size||st.color)) out[fields[k]]=st;
+  });
+  return out;
+}
 function safeName(n){return String(n||"file").replace(/[^a-zA-Z0-9._-]/g,"_");}
 function reqNA(v){return String(v||"").trim();}
 function val(id){var el=document.getElementById(id);return el?el.value.trim():"";}
@@ -2122,8 +2238,8 @@ function isStatoSenzaScadenze(e){
 function deviceExpiryStatus(e){if(isStatoSenzaScadenze(e))return"none";var man=expStatusSimple(e.prossimaMan),st=worstStageStatus(e);if(man==="overdue"||st==="overdue")return"overdue";if(man==="soon"||st==="soon")return"soon";if(man==="ok"||st==="ok")return"ok";return"none";}
 function deviceExpiryTier(e){if(isStatoSenzaScadenze(e))return"none";var worst="ok",dates=[];if(e.prossimaMan)dates.push(e.prossimaMan);stageProxList(e).forEach(function(x){if(x.prox)dates.push(x.prox);});if(!dates.length)return"none";dates.forEach(function(d){var s=expStatus(d);if(s==="overdue")worst="overdue";else if(s==="soon7"&&worst!=="overdue")worst="soon7";else if(s==="soon15"&&worst!=="overdue"&&worst!=="soon7")worst="soon15";else if(s==="soon30"&&(worst==="ok"||worst==="none"||worst==="soon60"))worst="soon30";else if(s==="soon60"&&(worst==="ok"||worst==="none"))worst="soon60";});return worst;}
 function countStadi(fs){if(!fs)return 0;return Object.keys(fs).filter(function(k){var s=fs[k];return s&&(s.codice||s.misure||s.tipologia||s.prox||s.data_install);}).length;}
-function buildStadiForm(){var box=document.getElementById("stadiBox");if(!box)return;var h="";for(var i=1;i<=4;i++){h+='<div class="stadio-card" id="stadioCard'+i+'" style="display:none"><h4>'+i+'o Stadio</h4><div class="stadio-grid"><div><label>Codice filtro</label><input id="s'+i+'_codice"></div><div><label>Misure (mm)</label><input id="s'+i+'_misure"></div><div><label>Tipologia</label><select id="s'+i+'_tipologia"><option value="">-</option><option value="P">P Particolare</option><option value="M">M Molecolare</option></select></div><div><label>Q.ta</label><input id="s'+i+'_qty"></div><div><label>Correlazione</label><input id="s'+i+'_correlazione"></div><div><label>Data install.</label><input type="date" id="s'+i+'_data"></div><div><label>Durata mesi</label><input id="s'+i+'_durata" type="number" min="1"></div><div><label>Prox. sostituz.</label><input type="date" id="s'+i+'_prox"></div><div><label>Status (auto)</label><input id="s'+i+'_status" readonly style="background:#f1f5f9;font-weight:600" placeholder="automatico"></div></div></div>';}box.innerHTML=h;bindStageAutoProx();updateStadiVisibility();}
-function updateStadiVisibility(){var n=parseNumStadi(val("stadiFiltranti"));for(var i=1;i<=4;i++){var card=document.getElementById("stadioCard"+i);if(card)card.style.display=(i<=n)?"block":"none";}var hint=document.getElementById("stadiSectionHint");if(hint)hint.textContent=n>0?("Compila i "+n+" stadi filtranti dichiarati."):"Seleziona prima il N. Stadi per visualizzare i dettagli filtro.";}
+function buildStadiForm(){var box=document.getElementById("stadiBox");if(!box)return;var h="";for(var i=1;i<=4;i++){h+='<div class="stadio-card" id="stadioCard'+i+'" style="display:none"><h4>'+i+'° Stadio</h4><div class="stadio-grid"><div><label>Codice filtro</label><input id="s'+i+'_codice"></div><div><label>Misure (mm)</label><input id="s'+i+'_misure"></div><div><label>Tipologia</label><select id="s'+i+'_tipologia"><option value="">-</option><option value="P">P Particolare</option><option value="M">M Molecolare</option></select></div><div><label>Q.ta</label><input id="s'+i+'_qty"></div><div><label>Correlazione</label><input id="s'+i+'_correlazione"></div><div><label>Data install.</label><input type="date" id="s'+i+'_data"></div><div><label>Durata mesi</label><input id="s'+i+'_durata" type="number" min="1"></div><div><label>Prox. sostituz.</label><input type="date" id="s'+i+'_prox"></div><div><label>Status (auto)</label><input id="s'+i+'_status" readonly style="background:#f1f5f9;font-weight:600" placeholder="automatico"></div></div></div>';}box.innerHTML=h;bindStageAutoProx();updateStadiVisibility();}
+function updateStadiVisibility(){var n=parseNumStadi(val("stadiFiltranti"));for(var i=1;i<=4;i++){var card=document.getElementById("stadioCard"+i);if(card)card.style.display=(i<=n)?"block":"none";}var hint=document.getElementById("stadiSectionHint");if(hint)hint.textContent=n>0?("Compila i "+n+" stadi filtranti dichiarati."):"Seleziona prima il N° stadi filtranti per visualizzare i dettagli filtro.";}
 function bindStageAutoProx(){for(var i=1;i<=4;i++){(function(n){var dataEl=document.getElementById("s"+n+"_data"),durEl=document.getElementById("s"+n+"_durata"),proxEl=document.getElementById("s"+n+"_prox"),statusEl=document.getElementById("s"+n+"_status");if(!dataEl||!durEl||!proxEl)return;var applyStatus=function(){var st=autoFilterStatus(proxEl.value);if(statusEl){statusEl.value=st;statusEl.style.color=st==="SCADUTO"?"#dc2626":(st==="IN SCADENZA"?"#ea580c":(st==="TRA 2 MESI"?"#2563eb":(st==="OK"?"#047857":"#64748b")));}};var calc=function(){var p=calcProx(dataEl.value,durEl.value);if(p)proxEl.value=p;applyStatus();};dataEl.addEventListener("change",calc);durEl.addEventListener("change",calc);durEl.addEventListener("input",calc);proxEl.addEventListener("change",applyStatus);})(i);}}
 function collectFiltriStadi(){var out={},n=parseNumStadi(val("stadiFiltranti")),max=n>0?n:0;for(var i=1;i<=max;i++){var s={codice:val("s"+i+"_codice"),misure:val("s"+i+"_misure"),tipologia:val("s"+i+"_tipologia"),qty:val("s"+i+"_qty"),correlazione:val("s"+i+"_correlazione"),data_install:val("s"+i+"_data"),durata_mesi:val("s"+i+"_durata"),prox:val("s"+i+"_prox"),status:""};if(!s.prox)s.prox=calcProx(s.data_install,s.durata_mesi);s.status=autoFilterStatus(s.prox);if(s.codice||s.misure||s.tipologia||s.qty||s.data_install||s.prox||s.status)out[String(i)]=s;}return out;}
 function fillFiltriStadi(data){data=data||{};for(var i=1;i<=4;i++){var s=data[String(i)]||emptyStage();setv("s"+i+"_codice",s.codice);setv("s"+i+"_misure",s.misure);setv("s"+i+"_tipologia",s.tipologia);setv("s"+i+"_qty",s.qty);setv("s"+i+"_correlazione",s.correlazione);setv("s"+i+"_data",s.data_install);setv("s"+i+"_durata",s.durata_mesi);var px=s.prox||calcProx(s.data_install,s.durata_mesi);setv("s"+i+"_prox",px);var st=autoFilterStatus(px);setv("s"+i+"_status",st);var statusEl=document.getElementById("s"+i+"_status");if(statusEl)statusEl.style.color=st==="SCADUTO"?"#dc2626":(st==="IN SCADENZA"?"#ea580c":(st==="TRA 2 MESI"?"#2563eb":(st==="OK"?"#047857":"#64748b")));}if(!val("stadiFiltranti")){var maxK=0;Object.keys(data).forEach(function(k){var num=parseInt(k,10);if(!isNaN(num)&&num>maxK)maxK=num;});if(maxK>0)setv("stadiFiltranti",String(maxK));}updateStadiVisibility();}
@@ -3926,7 +4042,7 @@ window.addEventListener("resize",function(){try{syncTableScrollbars();}catch(e){
 
 
 function renderTable(){try{refreshBell();}catch(ex){}var q=document.getElementById("searchInput").value.toLowerCase(),fcl=document.getElementById("filterCliente").value,fac=document.getElementById("filterAcronimo").value,fse=document.getElementById("filterSede").value,fst=document.getElementById("filterStato").value,ffi=document.getElementById("filterFiltro").value,fsc=document.getElementById("filterScadenza").value;var baseList=visibleEquipment();var list=baseList.filter(function(e){var ms=!q||[e.matricola,e.idDispositivo,e.modello,e.sede,e.acronimo,labelAcronimo(e.acronimo,"full"),clienteName(e.clienteId),clienteCode(e.clienteId),e.responsabile,filterCodesText(e)].join(" ").toLowerCase().indexOf(q)>-1;var dest=deviceExpiryStatus(e),msc=true;if(fsc==="scaduti")msc=dest==="overdue";else if(fsc==="in_scadenza")msc=dest==="soon";else if(fsc==="d7"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7";}else if(fsc==="d15"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7"||t==="soon15";}else if(fsc==="d30")msc=dest==="overdue"||dest==="soon";else if(fsc==="d60"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7"||t==="soon15"||t==="soon30"||t==="soon60";}else if(fsc==="in_2mesi"){var t=deviceExpiryTier(e);msc=t==="soon60";}else if(fsc==="ok")msc=dest==="ok"||dest==="none";return ms&&(!fcl||e.clienteId===fcl)&&(!fac||e.acronimo===fac)&&(!fse||e.sede===fse)&&(!fst||e.stato===fst)&&(!ffi||e.haSistemaFiltrante===ffi)&&msc;});list.sort(function(a,b){var o={overdue:0,soon:1,ok:2,none:3},sa=deviceExpiryStatus(a),sb=deviceExpiryStatus(b);if(o[sa]!==o[sb])return o[sa]-o[sb];return(a.matricola||"").localeCompare(b.matricola||"");});var tb=document.getElementById("tableBody"),empty=document.getElementById("emptyState");if(!list.length){tb.innerHTML="";empty.classList.add("show");try{syncTableScrollbars();}catch(ex){}return;}empty.classList.remove("show");var html="";list.forEach(function(e){var st=deviceExpiryStatus(e),row=st==="overdue"?"row-overdue":(st==="soon"?"row-soon":"");var manSt=isStatoSenzaScadenze(e)?"none":expStatus(e.prossimaMan),dc=manSt==="overdue"?"overdue":(manSt==="soon"?"soon":"");var days="";if(manSt==="overdue")days=" <small>(-"+Math.abs(daysUntil(e.prossimaMan))+"g)</small>";else if(manSt==="soon")days=" <small>("+daysUntil(e.prossimaMan)+"g)</small>";var nf=nextFilterProx(e),filCell="-";if(nf){var fdc=nf.status==="overdue"?"overdue":(nf.status==="soon"?"soon":"");var fd="";if(nf.status==="overdue")fd=" <small>(-"+Math.abs(daysUntil(nf.prox))+"g)</small>";else if(nf.status==="soon")fd=" <small>("+daysUntil(nf.prox)+"g)</small>";filCell='<span class="'+fdc+'">S'+nf.stadio+' '+fmt(nf.prox)+fd+'</span>';}
-    var stFil="-";if(isStatoSenzaScadenze(e)){filCell="-";stFil="-";}else if(nf){stFil=statusFiltroBadge(autoFilterStatus(nf.prox));}else{var fs=e.filtriStadi||{};for(var si=1;si<=4;si++){var ss=fs[String(si)];if(ss&&ss.prox){stFil=statusFiltroBadge(autoFilterStatus(ss.prox));break;}}}var att=(e.tipoAttivita&&e.tipoAttivita.length)?e.tipoAttivita.join(", "):"-";var filtro=e.haSistemaFiltrante==="si"?'<span class="badge badge-blue">Si</span>':'<span class="badge badge-gray">No</span>';var nSt=countStadi(e.filtriStadi),stadiTxt=nSt?(nSt+"o"):(e.stadiFiltranti||"-");var canInt=canEditInterventi(e.clienteId);var canAna=canEditAnagrafica(e.clienteId);var az='<button class="btn-icon history" title="Storico" onclick="openHistory(\''+e.id+'\')"><i class="fas fa-history"></i></button><button class="btn-icon report" title="Report" onclick="openReport(\''+e.id+'\')"><i class="fas fa-file-alt"></i></button><button class="btn-icon" title="Commenti" style="color:#7c3aed" onclick="openComments(\''+e.id+'\')"><i class="fas fa-comments"></i></button><button class="btn-icon" title="Scheda/Stampa" style="color:#0369a1" onclick="openPrintScheda(\''+e.id+'\')"><i class="fas fa-print"></i></button>';if(canAna)az+='<button class="btn-icon" title="Duplica" style="color:#0f766e" onclick="duplicaEquipment(\''+e.id+'\')"><i class="fas fa-copy"></i></button><button class="btn-icon edit" title="Modifica" onclick="editEquipment(\''+e.id+'\')"><i class="fas fa-pen"></i></button><button class="btn-icon delete" title="Elimina" onclick="deleteEquipment(\''+e.id+'\')"><i class="fas fa-trash"></i></button>';html+='<tr class="'+row+'"><td>'+clienteBadge(e.clienteId)+'</td><td title="'+String(labelAcronimo(e.acronimo,'full')).replace(/"/g,'&quot;')+'"><strong>'+(e.acronimo||"-")+'</strong><div style="font-size:.68rem;color:#64748b;font-weight:500;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+labelAcronimo(e.acronimo,'desc')+'</div></td><td class="truncate">'+(e.costruttore||"-")+'</td><td class="truncate">'+(e.modello||"-")+'</td><td class="code">'+(e.matricola||"-")+'</td><td class="code">'+(e.idDispositivo||"-")+'</td><td>'+fmt(e.ultimaMan)+'</td><td class="'+dc+'">'+(isStatoSenzaScadenze(e)?"-":(fmt(e.prossimaMan)+days))+'</td><td>'+filCell+'</td><td>'+stFil+'</td><td>'+(e.sede||"-")+'</td><td class="truncate">'+(e.edificio||"-")+'</td><td class="truncate">'+(e.laboratorio||"-")+'</td><td>'+(e.piano||"-")+'</td><td>'+(e.stanza||"-")+'</td><td>'+statusBadge(e.stato)+'</td><td class="truncate">'+(e.responsabile||"-")+'</td><td>'+(e.cadenzaMan||"-")+'</td><td>'+att+'</td><td>'+filtro+'</td><td>'+stadiTxt+'</td><td class="truncate">'+(e.accessori||"-")+'</td><td class="truncate">'+(e.note||"-")+'</td><td><div class="actions">'+az+'</div></td></tr>';});tb.innerHTML=html;try{syncTableScrollbars();}catch(ex){};}
+    var stFil="-";if(isStatoSenzaScadenze(e)){filCell="-";stFil="-";}else if(nf){stFil=statusFiltroBadge(autoFilterStatus(nf.prox));}else{var fs=e.filtriStadi||{};for(var si=1;si<=4;si++){var ss=fs[String(si)];if(ss&&ss.prox){stFil=statusFiltroBadge(autoFilterStatus(ss.prox));break;}}}var att=(e.tipoAttivita&&e.tipoAttivita.length)?e.tipoAttivita.join(", "):"-";var filtro=e.haSistemaFiltrante==="si"?'<span class="badge badge-blue">Si</span>':'<span class="badge badge-gray">No</span>';var nSt=countStadi(e.filtriStadi),stadiTxt=nSt?String(nSt):(e.stadiFiltranti||"-");var canInt=canEditInterventi(e.clienteId);var canAna=canEditAnagrafica(e.clienteId);var az='<button class="btn-icon history" title="Storico" onclick="openHistory(\''+e.id+'\')"><i class="fas fa-history"></i></button><button class="btn-icon report" title="Report" onclick="openReport(\''+e.id+'\')"><i class="fas fa-file-alt"></i></button><button class="btn-icon" title="Commenti" style="color:#7c3aed" onclick="openComments(\''+e.id+'\')"><i class="fas fa-comments"></i></button><button class="btn-icon" title="Scheda/Stampa" style="color:#0369a1" onclick="openPrintScheda(\''+e.id+'\')"><i class="fas fa-print"></i></button>';if(canAna)az+='<button class="btn-icon" title="Duplica" style="color:#0f766e" onclick="duplicaEquipment(\''+e.id+'\')"><i class="fas fa-copy"></i></button><button class="btn-icon edit" title="Modifica" onclick="editEquipment(\''+e.id+'\')"><i class="fas fa-pen"></i></button><button class="btn-icon delete" title="Elimina" onclick="deleteEquipment(\''+e.id+'\')"><i class="fas fa-trash"></i></button>';html+='<tr class="'+row+'"><td>'+clienteBadge(e.clienteId)+'</td><td'+xlStyle(e,'acronimo')+' title="'+String(labelAcronimo(e.acronimo,'full')).replace(/"/g,'&quot;')+'"><strong>'+(e.acronimo||"-")+'</strong><div style="font-size:.68rem;color:#64748b;font-weight:500;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+labelAcronimo(e.acronimo,'desc')+'</div></td><td class="truncate"'+xlStyle(e,'costruttore')+'>'+(e.costruttore||"-")+'</td><td class="truncate"'+xlStyle(e,'modello')+'>'+(e.modello||"-")+'</td><td class="code"'+xlStyle(e,'matricola')+'>'+(e.matricola||"-")+'</td><td class="code"'+xlStyle(e,'id_dispositivo')+'>'+(e.idDispositivo||"-")+'</td><td>'+fmt(e.ultimaMan)+'</td><td class="'+dc+'">'+(isStatoSenzaScadenze(e)?"-":(fmt(e.prossimaMan)+days))+'</td><td>'+filCell+'</td><td>'+stFil+'</td><td>'+(e.sede||"-")+'</td><td class="truncate">'+(e.edificio||"-")+'</td><td class="truncate">'+(e.laboratorio||"-")+'</td><td>'+(e.piano||"-")+'</td><td>'+(e.stanza||"-")+'</td><td>'+statusBadge(e.stato)+'</td><td class="truncate">'+(e.responsabile||"-")+'</td><td>'+(e.cadenzaMan||"-")+'</td><td>'+att+'</td><td>'+filtro+'</td><td>'+stadiTxt+'</td><td class="truncate">'+(e.accessori||"-")+'</td><td class="truncate">'+(e.note||"-")+'</td><td><div class="actions">'+az+'</div></td></tr>';});tb.innerHTML=html;try{syncTableScrollbars();}catch(ex){};}
 async function doLogin(){var u=document.getElementById("loginUsername").value.trim(),p=document.getElementById("loginPassword").value,err=document.getElementById("loginError");if(!u||!p){err.textContent="Inserisci credenziali";err.classList.add("show");return;}var res=await sb.from("users").select("*").eq("username",u).limit(1);if(res.error){err.textContent=res.error.message;err.classList.add("show");return;}if(!res.data.length||res.data[0].password!==p){err.textContent="Credenziali non corrette";err.classList.add("show");return;}var row=res.data[0];var role=normalizeRole(row.role);currentUser={id:row.id,username:row.username,nome:row.nome||row.username,role:role,clienteId:row.cliente_id||null,clienteIds:[]};try{var tc=await sb.from("tecnico_clienti").select("cliente_id").eq("user_id",row.id);if(tc&&!tc.error&&tc.data)currentUser.clienteIds=tc.data.map(function(x){return x.cliente_id;});}catch(ex){}if(!currentUser.clienteIds.length&&currentUser.clienteId)currentUser.clienteIds=[currentUser.clienteId];safeSetSession(SESSION_KEY,JSON.stringify(currentUser));err.classList.remove("show");
   try{await sb.from("users").update({last_login:new Date().toISOString()}).eq("id",row.id);}catch(e){}
   try{await logAudit("LOGIN",null,"Accesso "+currentUser.username+" ("+currentUser.role+")");}catch(e){}
@@ -4008,7 +4124,7 @@ async function showPendingInAppNotifications(){
   }catch(e){}
 }
 
-function openModal(id){if(!canCreateDpc()&&!id)return;fillFilters();buildStadiForm();try{refreshCascadeRoot();}catch(e){}document.getElementById("modal").classList.add("show");document.getElementById("editId").value="";["acronimo","costruttore","modello","matricola","idDispositivo","ultimaMan","prossimaMan","sede","edificio","laboratorio","piano","stanza","responsabile","cadenzaMan","stadiFiltranti","accessori","note"].forEach(function(f){var el=document.getElementById(f);if(el)el.value="";});document.getElementById("stato").value="OPERATIVA";document.getElementById("haSistemaFiltrante").value="no";setTipo([]);fillFiltriStadi({});document.getElementById("fotoUrl").value="";document.getElementById("fotoPath").value="";var ff=document.getElementById("fotoFile");if(ff)ff.value="";showFotoPreview("");var sel=document.getElementById("clienteId");
+function openModal(id){if(!canCreateDpc()&&!id)return;fillFilters();buildStadiForm();try{refreshCascadeRoot();}catch(e){}document.getElementById("modal").classList.add("show");var bp=document.getElementById("btnPianificaDpc");if(bp)bp.style.display=id?"inline-flex":"none";document.getElementById("editId").value="";["acronimo","costruttore","modello","matricola","idDispositivo","ultimaMan","prossimaMan","sede","edificio","laboratorio","piano","stanza","responsabile","cadenzaMan","stadiFiltranti","accessori","note"].forEach(function(f){var el=document.getElementById(f);if(el)el.value="";});document.getElementById("stato").value="OPERATIVA";document.getElementById("haSistemaFiltrante").value="no";setTipo([]);fillFiltriStadi({});document.getElementById("fotoUrl").value="";document.getElementById("fotoPath").value="";var ff=document.getElementById("fotoFile");if(ff)ff.value="";showFotoPreview("");var sel=document.getElementById("clienteId");
 if(sel){
   // popola solo clienti modificabili per tecnico
   if(isTecnico()){
@@ -4032,7 +4148,7 @@ async function saveEquipment(){var cliente_id=document.getElementById("clienteId
   if(dupMat){alert("Matricola gia presente per questo cliente e sede:\n"+dupMat.acronimo+" · Matricola: "+dupMat.matricola+" · ID: "+dupMat.idDispositivo+" · Sede: "+(dupMat.sede||"-"));return;}
   var dupId=equipment.find(function(x){return x.clienteId===cliente_id&&x.id!==id&&String(x.idDispositivo||"").toLowerCase()===idDispositivo.toLowerCase()&&String(x.sede||"").toLowerCase()===sedeNorm;});
   if(dupId){alert("ID dispositivo gia presente per questo cliente e sede:\n"+dupId.acronimo+" · Matricola: "+dupId.matricola+" · ID: "+dupId.idDispositivo+" · Sede: "+(dupId.sede||"-"));return;}
-var filtri=collectFiltriStadi(),nSt=Object.keys(filtri).length;var stadiRaw=document.getElementById("stadiFiltranti").value,nDecl=parseNumStadi(stadiRaw);var stadiLabel=nDecl>0?(nDecl+" Stadio"):(stadiRaw||(nSt?nSt+" Stadio":""));var foto={url:document.getElementById("fotoUrl").value||"",path:document.getElementById("fotoPath").value||""};try{foto=await uploadFotoIfAny(id||"new");}catch(fe){alert(storageErrorMsg(fe,"foto"));return;}var row={cliente_id:cliente_id,acronimo:acronimo,costruttore:document.getElementById("costruttore").value.trim(),modello:document.getElementById("modello").value.trim(),matricola:matricola,id_dispositivo:idDispositivo,ultima_man:document.getElementById("ultimaMan").value||null,prossima_man:document.getElementById("prossimaMan").value||null,sede:sede,
+var filtri=collectFiltriStadi(),nSt=Object.keys(filtri).length;var stadiRaw=document.getElementById("stadiFiltranti").value,nDecl=parseNumStadi(stadiRaw);var stadiLabel=nDecl>0?String(nDecl):(stadiRaw||(nSt?String(nSt):""));var foto={url:document.getElementById("fotoUrl").value||"",path:document.getElementById("fotoPath").value||""};try{foto=await uploadFotoIfAny(id||"new");}catch(fe){alert(storageErrorMsg(fe,"foto"));return;}var row={cliente_id:cliente_id,acronimo:acronimo,costruttore:document.getElementById("costruttore").value.trim(),modello:document.getElementById("modello").value.trim(),matricola:matricola,id_dispositivo:idDispositivo,ultima_man:document.getElementById("ultimaMan").value||null,prossima_man:document.getElementById("prossimaMan").value||null,sede:sede,
     dipartimento:(document.getElementById("dipartimento")&&document.getElementById("dipartimento").value||"").trim()||null,edificio:document.getElementById("edificio").value.trim(),laboratorio:document.getElementById("laboratorio").value.trim(),piano:document.getElementById("piano").value.trim(),stanza:document.getElementById("stanza").value.trim(),stato:document.getElementById("stato").value,responsabile:document.getElementById("responsabile").value.trim(),referente_contatto:(document.getElementById("referenteContatto")&&document.getElementById("referenteContatto").value||"").trim()||null,cadenza_man:document.getElementById("cadenzaMan").value.trim(),tipo_attivita:getTipo(),ha_sistema_filtrante:document.getElementById("haSistemaFiltrante").value,stadi_filtranti:stadiLabel,accessori:document.getElementById("accessori").value.trim(),note:document.getElementById("note").value.trim(),filtri_stadi:filtri,foto_url:foto.url||null,foto_path:foto.path||null,ultima_cert:document.getElementById("ultimaCert").value||null,prossima_cert:document.getElementById("prossimaCert").value||null,indirizzo:document.getElementById("indirizzo").value.trim()||null,geo_lat:document.getElementById("geoLat").value.trim()||null,geo_lng:document.getElementById("geoLng").value.trim()||null};
   var isUpdate=!!id;
   var prev=isUpdate?equipment.find(function(x){return x.id===id;}):null;
@@ -4612,7 +4728,7 @@ async function saveManutenzione(){if(!currentCanEdit)return;var data=document.ge
   if(!needAttach){
     if(/cambio\s*filtri/i.test(tipo)&&(o.CF||o["Cambio filtri"]))needAttach=true;
     else if(/controlli\s*strumentali|verifica\s*periodica/i.test(tipo)&&(o.CS||o["Controlli strumentali"]||o["Verifica periodica"]))needAttach=true;
-    else if(/manutenzione\s*ordinaria/i.test(tipo)&&(o.MA||o["Manutenzione ordinaria"]))needAttach=true;
+    else if(/manutenzione\s*(ordinaria|preventiva)/i.test(tipo)&&(o.MA||o["Manutenzione ordinaria"]||o["Manutenzione preventiva"]))needAttach=true;
     else if(/manutenzione\s*straordinaria/i.test(tipo)&&(o.MA||o["Manutenzione straordinaria"]))needAttach=true;
   }
   if(needAttach&&!file&&!link){alert("Per questo tipo di attività (\""+tipo+"\") l'allegato è obbligatorio.\nCarica un file o inserisci un link.");return;}
@@ -5247,7 +5363,7 @@ async function creaInterventiDaPiano(){
       var k=String(j.clienteId)+"|"+String(j.sede||"");
       if(!map[k])map[k]={date:d.date,clienteId:j.clienteId,cliente:j.cliente,sede:j.sede||"",ids:[],tipi:{}};
       if(map[k].ids.indexOf(j.id)<0)map[k].ids.push(j.id);
-      map[k].tipi[j.tipo==="man"?"Manutenzione ordinaria":"Cambio filtri"]=1;
+      map[k].tipi[j.tipo==="man"?"Manutenzione preventiva":"Cambio filtri"]=1;
     });
     Object.keys(map).forEach(function(k){groups.push(map[k]);});
   });
@@ -6466,7 +6582,8 @@ async function runExcelImport(file,clienteId,dpcMode){
   var reader=new FileReader();
   reader.onload=async function(e){
     try{
-      var wb=XLSX.read(new Uint8Array(e.target.result),{type:"array",cellDates:true});
+      var wb=XLSX.read(new Uint8Array(e.target.result),{type:"array",cellDates:true,cellStyles:true});
+      var styleIdx=await buildXlsxStyleIndex(e.target.result);
       // Scegli il foglio APPARECCHIATURE, mai la legenda acronimi (Foglio1 = 27 righe)
       function scoreCamiSheet(name, rows){
         var score=0, posN=0, joinedAll="";
@@ -6826,14 +6943,15 @@ async function runExcelImport(file,clienteId,dpcMode){
           if(!attRaw&&cami.ultimaTipo>=0)attRaw=cell(row,cami.ultimaTipo);
           var tipoAtt=[];
           if(attRaw){
-            ["Manutenzione ordinaria","Manutenzione straordinaria","Controlli strumentali","Cambio filtri","Verifica periodica"].forEach(function(t){});
+            ["Manutenzione preventiva","Manutenzione straordinaria","Controlli strumentali","Cambio filtri"].forEach(function(t){});
             // codici brevi
             var up=attRaw.toUpperCase();
-            if(up.indexOf("MA")>-1)tipoAtt.push("Manutenzione ordinaria");
+            if(up.indexOf("MA")>-1)tipoAtt.push("Manutenzione preventiva");
             if(up.indexOf("CS")>-1)tipoAtt.push("Controlli strumentali");
             if(up.indexOf("CF")>-1)tipoAtt.push("Cambio filtri");
             if(up.indexOf("FF")>-1)tipoAtt.push("Cambio filtri");
             if(!tipoAtt.length&&attRaw)tipoAtt.push(attRaw);
+            tipoAtt=normalizeAttivitaList(tipoAtt);
           }
 
           // filtri stadi
@@ -6919,12 +7037,13 @@ async function runExcelImport(file,clienteId,dpcMode){
             cadenza_man:cadenza||"",
             tipo_attivita:tipoAtt,
             ha_sistema_filtrante:haFiltro,
-            stadi_filtranti:maxS?(maxS+" Stadio"):"",
+            stadi_filtranti:maxS?String(maxS):"",
             accessori:accessori,
             note:("Pos "+(hasPos?String(posRaw).trim():"-")+" · Import Excel riga "+(r+1)+(noteExtra.length?(" · "+noteExtra.join(" · ")):"" )),
             filtri_stadi:fs,
             ultima_man:ultimaMan||null,
-            prossima_man:null
+            prossima_man:null,
+            excel_styles:collectRowExcelStyles(styleIdx, chosen, r, cami)
           };
           payload.push({rowNum:r+1,pos:posRaw,data:insertRow});
         }catch(exRow){
@@ -6938,6 +7057,10 @@ async function runExcelImport(file,clienteId,dpcMode){
           var rowsIns=chunk.map(function(x){return x.data;});
           var res=null;
           try{res=await sb.from("equipment").insert(rowsIns);}catch(ex){res={error:ex};}
+          if(res&&res.error&&String(res.error.message||"").indexOf("excel_styles")>-1){
+            rowsIns.forEach(function(rr){delete rr.excel_styles;});
+            try{res=await sb.from("equipment").insert(rowsIns);}catch(ex2){res={error:ex2};}
+          }
           if(res&&res.error&&String(res.error.message||"").indexOf("dipartimento")>-1){
             rowsIns.forEach(function(rr){delete rr.dipartimento;});
             try{res=await sb.from("equipment").insert(rowsIns);}catch(ex2){res={error:ex2};}
@@ -7010,6 +7133,7 @@ async function runExcelImport(file,clienteId,dpcMode){
         if(already){skip++;errors.push("Riga "+(r+1)+": duplicato "+mat);continue;}
         var attRaw=cell(row,cAtt),tipoAtt=[];
         if(attRaw){["MA","CS","CF","FF"].forEach(function(t){if(attRaw.toUpperCase().indexOf(t)>-1)tipoAtt.push(t);});}
+        tipoAtt=normalizeAttivitaList(tipoAtt);
         var fs={},maxS=0;
         for(var si=1;si<=4;si++){
           var sc=stageCols[si];
@@ -7020,7 +7144,7 @@ async function runExcelImport(file,clienteId,dpcMode){
         }
         var haFiltro=mapFiltro(cell(row,cFiltro));
         if(haFiltro==="no"&&Object.keys(fs).length)haFiltro="si";
-        var insertRow={cliente_id:clienteId,acronimo:(cell(row,cAcr)||"").toUpperCase(),costruttore:cell(row,cCost),modello:cell(row,cMod),matricola:mat,id_dispositivo:idd,sede:sedeImp,edificio:cell(row,cEd),laboratorio:cell(row,cLab),piano:cell(row,cPiano),stanza:cell(row,cStanza),stato:mapStato(cell(row,cStato)),responsabile:cell(row,cRef),cadenza_man:cell(row,cCad),tipo_attivita:tipoAtt,ha_sistema_filtrante:haFiltro,stadi_filtranti:maxS?maxS+" Stadio":"",accessori:cell(row,cAcc),note:"Import Excel riga "+(r+1),filtri_stadi:fs,dipartimento:cDip>=0?cell(row,cDip):"",ultima_man:cUlt>=0?(parseExcelDate(cell(row,cUlt))||null):null,prossima_man:cProx>=0?(parseExcelDate(cell(row,cProx))||null):null};
+        var insertRow={cliente_id:clienteId,acronimo:(cell(row,cAcr)||"").toUpperCase(),costruttore:cell(row,cCost),modello:cell(row,cMod),matricola:mat,id_dispositivo:idd,sede:sedeImp,edificio:cell(row,cEd),laboratorio:cell(row,cLab),piano:cell(row,cPiano),stanza:cell(row,cStanza),stato:mapStato(cell(row,cStato)),responsabile:cell(row,cRef),cadenza_man:cell(row,cCad),tipo_attivita:tipoAtt,ha_sistema_filtrante:haFiltro,stadi_filtranti:maxS?String(maxS):"",accessori:cell(row,cAcc),note:"Import Excel riga "+(r+1),filtri_stadi:fs,dipartimento:cDip>=0?cell(row,cDip):"",ultima_man:cUlt>=0?(parseExcelDate(cell(row,cUlt))||null):null,prossima_man:cProx>=0?(parseExcelDate(cell(row,cProx))||null):null};
         var res=await sb.from("equipment").insert([insertRow]);
         if(res.error){
           delete insertRow.dipartimento;
@@ -7039,7 +7163,7 @@ async function runExcelImport(file,clienteId,dpcMode){
 
 
 var OBB_KEY="cami_allegati_obbligatori_v2";
-var OBB_TIPI=["Manutenzione ordinaria","Manutenzione straordinaria","Controlli strumentali","Nuova installazione","Spostamento DPC","Cambio filtri","Verifica periodica","Smaltimento DPC","Sopralluogo","Altro"];
+var OBB_TIPI=["Manutenzione preventiva","Manutenzione correttiva","Manutenzione straordinaria","Controlli strumentali","Nuova installazione","Nuova installazione impiantistica","Spostamento DPC","Cambio filtri","Smaltimento DPC","Sopralluogo","Altro"];
 function obbId(t){return "obb_"+String(t).replace(/\s+/g,"_");}
 function getObbligatori(){
   try{
@@ -9217,13 +9341,16 @@ function renderMap(){
 
 /* ===== Report Excel univoci per tipo intervento ===== */
 var REPORT_TIPO_MAP={
-  "Manutenzione ordinaria":{num:1,code:"WS01",slug:"ManutenzioneOrdinaria"},
+  "Manutenzione preventiva":{num:1,code:"WS01",slug:"ManutenzionePreventiva"},
+  "Manutenzione ordinaria":{num:1,code:"WS01",slug:"ManutenzionePreventiva"},
+  "Manutenzione correttiva":{num:11,code:"WS11",slug:"ManutenzioneCorrettiva"},
   "Manutenzione straordinaria":{num:2,code:"WS02",slug:"ManutenzioneStraordinaria"},
   "Controlli strumentali":{num:3,code:"WS03",slug:"ControlliStrumentali"},
+  "Verifica periodica":{num:3,code:"WS03",slug:"ControlliStrumentali"},
   "Nuova installazione":{num:4,code:"WS04",slug:"NuovaInstallazione"},
+  "Nuova installazione impiantistica":{num:12,code:"WS12",slug:"NuovaInstallazioneImpiantistica"},
   "Spostamento DPC":{num:5,code:"WS05",slug:"SpostamentoDPC"},
   "Cambio filtri":{num:6,code:"WS06",slug:"CambioFiltri"},
-  "Verifica periodica":{num:7,code:"WS07",slug:"VerificaPeriodica"},
   "Smaltimento DPC":{num:8,code:"WS08",slug:"SmaltimentoDPC"},
   "Sopralluogo":{num:9,code:"WS09",slug:"Sopralluogo"},
   "Altro":{num:10,code:"WS10",slug:"Altro"}
