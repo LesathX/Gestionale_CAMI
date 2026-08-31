@@ -749,7 +749,7 @@ html.ui-only-dpc #commesseChrome{display:none!important}
     <div class="todo-wrap">
       <div class="todo-head">
         <h2><i class="fas fa-check-square"></i> TO DO LIST</h2>
-        <p>Promemoria a 60, 30, 15, 7 e 3 giorni (manutenzione e filtri). Se spunti <strong>ESEGUITO</strong> quella attivita sparisce e non parte piu la mail.</p>
+        <p>Solo <strong>preparazione</strong>: documenti, ordini filtri/prefiltri, accessori. Le attivita sul campo stanno in <strong>Piano +2 mesi</strong>. Spunta ESEGUITO quando il materiale/documento e pronto (niente mail dopo).</p>
       </div>
       <div class="todo-stats" id="todoStats"></div>
       <div class="todo-filters">
@@ -764,8 +764,9 @@ html.ui-only-dpc #commesseChrome{display:none!important}
         </select>
         <select id="todoFiltroTipo" onchange="renderTodoList()">
           <option value="">Tutti i tipi</option>
-          <option value="man">Manutenzione</option>
-          <option value="fil">Filtri</option>
+          <option value="ord">Da ordinare</option>
+          <option value="doc">Documenti</option>
+          <option value="acc">Accessori</option>
         </select>
         <label style="font-size:.8rem;color:#475569;display:flex;gap:.35rem;align-items:center"><input type="checkbox" id="todoShowDone" onchange="renderTodoList()"> Mostra eseguiti</label>
       </div>
@@ -786,11 +787,16 @@ html.ui-only-dpc #commesseChrome{display:none!important}
         <button class="btn btn-primary" onclick="renderPianoPage(true)"><i class="fas fa-sync"></i> Rigenera</button>
         <button class="btn btn-excel" onclick="exportPianoExcel()"><i class="fas fa-file-excel"></i> Excel</button>
         <button class="btn btn-email" onclick="emailPianoMensile()"><i class="fas fa-envelope"></i> Invia piano</button>
+        <button class="btn btn-oggi" onclick="creaInterventiDaPiano()"><i class="fas fa-wrench"></i> Crea interventi</button>
       </div>
       <div class="todo-stats" id="pianoStats"></div>
+      <h3 class="piano-sec">Viaggi per sede</h3>
+      <div class="piano-mat" id="pianoViaggi"></div>
+      <h3 class="piano-sec">Lista spesa magazzino (codici da ordinare)</h3>
+      <div class="piano-mat" id="pianoSpesa"></div>
       <h3 class="piano-sec">Materiali per cliente</h3>
       <div class="piano-mat" id="pianoMat"></div>
-      <h3 class="piano-sec">Pianificazione giorno per giorno (lun–ven)</h3>
+      <h3 class="piano-sec">Pianificazione giorno per giorno (lun–ven, raggruppata per sede)</h3>
       <div id="pianoDays"></div>
       <div id="pianoEmpty" class="empty" style="display:none"><p>Nessuna attivita in questo mese</p></div>
     </div>
@@ -4602,21 +4608,49 @@ function updateEmailStatus(){
 function isSoonDays(d,days){var x=daysUntil(d);return x!==null&&x>=0&&x<=days;}
 function collectWorkItems(days){
   days=days||DAYS_WARN_60;
+  var t=(typeof defaultPianoTarget==="function")?defaultPianoTarget():{y:new Date().getFullYear(),m:new Date().getMonth()};
+  var jobs=(typeof collectPianoJobs==="function")?collectPianoJobs(t.y,t.m):[];
+  var start=t.y+"-"+String(t.m+1).padStart(2,"0")+"-01";
+  var du=daysUntil(start);
+  if(du===null)du=60;
+  if(days<60 && du>days && du>0)return [];
+  var soglia=currentTodoSoglia(du); if(soglia===null)soglia=(du<0?0:60);
+  var bucket=soglia===0?"overdue":(soglia<=30?"soon":"m60");
   var out=[];
-  visibleEquipment().forEach(function(e){
-    if(isStatoSenzaScadenze(e))return;
-    function add(kind,date,label){
-      if(!date)return;
-      var du=daysUntil(date);
-      if(du===null)return;
-      var soglia=currentTodoSoglia(du);
-      if(soglia===null)return;
-      if(days<60 && soglia===60 && du>days)return;
-      var bucket=soglia===0?"overdue":(soglia<=30?"soon":"m60");
-      out.push({id:e.id,kind:kind,date:date,bucket:bucket,soglia:soglia,label:label,cliente:clienteName(e.clienteId),clienteId:e.clienteId,acronimo:e.acronimo||"",matricola:e.matricola||"",sede:e.sede||"",days:du});
-    }
-    add("man",e.prossimaMan,"Manutenzione");
-    stageProxList(e).forEach(function(x){add("fil-S"+x.stadio,x.prox,"Filtro S"+x.stadio+(x.codice?" "+x.codice:""));});
+  var byCli={};
+  jobs.forEach(function(j){
+    if(!byCli[j.clienteId])byCli[j.clienteId]={cliente:j.cliente,n:0,sedi:{}};
+    byCli[j.clienteId].n++;
+    if(j.sede)byCli[j.clienteId].sedi[j.sede]=1;
+  });
+  Object.keys(byCli).forEach(function(cid){
+    var r=byCli[cid];
+    var sedi=Object.keys(r.sedi).join(", ");
+    out.push({id:"prep-doc-"+cid,kind:"doc",date:start,bucket:bucket,soglia:soglia,label:"Prepara documenti ("+r.n+" DPC"+(sedi?"; "+sedi:"")+")",cliente:r.cliente,clienteId:cid,acronimo:"DOC",matricola:"",sede:sedi,days:du});
+  });
+  var codes={};
+  jobs.forEach(function(j){
+    if(j.tipo!=="fil"&&j.tipo!=="pre")return;
+    var k=(j.codice||"NO-COD")+"|"+j.tipo;
+    if(!codes[k])codes[k]={codice:j.codice||"NO-COD",tipo:j.tipo,qty:0,clienti:{},misure:j.misure||""};
+    codes[k].qty+=(j.qty||1);
+    codes[k].clienti[j.cliente]=(codes[k].clienti[j.cliente]||0)+(j.qty||1);
+  });
+  Object.keys(codes).forEach(function(k){
+    var r=codes[k];
+    var cli=Object.keys(r.clienti).map(function(c){return c+" x"+r.clienti[c];}).join(", ");
+    out.push({id:"prep-ord-"+k.replace(/\|/g,"_"),kind:"ord",date:start,bucket:bucket,soglia:soglia,label:"Ordina "+(r.tipo==="pre"?"prefiltro":"filtro")+" "+r.codice+" × "+r.qty+(r.misure?" ("+r.misure+")":""),cliente:cli,clienteId:"",acronimo:r.codice,matricola:"x"+r.qty,sede:"",days:du});
+  });
+  var acc={};
+  jobs.forEach(function(j){
+    if(!j.accessori)return;
+    var k=String(j.clienteId)+"|"+j.accessori;
+    if(!acc[k])acc[k]={cliente:j.cliente,clienteId:j.clienteId,txt:j.accessori,n:0};
+    acc[k].n++;
+  });
+  Object.keys(acc).forEach(function(k){
+    var r=acc[k];
+    out.push({id:"prep-acc-"+k.replace(/\|/g,"_"),kind:"acc",date:start,bucket:bucket,soglia:soglia,label:"Prepara accessori: "+r.txt+" ("+r.n+" DPC)",cliente:r.cliente,clienteId:r.clienteId,acronimo:"ACC",matricola:"",sede:"",days:du});
   });
   return out;
 }
@@ -4660,24 +4694,26 @@ function renderTodoList(){
   var showDone=!!(document.getElementById("todoShowDone")&&document.getElementById("todoShowDone").checked);
   var fs=document.getElementById("todoFiltroSoglia"); fs=fs?fs.value:"";
   var ft=document.getElementById("todoFiltroTipo"); ft=ft?ft.value:"";
-  var counts={0:0,3:0,7:0,15:0,30:0,60:0};
-  items.forEach(function(it){ if(!isTodoEseguito(it) && counts[it.soglia]!==undefined) counts[it.soglia]++; });
+  var counts={ord:0,doc:0,acc:0,0:0,3:0,7:0,15:0,30:0,60:0};
+  items.forEach(function(it){
+    if(isTodoEseguito(it))return;
+    if(counts[it.kind]!==undefined)counts[it.kind]++;
+    if(counts[it.soglia]!==undefined)counts[it.soglia]++;
+  });
   if(stats){
     stats.innerHTML=
+      '<div class="todo-stat warn"><b>'+counts.ord+'</b><span>Da ordinare</span></div>'+
+      '<div class="todo-stat info"><b>'+counts.doc+'</b><span>Documenti</span></div>'+
+      '<div class="todo-stat"><b>'+counts.acc+'</b><span>Accessori</span></div>'+
       '<div class="todo-stat danger"><b>'+counts[0]+'</b><span>Scadute</span></div>'+
-      '<div class="todo-stat warn"><b>'+counts[3]+'</b><span>3 giorni</span></div>'+
-      '<div class="todo-stat warn"><b>'+counts[7]+'</b><span>7 giorni</span></div>'+
-      '<div class="todo-stat"><b>'+counts[15]+'</b><span>15 giorni</span></div>'+
-      '<div class="todo-stat info"><b>'+counts[30]+'</b><span>30 giorni</span></div>'+
-      '<div class="todo-stat info"><b>'+counts[60]+'</b><span>60 giorni</span></div>';
+      '<div class="todo-stat warn"><b>'+counts[7]+'</b><span>Entro 7g</span></div>'+
+      '<div class="todo-stat info"><b>'+counts[60]+'</b><span>Entro 60g</span></div>';
   }
   var view=items.filter(function(it){
     var done=isTodoEseguito(it);
     if(done&&!showDone)return false;
-    if(!done&&showDone){ /* keep both if showDone */ }
     if(fs!=="" && String(it.soglia)!==String(fs))return false;
-    if(ft==="man" && it.kind!=="man")return false;
-    if(ft==="fil" && String(it.kind).indexOf("fil")!==0)return false;
+    if(ft && it.kind!==ft)return false;
     return true;
   });
   view.sort(function(a,b){
@@ -4692,12 +4728,14 @@ function renderTodoList(){
     var done=isTodoEseguito(it);
     var key=todoActivityKey(it).replace(/\\/g,"\\\\").replace(/'/g,"\\'");
     var dtxt=it.days<0?("scaduta da "+Math.abs(it.days)+"g"):("tra "+it.days+"g");
-    var stag=it.soglia===0?"SCADUTA":("ENTRO "+it.soglia+"g");
+    var stag=({ord:"ORDINA",doc:"DOCUMENTI",acc:"ACCESSORI"}[it.kind]||(it.soglia===0?"SCADUTA":("ENTRO "+it.soglia+"g")));
     h+='<div class="todo-item s'+it.soglia+(done?" done":"")+'">';
     h+='<label class="ese"><input type="checkbox" '+(done?"checked":"")+' data-key="'+encodeURIComponent(todoActivityKey(it))+'" data-eid="'+String(it.id)+'" data-kind="'+String(it.kind)+'" data-date="'+String(it.date||"")+'" onchange="setTodoEseguito(decodeURIComponent(this.getAttribute(\'data-key\')),this.checked,{id:this.getAttribute(\'data-eid\'),kind:this.getAttribute(\'data-kind\'),date:this.getAttribute(\'data-date\')})"><span>ESEGUITO</span></label>';
     h+='<div class="todo-body"><strong>'+it.cliente+' · '+(it.acronimo||"")+' · '+(it.matricola||"-")+'</strong>';
-    h+='<div class="todo-meta"><span class="todo-tag">'+stag+'</span>'+it.label+' · '+fmt(it.date)+' · '+dtxt+(it.sede?" · "+it.sede:"")+'</div></div>';
-    h+='<button class="btn btn-secondary" style="padding:.3rem .55rem" onclick="openFromOggi(\''+it.id+'\')">Apri</button>';
+    h+='<div class="todo-meta"><span class="todo-tag">'+stag+'</span>'+it.label+(it.sede?" · "+it.sede:"")+' · '+dtxt+'</div></div>';
+    if(String(it.id).indexOf("prep-")!==0){
+      h+='<button class="btn btn-secondary" style="padding:.3rem .55rem" onclick="openFromOggi(\''+it.id+'\')">Apri</button>';
+    }
     h+='</div>';
   });
   box.innerHTML=h;
@@ -4770,8 +4808,9 @@ function buildPiano(y,m,maxDay){
   maxDay=parseInt(maxDay,10)||6;
   var jobs=collectPianoJobs(y,m);
   jobs.sort(function(a,b){
-    if(a.cliente!==b.cliente)return a.cliente.localeCompare(b.cliente);
-    if(a.sede!==b.sede)return a.sede.localeCompare(b.sede);
+    var sa=String(a.sede||"zzz").toLowerCase(), sb=String(b.sede||"zzz").toLowerCase();
+    if(sa!==sb)return sa.localeCompare(sb,"it");
+    if(a.cliente!==b.cliente)return a.cliente.localeCompare(b.cliente,"it");
     return String(a.date).localeCompare(String(b.date));
   });
   var days=workingDaysOfMonth(y,m);
@@ -4786,7 +4825,7 @@ function buildPiano(y,m,maxDay){
       var same=-1;
       for(var k=di;k<plan.length;k++){
         if(plan[k].jobs.length>=maxDay)continue;
-        if(!plan[k].jobs.length || plan[k].jobs[0].clienteId===job.clienteId){same=k;break;}
+        if(!plan[k].jobs.length || String(plan[k].jobs[0].sede||"")===String(job.sede||"")){same=k;break;}
       }
       if(same<0)same=di;
       plan[same].jobs.push(job);
@@ -4834,6 +4873,46 @@ async function renderPianoPage(){
   });
   mh+="</tbody></table>";
   if(matEl)matEl.innerHTML=Object.keys(piano.mat).length?mh:"<p class='client-home-sub'>Nessun materiale in questo mese.</p>";
+  var viaggi={}, spesa={};
+  piano.jobs.forEach(function(j){
+    var se=j.sede||"(senza sede)";
+    if(!viaggi[se])viaggi[se]={sede:se,dpc:{},clienti:{},days:{}};
+    viaggi[se].dpc[j.id]=1;
+    viaggi[se].clienti[j.cliente]=1;
+    if(j.tipo==="fil"||j.tipo==="pre"){
+      var ck=(j.codice||"NO-COD")+"|"+j.tipo;
+      if(!spesa[ck])spesa[ck]={codice:j.codice||"NO-COD",tipo:j.tipo==="pre"?"Prefiltro":"Filtro",qty:0,misure:j.misure||"",clienti:{}};
+      spesa[ck].qty+=(j.qty||1);
+      spesa[ck].clienti[j.cliente]=(spesa[ck].clienti[j.cliente]||0)+(j.qty||1);
+    }
+  });
+  piano.days.forEach(function(d){
+    var sedi={};
+    d.jobs.forEach(function(j){sedi[j.sede||"(senza sede)"]=1;});
+    Object.keys(sedi).forEach(function(se){ if(viaggi[se]) viaggi[se].days[d.date]=1; });
+  });
+  var vg=document.getElementById("pianoViaggi");
+  if(vg){
+    var vh='<table><thead><tr><th>Sede / citta</th><th>Giorni viaggio</th><th>DPC</th><th>Clienti</th></tr></thead><tbody>';
+    Object.keys(viaggi).sort(function(a,b){return a.localeCompare(b,"it");}).forEach(function(se){
+      var r=viaggi[se];
+      vh+="<tr><td>"+escHtml(r.sede)+"</td><td>"+Object.keys(r.days).length+"</td><td>"+Object.keys(r.dpc).length+"</td><td>"+escHtml(Object.keys(r.clienti).join(", "))+"</td></tr>";
+    });
+    vh+="</tbody></table>";
+    vg.innerHTML=Object.keys(viaggi).length?vh:"<p class='client-home-sub'>Nessun viaggio.</p>";
+  }
+  var sp=document.getElementById("pianoSpesa");
+  if(sp){
+    var sh='<table><thead><tr><th>Codice</th><th>Tipo</th><th>Q.ta da ordinare</th><th>Misure</th><th>Per quali clienti</th></tr></thead><tbody>';
+    Object.keys(spesa).sort().forEach(function(k){
+      var r=spesa[k];
+      var cli=Object.keys(r.clienti).map(function(c){return c+" ×"+r.clienti[c];}).join("; ");
+      sh+="<tr><td><code>"+escHtml(r.codice)+"</code></td><td>"+escHtml(r.tipo)+"</td><td><strong>"+r.qty+"</strong></td><td>"+escHtml(r.misure||"-")+"</td><td>"+escHtml(cli)+"</td></tr>";
+    });
+    sh+="</tbody></table>";
+    sp.innerHTML=Object.keys(spesa).length?sh:"<p class='client-home-sub'>Nessun codice filtro da ordinare.</p>";
+  }
+  piano.spesa=spesa;piano.viaggi=viaggi;
   var daysEl=document.getElementById("pianoDays");
   var empty=document.getElementById("pianoEmpty");
   var dh="";
@@ -4841,11 +4920,20 @@ async function renderPianoPage(){
     if(!d.jobs.length)return;
     var dt=d.date.split("-");
     var wd=["Dom","Lun","Mar","Mer","Gio","Ven","Sab"][new Date(d.date+"T00:00:00").getDay()];
-    dh+='<div class="piano-day"><h4>'+wd+" "+dt[2]+"/"+dt[1]+" — "+d.jobs.length+" DPC</h4>";
+    var bySe={};
     d.jobs.forEach(function(j){
-      dh+='<div class="piano-job"><strong>'+escHtml(j.cliente)+"</strong> · "+escHtml(j.acronimo)+" "+escHtml(j.matricola)+" · "+escHtml(j.label)+(j.sede?" · "+escHtml(j.sede):"")+"</div>";
+      var se=j.sede||"(senza sede)";
+      if(!bySe[se])bySe[se]=[];
+      bySe[se].push(j);
     });
-    dh+="</div>";
+    Object.keys(bySe).sort(function(a,b){return a.localeCompare(b,"it");}).forEach(function(se){
+      var list=bySe[se];
+      dh+='<div class="piano-day"><h4>'+wd+" "+dt[2]+"/"+dt[1]+" — "+escHtml(se)+" — "+list.length+" DPC</h4>";
+      list.forEach(function(j){
+        dh+='<div class="piano-job"><strong>'+escHtml(j.cliente)+"</strong> · "+escHtml(j.acronimo)+" "+escHtml(j.matricola)+" · "+escHtml(j.label)+"</div>";
+      });
+      dh+="</div>";
+    });
   });
   if(daysEl)daysEl.innerHTML=dh;
   if(empty)empty.style.display=piano.jobs.length?"none":"block";
@@ -4869,6 +4957,20 @@ function exportPianoExcel(){
     var r=p.mat[k];
     rows.push([r.cliente,r.man,r.fil,r.pre,r.acc,(r.filDett.concat(r.preDett,r.accDett)).join("; ")]);
   });
+  rows.push([]);
+  rows.push(["LISTA SPESA MAGAZZINO"]);
+  rows.push(["Codice","Tipo","Qta","Misure","Clienti"]);
+  Object.keys(p.spesa||{}).forEach(function(k){
+    var r=p.spesa[k];
+    rows.push([r.codice,r.tipo,r.qty,r.misure||"",Object.keys(r.clienti||{}).map(function(c){return c+" x"+r.clienti[c];}).join("; ")]);
+  });
+  rows.push([]);
+  rows.push(["VIAGGI PER SEDE"]);
+  rows.push(["Sede","Giorni","DPC","Clienti"]);
+  Object.keys(p.viaggi||{}).forEach(function(se){
+    var r=p.viaggi[se];
+    rows.push([r.sede,Object.keys(r.days||{}).length,Object.keys(r.dpc||{}).length,Object.keys(r.clienti||{}).join(", ")]);
+  });
   var wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Piano "+p.id);
   XLSX.writeFile(wb,"piano_cami_"+p.id+".xlsx");
@@ -4888,6 +4990,78 @@ function emailPianoMensile(){
   var list=(o.recipients||"").split(",").map(function(x){return x.trim();}).filter(Boolean);
   if(!list.length){alert("Nessun destinatario in Strumenti → Email");return;}
   sendEmailToList(list,"Piano CAMI "+p.label,msg);
+}
+function findOpenCommessaForCliente(cid){
+  var list=(commesse||[]).filter(function(c){
+    if((c.stato||"aperta")==="chiusa")return false;
+    return c.cliente_id===cid || c.cliente_operativo_id===cid || c.cliente_fatt_id===cid;
+  });
+  if(!list.length)return null;
+  list.sort(function(a,b){return String(b.numero||"").localeCompare(String(a.numero||""));});
+  return list[0];
+}
+async function creaInterventiDaPiano(){
+  if(!(isSuper()||isBackOfficer())){alert("Solo Super admin / Back officer");return;}
+  var p=window._piano;
+  if(!p||!p.jobs||!p.jobs.length){alert("Nessun piano da convertire");return;}
+  try{if(!commesse||!commesse.length)await loadCommesse();}catch(e){}
+  var groups=[];
+  p.days.forEach(function(d){
+    var map={};
+    d.jobs.forEach(function(j){
+      var k=String(j.clienteId)+"|"+String(j.sede||"");
+      if(!map[k])map[k]={date:d.date,clienteId:j.clienteId,cliente:j.cliente,sede:j.sede||"",ids:[],tipi:{}};
+      if(map[k].ids.indexOf(j.id)<0)map[k].ids.push(j.id);
+      map[k].tipi[j.tipo==="man"?"Manutenzione ordinaria":"Cambio filtri"]=1;
+    });
+    Object.keys(map).forEach(function(k){groups.push(map[k]);});
+  });
+  if(!confirm("Creare "+groups.length+" interventi dal piano "+p.label+"?\n\n1 intervento per sede e giorno.\nTecnico: DA ASSEGNARE\nSe esiste una commessa aperta del cliente viene collegata.\nI report NON vengono scaricati in automatico."))return;
+  var existing=await loadAssiFromDb()||[];
+  var created=0,skip=0,fail=0,lastErr="";
+  for(var i=0;i<groups.length;i++){
+    var g=groups[i];
+    var already=existing.some(function(a){
+      return String(a.data||"").slice(0,10)===g.date && a.cliente_id===g.clienteId && String(a.sede||"")===String(g.sede||"") && String(a.note||"").indexOf("DA PIANO")>-1;
+    });
+    if(already){skip++;continue;}
+    var comm=findOpenCommessaForCliente(g.clienteId);
+    var labels=[];
+    g.ids.forEach(function(id){
+      var e=equipment.find(function(x){return x.id===id;});
+      if(e)labels.push((e.acronimo||"")+" "+(e.matricola||""));
+    });
+    var tipo=Object.keys(g.tipi).join(", ");
+    var row={
+      equip_id:g.ids[0],
+      equip_ids:g.ids,
+      cliente_id:g.clienteId,
+      acronimo:g.ids.length>1?("MULTI ("+g.ids.length+")"):(labels[0]||""),
+      matricola:labels.join(", "),
+      sede:g.sede||"",
+      tecnico:"DA ASSEGNARE",
+      tecnico_user_id:null,
+      tecnico_ids:[],
+      data:g.date,
+      tipo:tipo,
+      note:"DA PIANO "+p.id+" | "+g.cliente+(g.sede?(" | "+g.sede):"")+" | DPC: "+labels.join("; "),
+      done:false,
+      creato_da:currentUser?currentUser.username:"",
+      commessa_id:comm?comm.id:null,
+      commessa_numero:comm?comm.numero:null
+    };
+    var res=await sb.from("assegnazioni").insert([row]);
+    if(res.error){
+      delete row.equip_ids; delete row.tecnico_ids; delete row.tecnico_user_id;
+      res=await sb.from("assegnazioni").insert([row]);
+    }
+    if(res.error){fail++;lastErr=res.error.message;continue;}
+    created++;
+    existing.push(row);
+  }
+  toast("Interventi creati: "+created+(skip?" · già presenti: "+skip:"")+(fail?" · errori: "+fail:""));
+  if(fail)alert("Alcuni interventi non creati: "+lastErr);
+  try{await logAudit("INTERVENTO",null,"DA PIANO "+p.id+" creati "+created);}catch(e){}
 }
 async function checkPianoMensileAuto(){
   try{
