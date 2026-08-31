@@ -362,6 +362,13 @@ tbody tr.row-overdue{background:#fef2f2}tbody tr.row-soon{background:#fff7ed}
 .piano-day{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:.65rem .8rem;margin-bottom:.45rem}
 .piano-day h4{margin:0 0 .35rem;font-size:.88rem;color:#0f172a}
 .piano-job{font-size:.8rem;padding:.2rem 0;border-top:1px dashed #e2e8f0;color:#334155}
+.pi-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;margin-bottom:.55rem;overflow:hidden}
+.pi-card h4{margin:0;padding:.5rem .8rem;background:#1e3a8a;color:#fff;font-size:.85rem}
+.pi-row{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;padding:.45rem .8rem;border-top:1px solid #f1f5f9;font-size:.8rem}
+.pi-row select{padding:.25rem .4rem;border:1px solid #cbd5e1;border-radius:6px}
+.pill-warn{background:#fff7ed;color:#c2410c;font-size:.65rem;font-weight:800;padding:.12rem .4rem;border-radius:999px}
+.pill-ok{background:#dcfce7;color:#166534;font-size:.65rem;font-weight:800;padding:.12rem .4rem;border-radius:999px}
+.pill-done{background:#e2e8f0;color:#475569;font-size:.65rem;font-weight:800;padding:.12rem .4rem;border-radius:999px}
 .piano-mat table{width:100%;border-collapse:collapse;font-size:.8rem;background:#fff;border-radius:10px;overflow:hidden}
 .piano-mat th,.piano-mat td{padding:.4rem .55rem;border-bottom:1px solid #f1f5f9;text-align:left}
 .piano-mat th{background:#f8fafc;font-size:.7rem;text-transform:uppercase;color:#64748b}
@@ -619,6 +626,7 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       <button class="btn btn-oggi" id="btnOggi" style="display:none" onclick="openOggiModal()"><i class="fas fa-tasks"></i> Cosa fare oggi</button>
       <button class="btn btn-primary" id="btnTodo" style="display:none" onclick="showTodoPage()"><i class="fas fa-check-square"></i> TO DO</button>
       <button class="btn btn-secondary" id="btnPiano" style="display:none" onclick="showPianoPage()"><i class="fas fa-calendar-alt"></i> Piano +2 mesi</button>
+      <button class="btn btn-oggi" id="btnPianoInt" style="display:none" onclick="showPianoIntPage()"><i class="fas fa-route"></i> Interventi piano</button>
       <div class="altro-wrap" id="altroWrap">
         <button type="button" class="btn btn-secondary" id="btnAltro" onclick="toggleAltroMenu(event)"><i class="fas fa-ellipsis-h"></i> Altro <i class="fas fa-caret-down"></i></button>
         <div class="altro-menu" id="altroMenu">
@@ -799,6 +807,23 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       <h3 class="piano-sec">Pianificazione giorno per giorno (lun–ven, raggruppata per sede)</h3>
       <div id="pianoDays"></div>
       <div id="pianoEmpty" class="empty" style="display:none"><p>Nessuna attivita in questo mese</p></div>
+    </div>
+  </div>
+
+  <div id="pagePianoInt" class="page-panel">
+    <div class="piano-wrap">
+      <div class="piano-head">
+        <h2><i class="fas fa-route"></i> Interventi piano</h2>
+        <p>Interventi creati dal piano mensile. <strong>Nessuna commessa</strong>. Assegna il tecnico qui, sede per sede.</p>
+      </div>
+      <div class="todo-stats" id="piStats"></div>
+      <div class="piano-toolbar">
+        <select id="piFiltroStato" onchange="renderPianoIntPage()"><option value="">Tutti gli stati</option><option value="da_assegnare">Da assegnare</option><option value="assegnato">Assegnati</option><option value="fatto">Fatti</option></select>
+        <select id="piFiltroSede" onchange="renderPianoIntPage()"><option value="">Tutte le sedi</option></select>
+        <button class="btn btn-secondary" onclick="showPianoPage()"><i class="fas fa-calendar-alt"></i> Torna al piano</button>
+      </div>
+      <div id="piList"></div>
+      <div id="piEmpty" class="empty" style="display:none"><p>Nessun intervento piano. Generali da Piano +2 mesi → Crea interventi.</p></div>
     </div>
   </div>
 
@@ -2391,7 +2416,7 @@ function applyAutoClientCode(inputId){
 /* ===== COMMESSE ===== */
 var commesse=[];
 function hideAllPages(){
-  ["pageDpc","pageCommesse","pageTools","pageTodo","pagePiano"].forEach(function(id){
+  ["pageDpc","pageCommesse","pageTools","pageTodo","pagePiano","pagePianoInt"].forEach(function(id){
     var el=document.getElementById(id);if(el)el.classList.remove("active");
   });
   var dc=document.getElementById("dpcChrome");if(dc)dc.style.display="none";
@@ -2464,6 +2489,18 @@ function showPianoPage(){
   if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
   fillPianoMeseSelect();
   try{renderPianoPage();}catch(e){}
+  try{window.scrollTo(0,0);}catch(e){}
+}
+function showPianoIntPage(){
+  hideAllPages();
+  var p=document.getElementById("pagePianoInt");if(p)p.classList.add("active");
+  var dc=document.getElementById("dpcChrome");if(dc)dc.style.display="none";
+  var cc=document.getElementById("commesseChrome");if(cc)cc.style.display="none";
+  var bd=document.getElementById("btnDpcHome"),bc=document.getElementById("btnCommesse"),bt=document.getElementById("btnToolsNav");
+  if(bd)bd.style.display="inline-flex";
+  if(bc)bc.style.display=(UI_STANDBY_ONLY_DPC?"none":"inline-flex");
+  if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
+  try{renderPianoIntPage();}catch(e){}
   try{window.scrollTo(0,0);}catch(e){}
 }
 function showToolsPage(){
@@ -3413,6 +3450,7 @@ var UI_BTN_KEYS=[
   {id:"btnOggi",label:"Cosa fare oggi"},
   {id:"btnTodo",label:"TO DO LIST"},
   {id:"btnPiano",label:"Piano +2 mesi"},
+  {id:"btnPianoInt",label:"Interventi piano"},
   {id:"altroWrap",label:"Menu Altro"},
   {id:"btnExportExcelAlways",label:"Export Excel"},
   {id:"btnImportExcel",label:"Import Excel"},
@@ -3425,9 +3463,9 @@ var UI_ROLES=["superadmin","backofficer","tecnico"];
 function defaultColumns(){var o={};DPC_COLS.forEach(function(c){o[c.id]=true;});return o;}
 function defaultButtons(){
   return {
-    superadmin:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,btnTodo:true,btnPiano:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:true,btnEmail:true,btnUsers:true,btnClienti:true,btnAssegnaTecnico:true},
-    backofficer:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,btnTodo:true,btnPiano:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:false,btnEmail:true,btnUsers:true,btnClienti:true,btnAssegnaTecnico:true},
-    tecnico:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,btnTodo:true,btnPiano:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:false,btnEmail:true,btnUsers:false,btnClienti:false,btnAssegnaTecnico:false}
+    superadmin:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,btnTodo:true,btnPiano:true,btnPianoInt:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:true,btnEmail:true,btnUsers:true,btnClienti:true,btnAssegnaTecnico:true},
+    backofficer:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,btnTodo:true,btnPiano:true,btnPianoInt:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:false,btnEmail:true,btnUsers:true,btnClienti:true,btnAssegnaTecnico:true},
+    tecnico:{btnNuovo:true,btnToolsNav:true,btnDashboard:true,btnOggi:true,btnTodo:true,btnPiano:true,btnPianoInt:true,altroWrap:true,btnExportExcelAlways:true,btnImportExcel:false,btnEmail:true,btnUsers:false,btnClienti:false,btnAssegnaTecnico:false}
   };
 }
 function defaultUiPrefs(){
@@ -3827,6 +3865,7 @@ async function showApp(){document.getElementById("loginScreen").classList.add("h
   var bog=document.getElementById("btnOggi");if(bog)bog.style.display=(s||a||t)?"inline-flex":"none";
   var btd=document.getElementById("btnTodo");if(btd)btd.style.display=(s||a||t)?"inline-flex":"none";
   var bpi=document.getElementById("btnPiano");if(bpi)bpi.style.display=(s||a||t)?"inline-flex":"none";
+  var bpit=document.getElementById("btnPianoInt");if(bpit)bpit.style.display=(s||a||t)?"inline-flex":"none";
   var bt=document.getElementById("btnTools");if(bt)bt.style.display=(s||a||t)?"inline-flex":"none";
   window.__toolsNavVisible=!!(s||a||t);
   var btnNav=document.getElementById("btnToolsNav");
@@ -4991,20 +5030,11 @@ function emailPianoMensile(){
   if(!list.length){alert("Nessun destinatario in Strumenti → Email");return;}
   sendEmailToList(list,"Piano CAMI "+p.label,msg);
 }
-function findOpenCommessaForCliente(cid){
-  var list=(commesse||[]).filter(function(c){
-    if((c.stato||"aperta")==="chiusa")return false;
-    return c.cliente_id===cid || c.cliente_operativo_id===cid || c.cliente_fatt_id===cid;
-  });
-  if(!list.length)return null;
-  list.sort(function(a,b){return String(b.numero||"").localeCompare(String(a.numero||""));});
-  return list[0];
-}
+function findOpenCommessaForCliente(cid){return null;}
 async function creaInterventiDaPiano(){
   if(!(isSuper()||isBackOfficer())){alert("Solo Super admin / Back officer");return;}
   var p=window._piano;
   if(!p||!p.jobs||!p.jobs.length){alert("Nessun piano da convertire");return;}
-  try{if(!commesse||!commesse.length)await loadCommesse();}catch(e){}
   var groups=[];
   p.days.forEach(function(d){
     var map={};
@@ -5016,53 +5046,149 @@ async function creaInterventiDaPiano(){
     });
     Object.keys(map).forEach(function(k){groups.push(map[k]);});
   });
-  if(!confirm("Creare "+groups.length+" interventi dal piano "+p.label+"?\n\n1 intervento per sede e giorno.\nTecnico: DA ASSEGNARE\nSe esiste una commessa aperta del cliente viene collegata.\nI report NON vengono scaricati in automatico."))return;
-  var existing=await loadAssiFromDb()||[];
+  if(!confirm("Salvare "+groups.length+" interventi piano (senza commessa) per "+p.label+"?\\n\\n1 riga per sede e giorno.\\nTecnico: DA ASSEGNARE.\\nLi trovi in Interventi piano."))return;
+  var existing=[];
+  try{
+    var ex=await sb.from("piano_interventi").select("data,cliente_id,sede,piano_id").eq("piano_id",p.id);
+    if(!ex.error)existing=ex.data||[];
+  }catch(e){}
   var created=0,skip=0,fail=0,lastErr="";
   for(var i=0;i<groups.length;i++){
     var g=groups[i];
     var already=existing.some(function(a){
-      return String(a.data||"").slice(0,10)===g.date && a.cliente_id===g.clienteId && String(a.sede||"")===String(g.sede||"") && String(a.note||"").indexOf("DA PIANO")>-1;
+      return String(a.data||"").slice(0,10)===g.date && String(a.cliente_id)===String(g.clienteId) && String(a.sede||"")===String(g.sede||"");
     });
     if(already){skip++;continue;}
-    var comm=findOpenCommessaForCliente(g.clienteId);
     var labels=[];
     g.ids.forEach(function(id){
       var e=equipment.find(function(x){return x.id===id;});
       if(e)labels.push((e.acronimo||"")+" "+(e.matricola||""));
     });
-    var tipo=Object.keys(g.tipi).join(", ");
     var row={
-      equip_id:g.ids[0],
-      equip_ids:g.ids,
+      piano_id:p.id,
+      data:g.date,
       cliente_id:g.clienteId,
+      cliente_nome:g.cliente,
+      sede:g.sede||"",
+      equip_ids:g.ids,
       acronimo:g.ids.length>1?("MULTI ("+g.ids.length+")"):(labels[0]||""),
       matricola:labels.join(", "),
-      sede:g.sede||"",
+      tipo:Object.keys(g.tipi).join(", "),
       tecnico:"DA ASSEGNARE",
-      tecnico_user_id:null,
       tecnico_ids:[],
-      data:g.date,
-      tipo:tipo,
-      note:"DA PIANO "+p.id+" | "+g.cliente+(g.sede?(" | "+g.sede):"")+" | DPC: "+labels.join("; "),
-      done:false,
-      creato_da:currentUser?currentUser.username:"",
-      commessa_id:comm?comm.id:null,
-      commessa_numero:comm?comm.numero:null
+      stato:"da_assegnare",
+      note:"Piano "+p.id+" | DPC: "+labels.join("; "),
+      created_by:currentUser?currentUser.username:""
     };
-    var res=await sb.from("assegnazioni").insert([row]);
-    if(res.error){
-      delete row.equip_ids; delete row.tecnico_ids; delete row.tecnico_user_id;
-      res=await sb.from("assegnazioni").insert([row]);
-    }
+    var res=await sb.from("piano_interventi").insert([row]);
     if(res.error){fail++;lastErr=res.error.message;continue;}
     created++;
     existing.push(row);
   }
-  toast("Interventi creati: "+created+(skip?" · già presenti: "+skip:"")+(fail?" · errori: "+fail:""));
-  if(fail)alert("Alcuni interventi non creati: "+lastErr);
-  try{await logAudit("INTERVENTO",null,"DA PIANO "+p.id+" creati "+created);}catch(e){}
+  toast("Interventi piano: "+created+" nuovi"+(skip?" · gia presenti: "+skip:"")+(fail?" · errori: "+fail:""));
+  if(fail)alert("Errore salvataggio: "+lastErr);
+  try{await logAudit("PIANO",null,p.id+" interventi "+created);}catch(e){}
+  showPianoIntPage();
 }
+async function loadPianoInterventi(){
+  try{
+    var res=await sb.from("piano_interventi").select("*").order("data",{ascending:true});
+    if(res.error)throw res.error;
+    return res.data||[];
+  }catch(e){ console.warn("piano_interventi",e); return []; }
+}
+function piTecOptions(selected){
+  var tecs=(users||[]).filter(isUserTecnico);
+  var h='<option value="">DA ASSEGNARE</option>';
+  tecs.forEach(function(u){
+    var nome=(u.nome||u.username||"").trim();
+    h+='<option value="'+u.id+'" data-nome="'+String(nome).replace(/"/g,"")+'"'+(selected===u.id?" selected":"")+">"+nome+"</option>";
+  });
+  return h;
+}
+async function renderPianoIntPage(){
+  var list=await loadPianoInterventi();
+  window._pianoInt=list;
+  var stF=(document.getElementById("piFiltroStato")||{}).value||"";
+  var seEl=document.getElementById("piFiltroSede");
+  if(seEl && seEl.getAttribute("data-filled")!=="1"){
+    var sedi={}; list.forEach(function(r){if(r.sede)sedi[r.sede]=1;});
+    Object.keys(sedi).sort(function(a,b){return a.localeCompare(b,"it");}).forEach(function(se){
+      seEl.innerHTML+='<option value="'+se.replace(/"/g,"")+'">'+se+"</option>";
+    });
+    seEl.setAttribute("data-filled","1");
+  }
+  var seF=seEl?seEl.value:"";
+  var view=list.filter(function(r){
+    if(stF && r.stato!==stF)return false;
+    if(seF && String(r.sede||"")!==seF)return false;
+    return true;
+  });
+  var nA=0,nS=0,nF=0,sed={};
+  list.forEach(function(r){
+    if(r.stato==="fatto")nF++; else if(r.stato==="assegnato")nS++; else nA++;
+    if(r.sede)sed[r.sede]=1;
+  });
+  var stats=document.getElementById("piStats");
+  if(stats)stats.innerHTML=
+    '<div class="todo-stat warn"><b>'+nA+'</b><span>Da assegnare</span></div>'+
+    '<div class="todo-stat info"><b>'+nS+'</b><span>Assegnati</span></div>'+
+    '<div class="todo-stat"><b>'+nF+'</b><span>Fatti</span></div>'+
+    '<div class="todo-stat"><b>'+Object.keys(sed).length+'</b><span>Sedi</span></div>';
+  var box=document.getElementById("piList"), empty=document.getElementById("piEmpty");
+  if(!view.length){if(box)box.innerHTML="";if(empty)empty.style.display="block";return;}
+  if(empty)empty.style.display="none";
+  var groups={};
+  view.forEach(function(r){
+    var k=String(r.data||"").slice(0,10)+"|"+(r.sede||"");
+    if(!groups[k])groups[k]=[];
+    groups[k].push(r);
+  });
+  var h="";
+  Object.keys(groups).sort().forEach(function(k){
+    var rows=groups[k], r0=rows[0];
+    var dt=String(r0.data||"").slice(0,10).split("-");
+    var wd=["Dom","Lun","Mar","Mer","Gio","Ven","Sab"][new Date(String(r0.data).slice(0,10)+"T00:00:00").getDay()];
+    h+='<div class="pi-card"><h4>'+wd+" "+(dt[2]||"")+"/"+(dt[1]||"")+" · "+escHtml(r0.sede||"senza sede")+" · "+rows.length+" interventi</h4>";
+    rows.forEach(function(r){
+      var pill=r.stato==="fatto"?"pill-done":(r.stato==="assegnato"?"pill-ok":"pill-warn");
+      var lab=r.stato==="fatto"?"FATTO":(r.stato==="assegnato"?"ASSEGNATO":"DA ASSEGNARE");
+      var selId=(Array.isArray(r.tecnico_ids)&&r.tecnico_ids[0])?r.tecnico_ids[0]:"";
+      h+='<div class="pi-row">';
+      h+="<div style='flex:1;min-width:180px'><strong>"+escHtml(r.cliente_nome||"")+"</strong><div style='color:#64748b'>"+escHtml(r.acronimo||"")+" · "+escHtml(r.matricola||"")+" · "+escHtml(r.tipo||"")+"</div></div>";
+      h+='<span class="'+pill+'">'+lab+"</span>";
+      h+='<select data-id="'+r.id+'" onchange="assegnaTecnicoPianoInt(this.dataset.id,this)">'+piTecOptions(selId)+"</select>";
+      if(r.stato!=="fatto") h+='<button class="btn btn-save" style="padding:.25rem .5rem" data-id="'+r.id+'" onclick="setStatoPianoInt(this.dataset.id,\'fatto\')">Fatto</button>';
+      else h+='<button class="btn btn-secondary" style="padding:.25rem .5rem" data-id="'+r.id+'" onclick="setStatoPianoInt(this.dataset.id,\'da_assegnare\')">Riapri</button>';
+      if(isSuper()||isBackOfficer()) h+='<button class="btn btn-danger" style="padding:.25rem .5rem" data-id="'+r.id+'" onclick="deletePianoInt(this.dataset.id)">Elimina</button>';
+      h+="</div>";
+    });
+    h+="</div>";
+  });
+  if(box)box.innerHTML=h;
+}
+async function assegnaTecnicoPianoInt(id,sel){
+  var opt=sel.options[sel.selectedIndex];
+  var nome=opt && opt.value ? (opt.getAttribute("data-nome")||opt.textContent) : "DA ASSEGNARE";
+  var uid=opt && opt.value ? opt.value : "";
+  var stato=uid?"assegnato":"da_assegnare";
+  var res=await sb.from("piano_interventi").update({tecnico:nome,tecnico_ids:uid?[uid]:[],stato:stato}).eq("id",id);
+  if(res.error){alert(res.error.message);return;}
+  toast(uid?("Assegnato a "+nome):"Tecnico rimosso");
+  renderPianoIntPage();
+}
+async function setStatoPianoInt(id,stato){
+  var res=await sb.from("piano_interventi").update({stato:stato}).eq("id",id);
+  if(res.error){alert(res.error.message);return;}
+  renderPianoIntPage();
+}
+async function deletePianoInt(id){
+  if(!confirm("Eliminare questo intervento piano?"))return;
+  var res=await sb.from("piano_interventi").delete().eq("id",id);
+  if(res.error){alert(res.error.message);return;}
+  renderPianoIntPage();
+}
+
 async function checkPianoMensileAuto(){
   try{
     if(new Date().getDate()!==1)return;
