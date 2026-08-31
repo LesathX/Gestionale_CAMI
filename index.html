@@ -628,7 +628,7 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       <select id="filterSede" onchange="onDpcFiltersChange()"><option value="">Sedi</option></select>
       <select id="filterStato" onchange="onDpcFiltersChange()"><option value="">Stati</option><option>OPERATIVA</option><option>IN PRODUZIONE</option><option>MANUTENZIONE</option><option>DA INSTALLARE</option><option>IN DISUSO</option><option>DISMESSA</option><option>NON DI COMPETENZA CAMI</option></select>
       <select id="filterFiltro" onchange="onDpcFiltersChange()"><option value="">Filtro</option><option value="si">Si</option><option value="no">No</option></select>
-      <select id="filterScadenza" onchange="onDpcFiltersChange()"><option value="">Scadenze DPC</option><option value="scaduti">DPC scaduti</option><option value="d7">DPC scaduti + entro 7 gg</option><option value="d15">DPC scaduti + entro 15 gg</option><option value="d30">DPC scaduti + entro 30 gg</option><option value="in_scadenza">DPC in scadenza (1-30)</option><option value="ok">DPC in regola</option></select>
+      <select id="filterScadenza" onchange="onDpcFiltersChange()"><option value="">Scadenze DPC</option><option value="scaduti">DPC scaduti</option><option value="d7">DPC scaduti + entro 7 gg</option><option value="d15">DPC scaduti + entro 15 gg</option><option value="d30">DPC scaduti + entro 30 gg</option><option value="d60">DPC scaduti + entro 2 mesi</option><option value="in_scadenza">DPC in scadenza (1-30)</option><option value="in_2mesi">DPC entro 2 mesi (31-60)</option><option value="ok">DPC in regola</option></select>
     </div></div>
     <div id="clientHome" class="client-home">
       <h2>I tuoi clienti</h2>
@@ -800,12 +800,12 @@ html.ui-only-dpc #commesseChrome{display:none!important}
 
   
   <div id="tab-email" class="tools-panel">
-    <p class="device-info">Notifiche <strong>EmailJS</strong> automatiche: all&apos;accesso (max 1/giorno) invia scadenze manutenzione, filtri e certificazioni del perimetro utente. Configura destinatari qui sotto. Pulsante <strong>Avviso</strong> in header = invio immediato.</p>
+    <p class="device-info">Le email automatiche partono <strong>solo se c'e qualcosa di nuovo</strong> (scaduto o entro 2 mesi) non ancora avvisato. Non a ogni accesso. Intervento assegnato al tecnico = mail subito.</p>
     <div class="form-grid" style="grid-template-columns:1fr 1fr;max-width:640px">
       <div class="form-group" style="grid-column:1/-1"><label>Destinatari * (obbligatorio – email separate da virgola)</label><input id="emailRecipients" placeholder="es. tuamail@gmail.com" style="border:2px solid #2563eb"><small style="color:#64748b;display:block;margin-top:.25rem">1) Scrivi l&apos;email &nbsp; 2) Salva impostazioni &nbsp; 3) Invia ora</small></div>
-      <div class="form-group"><label>Invio automatico all&apos;accesso</label><select id="emailAutoOn"><option value="1">Attivo</option><option value="0">Disattivo</option></select></div>
+      <div class="form-group"><label>Avviso automatico scadenze</label><select id="emailAutoOn"><option value="1">Solo novita (scaduto / 2 mesi)</option><option value="0">Disattivo</option></select></div>
       <div class="form-group"><label>Includi certificazioni</label><select id="emailInclCert"><option value="1">Si</option><option value="0">No</option></select></div>
-      <div class="form-group"><label>Soglia giorni (in scadenza)</label><input type="number" id="emailDays" min="1" max="90" value="30"></div>
+      <div class="form-group"><label>Soglia avviso (giorni)</label><input type="number" id="emailDays" min="1" max="90" value="60"></div>
       <div class="form-group"><label>Nome mittente visualizzato</label><input id="emailFromName" value="Gestionale CAMI"></div>
       <div class="form-group"><label>Email automatica sui report intervento</label><select id="emailReportOn"><option value="1">Attivo</option><option value="0">Disattivo</option></select></div>
       <div id="emailJsKeysBox" class="form-group full" style="display:none;grid-column:1/-1;margin-top:.5rem;padding:.75rem;background:#fef3c7;border-radius:.5rem;border:1px solid #f59e0b">
@@ -1683,6 +1683,7 @@ const LAST_BACKUP_KEY="lab_last_backup_cami";
 const DAYS_WARNING=30;
 const DAYS_WARN_7=7;
 const DAYS_WARN_15=15;
+const DAYS_WARN_60=60;
 const BACKUP_DAYS=1;
 const STATI_DPC=["OPERATIVA","IN PRODUZIONE","MANUTENZIONE","DA INSTALLARE","IN DISUSO","DISMESSA","NON DI COMPETENZA CAMI"];
 var sb,equipment=[],clienti=[],clientiAll=[],users=[],tecnicoClienti=[],currentUser=null;
@@ -1898,8 +1899,8 @@ function daysUntil(d){if(!d)return null;var t=new Date(d),n=new Date();n.setHour
 function isOverdue(d){var x=daysUntil(d);return x!==null&&x<0;}
 function isSoon(d){var x=daysUntil(d);return x!==null&&x>=0&&x<=DAYS_WARNING;}
 function isSoonTier(d,maxD){var x=daysUntil(d);return x!==null&&x>=0&&x<=maxD;}
-function expStatus(d){if(!d)return"none";if(isOverdue(d))return"overdue";var x=daysUntil(d);if(x===null)return"none";if(x<=DAYS_WARN_7)return"soon7";if(x<=DAYS_WARN_15)return"soon15";if(x<=DAYS_WARNING)return"soon30";return"ok";}
-function expStatusSimple(d){var s=expStatus(d);if(s==="overdue")return"overdue";if(s==="soon7"||s==="soon15"||s==="soon30")return"soon";if(s==="ok")return"ok";return"none";}
+function expStatus(d){if(!d)return"none";if(isOverdue(d))return"overdue";var x=daysUntil(d);if(x===null)return"none";if(x<=DAYS_WARN_7)return"soon7";if(x<=DAYS_WARN_15)return"soon15";if(x<=DAYS_WARNING)return"soon30";if(x<=DAYS_WARN_60)return"soon60";return"ok";}
+function expStatusSimple(d){var s=expStatus(d);if(s==="overdue")return"overdue";if(s==="soon7"||s==="soon15"||s==="soon30")return"soon";if(s==="soon60")return"soon60";if(s==="ok")return"ok";return"none";}
 function statusBadge(s){var m={"OPERATIVA":"badge-teal","IN PRODUZIONE":"badge-green","MANUTENZIONE":"badge-amber","DA INSTALLARE":"badge-blue","DISMESSA":"badge-rose"};return '<span class="badge '+(m[s]||"badge-gray")+'">'+(s||"-")+'</span>';}
 function getTipo(){var a=[];document.querySelectorAll('input[name="tipoAtt"]:checked').forEach(function(c){a.push(c.value);});return a;}
 function setTipo(arr){document.querySelectorAll('input[name="tipoAtt"]').forEach(function(c){c.checked=arr&&arr.indexOf(c.value)>-1;});}
@@ -1909,7 +1910,7 @@ function val(id){var el=document.getElementById(id);return el?el.value.trim():""
 function setv(id,v){var el=document.getElementById(id);if(el)el.value=v||"";}
 function emptyStage(){return{codice:"",misure:"",tipologia:"",qty:"",correlazione:"",data_install:"",durata_mesi:"",prox:"",status:""};}
 function calcProx(di,dm){if(!di||!dm)return"";var m=parseInt(dm,10);if(isNaN(m)||m<=0)return"";var d=new Date(di+"T00:00:00");if(isNaN(d.getTime()))return"";d.setMonth(d.getMonth()+m);return d.toISOString().slice(0,10);}
-function autoFilterStatus(prox){if(!prox)return"";var days=daysUntil(prox);if(days===null)return"";if(days<0)return"SCADUTO";if(days<=DAYS_WARNING)return"IN SCADENZA";return"OK";}
+function autoFilterStatus(prox){if(!prox)return"";var days=daysUntil(prox);if(days===null)return"";if(days<0)return"SCADUTO";if(days<=DAYS_WARNING)return"IN SCADENZA";if(days<=DAYS_WARN_60)return"TRA 2 MESI";return"OK";}
 function refreshStageStatus(n){var proxEl=document.getElementById("s"+n+"_prox");var statusEl=document.getElementById("s"+n+"_status");if(!proxEl||!statusEl)return;var p=proxEl.value;statusEl.value=autoFilterStatus(p);}
 function parseNumStadi(label){if(!label)return 0;var m=String(label).match(/(\d)/);if(m)return parseInt(m[1],10);var n=parseInt(label,10);return isNaN(n)?0:n;}
 function stageProxList(e){var out=[],fs=(e&&e.filtriStadi)?e.filtriStadi:{};for(var i=1;i<=4;i++){var s=fs[String(i)];if(!s)continue;var prox=s.prox||"";if(!prox)prox=calcProx(s.data_install,s.durata_mesi);if(prox)out.push({stadio:i,prox:prox,status:expStatus(prox),codice:s.codice||""});}return out;}
@@ -1920,13 +1921,13 @@ function isStatoSenzaScadenze(e){
   return s.indexOf("dismess")>-1||s.indexOf("disuso")>-1||s.indexOf("competenza")>-1;
 }
 function deviceExpiryStatus(e){if(isStatoSenzaScadenze(e))return"none";var man=expStatusSimple(e.prossimaMan),st=worstStageStatus(e);if(man==="overdue"||st==="overdue")return"overdue";if(man==="soon"||st==="soon")return"soon";if(man==="ok"||st==="ok")return"ok";return"none";}
-function deviceExpiryTier(e){if(isStatoSenzaScadenze(e))return"none";var worst="ok",dates=[];if(e.prossimaMan)dates.push(e.prossimaMan);stageProxList(e).forEach(function(x){if(x.prox)dates.push(x.prox);});if(!dates.length)return"none";dates.forEach(function(d){var s=expStatus(d);if(s==="overdue")worst="overdue";else if(s==="soon7"&&worst!=="overdue")worst="soon7";else if(s==="soon15"&&worst!=="overdue"&&worst!=="soon7")worst="soon15";else if(s==="soon30"&&(worst==="ok"||worst==="none"))worst="soon30";});return worst;}
+function deviceExpiryTier(e){if(isStatoSenzaScadenze(e))return"none";var worst="ok",dates=[];if(e.prossimaMan)dates.push(e.prossimaMan);stageProxList(e).forEach(function(x){if(x.prox)dates.push(x.prox);});if(!dates.length)return"none";dates.forEach(function(d){var s=expStatus(d);if(s==="overdue")worst="overdue";else if(s==="soon7"&&worst!=="overdue")worst="soon7";else if(s==="soon15"&&worst!=="overdue"&&worst!=="soon7")worst="soon15";else if(s==="soon30"&&(worst==="ok"||worst==="none"||worst==="soon60"))worst="soon30";else if(s==="soon60"&&(worst==="ok"||worst==="none"))worst="soon60";});return worst;}
 function countStadi(fs){if(!fs)return 0;return Object.keys(fs).filter(function(k){var s=fs[k];return s&&(s.codice||s.misure||s.tipologia||s.prox||s.data_install);}).length;}
 function buildStadiForm(){var box=document.getElementById("stadiBox");if(!box)return;var h="";for(var i=1;i<=4;i++){h+='<div class="stadio-card" id="stadioCard'+i+'" style="display:none"><h4>'+i+'o Stadio</h4><div class="stadio-grid"><div><label>Codice filtro</label><input id="s'+i+'_codice"></div><div><label>Misure (mm)</label><input id="s'+i+'_misure"></div><div><label>Tipologia</label><select id="s'+i+'_tipologia"><option value="">-</option><option value="P">P Particolare</option><option value="M">M Molecolare</option></select></div><div><label>Q.ta</label><input id="s'+i+'_qty"></div><div><label>Correlazione</label><input id="s'+i+'_correlazione"></div><div><label>Data install.</label><input type="date" id="s'+i+'_data"></div><div><label>Durata mesi</label><input id="s'+i+'_durata" type="number" min="1"></div><div><label>Prox. sostituz.</label><input type="date" id="s'+i+'_prox"></div><div><label>Status (auto)</label><input id="s'+i+'_status" readonly style="background:#f1f5f9;font-weight:600" placeholder="automatico"></div></div></div>';}box.innerHTML=h;bindStageAutoProx();updateStadiVisibility();}
 function updateStadiVisibility(){var n=parseNumStadi(val("stadiFiltranti"));for(var i=1;i<=4;i++){var card=document.getElementById("stadioCard"+i);if(card)card.style.display=(i<=n)?"block":"none";}var hint=document.getElementById("stadiSectionHint");if(hint)hint.textContent=n>0?("Compila i "+n+" stadi filtranti dichiarati."):"Seleziona prima il N. Stadi per visualizzare i dettagli filtro.";}
-function bindStageAutoProx(){for(var i=1;i<=4;i++){(function(n){var dataEl=document.getElementById("s"+n+"_data"),durEl=document.getElementById("s"+n+"_durata"),proxEl=document.getElementById("s"+n+"_prox"),statusEl=document.getElementById("s"+n+"_status");if(!dataEl||!durEl||!proxEl)return;var applyStatus=function(){var st=autoFilterStatus(proxEl.value);if(statusEl){statusEl.value=st;statusEl.style.color=st==="SCADUTO"?"#dc2626":(st==="IN SCADENZA"?"#ea580c":(st==="OK"?"#047857":"#64748b"));}};var calc=function(){var p=calcProx(dataEl.value,durEl.value);if(p)proxEl.value=p;applyStatus();};dataEl.addEventListener("change",calc);durEl.addEventListener("change",calc);durEl.addEventListener("input",calc);proxEl.addEventListener("change",applyStatus);})(i);}}
+function bindStageAutoProx(){for(var i=1;i<=4;i++){(function(n){var dataEl=document.getElementById("s"+n+"_data"),durEl=document.getElementById("s"+n+"_durata"),proxEl=document.getElementById("s"+n+"_prox"),statusEl=document.getElementById("s"+n+"_status");if(!dataEl||!durEl||!proxEl)return;var applyStatus=function(){var st=autoFilterStatus(proxEl.value);if(statusEl){statusEl.value=st;statusEl.style.color=st==="SCADUTO"?"#dc2626":(st==="IN SCADENZA"?"#ea580c":(st==="TRA 2 MESI"?"#2563eb":(st==="OK"?"#047857":"#64748b")));}};var calc=function(){var p=calcProx(dataEl.value,durEl.value);if(p)proxEl.value=p;applyStatus();};dataEl.addEventListener("change",calc);durEl.addEventListener("change",calc);durEl.addEventListener("input",calc);proxEl.addEventListener("change",applyStatus);})(i);}}
 function collectFiltriStadi(){var out={},n=parseNumStadi(val("stadiFiltranti")),max=n>0?n:0;for(var i=1;i<=max;i++){var s={codice:val("s"+i+"_codice"),misure:val("s"+i+"_misure"),tipologia:val("s"+i+"_tipologia"),qty:val("s"+i+"_qty"),correlazione:val("s"+i+"_correlazione"),data_install:val("s"+i+"_data"),durata_mesi:val("s"+i+"_durata"),prox:val("s"+i+"_prox"),status:""};if(!s.prox)s.prox=calcProx(s.data_install,s.durata_mesi);s.status=autoFilterStatus(s.prox);if(s.codice||s.misure||s.tipologia||s.qty||s.data_install||s.prox||s.status)out[String(i)]=s;}return out;}
-function fillFiltriStadi(data){data=data||{};for(var i=1;i<=4;i++){var s=data[String(i)]||emptyStage();setv("s"+i+"_codice",s.codice);setv("s"+i+"_misure",s.misure);setv("s"+i+"_tipologia",s.tipologia);setv("s"+i+"_qty",s.qty);setv("s"+i+"_correlazione",s.correlazione);setv("s"+i+"_data",s.data_install);setv("s"+i+"_durata",s.durata_mesi);var px=s.prox||calcProx(s.data_install,s.durata_mesi);setv("s"+i+"_prox",px);var st=autoFilterStatus(px);setv("s"+i+"_status",st);var statusEl=document.getElementById("s"+i+"_status");if(statusEl)statusEl.style.color=st==="SCADUTO"?"#dc2626":(st==="IN SCADENZA"?"#ea580c":(st==="OK"?"#047857":"#64748b"));}if(!val("stadiFiltranti")){var maxK=0;Object.keys(data).forEach(function(k){var num=parseInt(k,10);if(!isNaN(num)&&num>maxK)maxK=num;});if(maxK>0)setv("stadiFiltranti",String(maxK));}updateStadiVisibility();}
+function fillFiltriStadi(data){data=data||{};for(var i=1;i<=4;i++){var s=data[String(i)]||emptyStage();setv("s"+i+"_codice",s.codice);setv("s"+i+"_misure",s.misure);setv("s"+i+"_tipologia",s.tipologia);setv("s"+i+"_qty",s.qty);setv("s"+i+"_correlazione",s.correlazione);setv("s"+i+"_data",s.data_install);setv("s"+i+"_durata",s.durata_mesi);var px=s.prox||calcProx(s.data_install,s.durata_mesi);setv("s"+i+"_prox",px);var st=autoFilterStatus(px);setv("s"+i+"_status",st);var statusEl=document.getElementById("s"+i+"_status");if(statusEl)statusEl.style.color=st==="SCADUTO"?"#dc2626":(st==="IN SCADENZA"?"#ea580c":(st==="TRA 2 MESI"?"#2563eb":(st==="OK"?"#047857":"#64748b")));}if(!val("stadiFiltranti")){var maxK=0;Object.keys(data).forEach(function(k){var num=parseInt(k,10);if(!isNaN(num)&&num>maxK)maxK=num;});if(maxK>0)setv("stadiFiltranti",String(maxK));}updateStadiVisibility();}
 async function logAudit(azione,eq,dettagli){try{await sb.from("audit_log").insert([{equip_id:eq&&eq.id?eq.id:null,matricola:eq?eq.matricola||"":"",id_dispositivo:eq?eq.idDispositivo||"":"",username:currentUser?currentUser.username:"?",azione:azione,dettagli:dettagli||""}]);}catch(e){console.warn("audit",e);}}
 function checkAutoBackup(){try{var last=parseInt(safeGetLocal(LAST_BACKUP_KEY,"0")||"0",10);if(!last||(Date.now()-last)>BACKUP_DAYS*86400000){exportFullBackup({cloudOnly:true});}}catch(e){}}
 function showFotoPreview(url){var img=document.getElementById("fotoPreview");if(!img)return;if(url){img.src=url;img.classList.add("show");}else{img.src="";img.classList.remove("show");}}
@@ -3219,6 +3220,8 @@ function dpcMatchesHomeFilters(e,f){
     else if(f.fsc==="d7")ok=tier==="overdue"||tier==="soon7";
     else if(f.fsc==="d15")ok=tier==="overdue"||tier==="soon7"||tier==="soon15";
     else if(f.fsc==="d30")ok=tier==="overdue"||tier==="soon7"||tier==="soon15"||tier==="soon30";
+    else if(f.fsc==="d60")ok=tier==="overdue"||tier==="soon7"||tier==="soon15"||tier==="soon30"||tier==="soon60";
+    else if(f.fsc==="in_2mesi")ok=tier==="soon60";
     else if(f.fsc==="ok")ok=dest==="ok";
     if(!ok)return false;
   }
@@ -3506,28 +3509,35 @@ function filterByClienteChip(clienteId){
   openClienteElenco(clienteId);
 }
 function updateExpiry(){
-  var scMan=0,soMan=0,scFil=0,soFil=0,dpcSc=0,dpcSo=0;
+  var scMan=0,soMan=0,m60Man=0,scFil=0,soFil=0,m60Fil=0,dpcSc=0,dpcSo=0,dpc60=0;
   visibleEquipment().forEach(function(e){
     if(isStatoSenzaScadenze(e))return;
     if(isOverdue(e.prossimaMan))scMan++;
     else if(isSoon(e.prossimaMan))soMan++;
+    else if(isSoonTier(e.prossimaMan,DAYS_WARN_60))m60Man++;
     stageProxList(e).forEach(function(x){
-      if(x.status==="overdue")scFil++;
-      else if(x.status==="soon")soFil++;
+      var st=expStatus(x.prox);
+      if(st==="overdue")scFil++;
+      else if(st==="soon7"||st==="soon15"||st==="soon30")soFil++;
+      else if(st==="soon60")m60Fil++;
     });
-    var d=deviceExpiryStatus(e);
-    if(d==="overdue")dpcSc++;
-    else if(d==="soon")dpcSo++;
+    var t=deviceExpiryTier(e);
+    if(t==="overdue")dpcSc++;
+    else if(t==="soon7"||t==="soon15"||t==="soon30")dpcSo++;
+    else if(t==="soon60")dpc60++;
   });
   var box=document.getElementById("expiryAlert"),tx=document.getElementById("expiryAlertText");
-  if(!scMan&&!soMan&&!scFil&&!soFil&&!dpcSc&&!dpcSo){box.classList.remove("show","danger");try{syncStickyChrome();}catch(e){}return;}
+  if(!scMan&&!soMan&&!m60Man&&!scFil&&!soFil&&!m60Fil&&!dpcSc&&!dpcSo&&!dpc60){box.classList.remove("show","danger");try{syncStickyChrome();}catch(e){}return;}
   var p=[];
   if(dpcSc)p.push("<strong>"+dpcSc+" DPC scaduti</strong>");
-  if(dpcSo)p.push("<strong>"+dpcSo+" DPC in scadenza</strong>");
+  if(dpcSo)p.push("<strong>"+dpcSo+" DPC in scadenza (30gg)</strong>");
+  if(dpc60)p.push("<strong>"+dpc60+" DPC entro 2 mesi</strong>");
   if(scMan)p.push("<strong>"+scMan+" man. scadute</strong>");
-  if(soMan)p.push("<strong>"+soMan+" man. in scadenza</strong>");
-  if(scFil)p.push("<strong>"+scFil+" stadi filtro scaduti</strong>");
-  if(soFil)p.push("<strong>"+soFil+" stadi filtro in scadenza</strong>");
+  if(soMan)p.push("<strong>"+soMan+" man. 30gg</strong>");
+  if(m60Man)p.push("<strong>"+m60Man+" man. 2 mesi</strong>");
+  if(scFil)p.push("<strong>"+scFil+" filtri scaduti</strong>");
+  if(soFil)p.push("<strong>"+soFil+" filtri 30gg</strong>");
+  if(m60Fil)p.push("<strong>"+m60Fil+" filtri 2 mesi</strong>");
   tx.innerHTML=p.join(" · ");
   box.classList.add("show");
   if(scMan||scFil||dpcSc)box.classList.add("danger");else box.classList.remove("danger");
@@ -3552,7 +3562,14 @@ if(!window.__stickyObs && typeof ResizeObserver!=="undefined"){
   });
 }
 window.addEventListener("resize",function(){try{syncStickyChrome();}catch(e){}});
-function filterExpiring(){var hasOver=equipment.some(function(e){return deviceExpiryStatus(e)==="overdue";});document.getElementById("filterScadenza").value=hasOver?"scaduti":"in_scadenza";document.documentElement.classList.remove("client-home-mode");var t=document.getElementById("dpcListTitle");if(t)t.textContent="DPC in evidenza";renderTable();try{syncStickyChrome();}catch(e){}}
+function filterExpiring(){
+  var hasOver=equipment.some(function(e){return deviceExpiryStatus(e)==="overdue";});
+  var has30=equipment.some(function(e){return deviceExpiryStatus(e)==="soon";});
+  document.getElementById("filterScadenza").value=hasOver?"scaduti":(has30?"in_scadenza":"d60");
+  document.documentElement.classList.remove("client-home-mode");
+  var t=document.getElementById("dpcListTitle");if(t)t.textContent="DPC in evidenza";
+  renderTable();try{syncStickyChrome();}catch(e){}
+}
 
 function bindHScroll(a,b){
   if(!a||!b||a===b)return;
@@ -3652,7 +3669,7 @@ function syncTableScrollbars(){
 window.addEventListener("resize",function(){try{syncTableScrollbars();}catch(e){}});
 
 
-function renderTable(){try{refreshBell();}catch(ex){}try{setTimeout(syncTableScrollbars,0);}catch(ex){}var q=document.getElementById("searchInput").value.toLowerCase(),fcl=document.getElementById("filterCliente").value,fac=document.getElementById("filterAcronimo").value,fse=document.getElementById("filterSede").value,fst=document.getElementById("filterStato").value,ffi=document.getElementById("filterFiltro").value,fsc=document.getElementById("filterScadenza").value;var baseList=visibleEquipment();var list=baseList.filter(function(e){var ms=!q||[e.matricola,e.idDispositivo,e.modello,e.sede,e.acronimo,labelAcronimo(e.acronimo,"full"),clienteName(e.clienteId),clienteCode(e.clienteId),e.responsabile,filterCodesText(e)].join(" ").toLowerCase().indexOf(q)>-1;var dest=deviceExpiryStatus(e),msc=true;if(fsc==="scaduti")msc=dest==="overdue";else if(fsc==="in_scadenza")msc=dest==="soon";else if(fsc==="d7"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7";}else if(fsc==="d15"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7"||t==="soon15";}else if(fsc==="d30")msc=dest==="overdue"||dest==="soon";else if(fsc==="ok")msc=dest==="ok"||dest==="none";return ms&&(!fcl||e.clienteId===fcl)&&(!fac||e.acronimo===fac)&&(!fse||e.sede===fse)&&(!fst||e.stato===fst)&&(!ffi||e.haSistemaFiltrante===ffi)&&msc;});list.sort(function(a,b){var o={overdue:0,soon:1,ok:2,none:3},sa=deviceExpiryStatus(a),sb=deviceExpiryStatus(b);if(o[sa]!==o[sb])return o[sa]-o[sb];return(a.matricola||"").localeCompare(b.matricola||"");});var tb=document.getElementById("tableBody"),empty=document.getElementById("emptyState");if(!list.length){tb.innerHTML="";empty.classList.add("show");return;}empty.classList.remove("show");var html="";list.forEach(function(e){var st=deviceExpiryStatus(e),row=st==="overdue"?"row-overdue":(st==="soon"?"row-soon":"");var manSt=isStatoSenzaScadenze(e)?"none":expStatus(e.prossimaMan),dc=manSt==="overdue"?"overdue":(manSt==="soon"?"soon":"");var days="";if(manSt==="overdue")days=" <small>(-"+Math.abs(daysUntil(e.prossimaMan))+"g)</small>";else if(manSt==="soon")days=" <small>("+daysUntil(e.prossimaMan)+"g)</small>";var nf=nextFilterProx(e),filCell="-";if(nf){var fdc=nf.status==="overdue"?"overdue":(nf.status==="soon"?"soon":"");var fd="";if(nf.status==="overdue")fd=" <small>(-"+Math.abs(daysUntil(nf.prox))+"g)</small>";else if(nf.status==="soon")fd=" <small>("+daysUntil(nf.prox)+"g)</small>";filCell='<span class="'+fdc+'">S'+nf.stadio+' '+fmt(nf.prox)+fd+'</span>';}
+function renderTable(){try{refreshBell();}catch(ex){}try{setTimeout(syncTableScrollbars,0);}catch(ex){}var q=document.getElementById("searchInput").value.toLowerCase(),fcl=document.getElementById("filterCliente").value,fac=document.getElementById("filterAcronimo").value,fse=document.getElementById("filterSede").value,fst=document.getElementById("filterStato").value,ffi=document.getElementById("filterFiltro").value,fsc=document.getElementById("filterScadenza").value;var baseList=visibleEquipment();var list=baseList.filter(function(e){var ms=!q||[e.matricola,e.idDispositivo,e.modello,e.sede,e.acronimo,labelAcronimo(e.acronimo,"full"),clienteName(e.clienteId),clienteCode(e.clienteId),e.responsabile,filterCodesText(e)].join(" ").toLowerCase().indexOf(q)>-1;var dest=deviceExpiryStatus(e),msc=true;if(fsc==="scaduti")msc=dest==="overdue";else if(fsc==="in_scadenza")msc=dest==="soon";else if(fsc==="d7"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7";}else if(fsc==="d15"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7"||t==="soon15";}else if(fsc==="d30")msc=dest==="overdue"||dest==="soon";else if(fsc==="d60"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7"||t==="soon15"||t==="soon30"||t==="soon60";}else if(fsc==="in_2mesi"){var t=deviceExpiryTier(e);msc=t==="soon60";}else if(fsc==="ok")msc=dest==="ok"||dest==="none";return ms&&(!fcl||e.clienteId===fcl)&&(!fac||e.acronimo===fac)&&(!fse||e.sede===fse)&&(!fst||e.stato===fst)&&(!ffi||e.haSistemaFiltrante===ffi)&&msc;});list.sort(function(a,b){var o={overdue:0,soon:1,ok:2,none:3},sa=deviceExpiryStatus(a),sb=deviceExpiryStatus(b);if(o[sa]!==o[sb])return o[sa]-o[sb];return(a.matricola||"").localeCompare(b.matricola||"");});var tb=document.getElementById("tableBody"),empty=document.getElementById("emptyState");if(!list.length){tb.innerHTML="";empty.classList.add("show");return;}empty.classList.remove("show");var html="";list.forEach(function(e){var st=deviceExpiryStatus(e),row=st==="overdue"?"row-overdue":(st==="soon"?"row-soon":"");var manSt=isStatoSenzaScadenze(e)?"none":expStatus(e.prossimaMan),dc=manSt==="overdue"?"overdue":(manSt==="soon"?"soon":"");var days="";if(manSt==="overdue")days=" <small>(-"+Math.abs(daysUntil(e.prossimaMan))+"g)</small>";else if(manSt==="soon")days=" <small>("+daysUntil(e.prossimaMan)+"g)</small>";var nf=nextFilterProx(e),filCell="-";if(nf){var fdc=nf.status==="overdue"?"overdue":(nf.status==="soon"?"soon":"");var fd="";if(nf.status==="overdue")fd=" <small>(-"+Math.abs(daysUntil(nf.prox))+"g)</small>";else if(nf.status==="soon")fd=" <small>("+daysUntil(nf.prox)+"g)</small>";filCell='<span class="'+fdc+'">S'+nf.stadio+' '+fmt(nf.prox)+fd+'</span>';}
     var stFil="-";if(isStatoSenzaScadenze(e)){filCell="-";stFil="-";}else if(nf){stFil=statusFiltroBadge(autoFilterStatus(nf.prox));}else{var fs=e.filtriStadi||{};for(var si=1;si<=4;si++){var ss=fs[String(si)];if(ss&&ss.prox){stFil=statusFiltroBadge(autoFilterStatus(ss.prox));break;}}}var att=(e.tipoAttivita&&e.tipoAttivita.length)?e.tipoAttivita.join(", "):"-";var filtro=e.haSistemaFiltrante==="si"?'<span class="badge badge-blue">Si</span>':'<span class="badge badge-gray">No</span>';var nSt=countStadi(e.filtriStadi),stadiTxt=nSt?(nSt+"o"):(e.stadiFiltranti||"-");var canInt=canEditInterventi(e.clienteId);var canAna=canEditAnagrafica(e.clienteId);var az='<button class="btn-icon history" title="Storico" onclick="openHistory(\''+e.id+'\')"><i class="fas fa-history"></i></button><button class="btn-icon report" title="Report" onclick="openReport(\''+e.id+'\')"><i class="fas fa-file-alt"></i></button><button class="btn-icon" title="Commenti" style="color:#7c3aed" onclick="openComments(\''+e.id+'\')"><i class="fas fa-comments"></i></button><button class="btn-icon" title="Scheda/Stampa" style="color:#0369a1" onclick="openPrintScheda(\''+e.id+'\')"><i class="fas fa-print"></i></button>';if(canAna)az+='<button class="btn-icon" title="Duplica" style="color:#0f766e" onclick="duplicaEquipment(\''+e.id+'\')"><i class="fas fa-copy"></i></button><button class="btn-icon edit" title="Modifica" onclick="editEquipment(\''+e.id+'\')"><i class="fas fa-pen"></i></button><button class="btn-icon delete" title="Elimina" onclick="deleteEquipment(\''+e.id+'\')"><i class="fas fa-trash"></i></button>';html+='<tr class="'+row+'"><td>'+clienteBadge(e.clienteId)+'</td><td title="'+String(labelAcronimo(e.acronimo,'full')).replace(/"/g,'&quot;')+'"><strong>'+(e.acronimo||"-")+'</strong><div style="font-size:.68rem;color:#64748b;font-weight:500;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+labelAcronimo(e.acronimo,'desc')+'</div></td><td class="truncate">'+(e.costruttore||"-")+'</td><td class="truncate">'+(e.modello||"-")+'</td><td class="code">'+(e.matricola||"-")+'</td><td class="code">'+(e.idDispositivo||"-")+'</td><td>'+fmt(e.ultimaMan)+'</td><td class="'+dc+'">'+(isStatoSenzaScadenze(e)?"-":(fmt(e.prossimaMan)+days))+'</td><td>'+filCell+'</td><td>'+stFil+'</td><td>'+(e.sede||"-")+'</td><td class="truncate">'+(e.edificio||"-")+'</td><td class="truncate">'+(e.laboratorio||"-")+'</td><td>'+(e.piano||"-")+'</td><td>'+(e.stanza||"-")+'</td><td>'+statusBadge(e.stato)+'</td><td class="truncate">'+(e.responsabile||"-")+'</td><td>'+(e.cadenzaMan||"-")+'</td><td>'+att+'</td><td>'+filtro+'</td><td>'+stadiTxt+'</td><td class="truncate">'+(e.accessori||"-")+'</td><td class="truncate">'+(e.note||"-")+'</td><td><div class="actions">'+az+'</div></td></tr>';});tb.innerHTML=html;try{setTimeout(syncTableScrollbars,30);}catch(ex){};}
 async function doLogin(){var u=document.getElementById("loginUsername").value.trim(),p=document.getElementById("loginPassword").value,err=document.getElementById("loginError");if(!u||!p){err.textContent="Inserisci credenziali";err.classList.add("show");return;}var res=await sb.from("users").select("*").eq("username",u).limit(1);if(res.error){err.textContent=res.error.message;err.classList.add("show");return;}if(!res.data.length||res.data[0].password!==p){err.textContent="Credenziali non corrette";err.classList.add("show");return;}var row=res.data[0];var role=normalizeRole(row.role);currentUser={id:row.id,username:row.username,nome:row.nome||row.username,role:role,clienteId:row.cliente_id||null,clienteIds:[]};try{var tc=await sb.from("tecnico_clienti").select("cliente_id").eq("user_id",row.id);if(tc&&!tc.error&&tc.data)currentUser.clienteIds=tc.data.map(function(x){return x.cliente_id;});}catch(ex){}if(!currentUser.clienteIds.length&&currentUser.clienteId)currentUser.clienteIds=[currentUser.clienteId];safeSetSession(SESSION_KEY,JSON.stringify(currentUser));err.classList.remove("show");
   try{await sb.from("users").update({last_login:new Date().toISOString()}).eq("id",row.id);}catch(e){}
@@ -4402,10 +4419,10 @@ function getEmailSettings(){
       autoOn:o.autoOn!==false&&o.autoOn!=="0",
       reportOn:o.reportOn!==false&&o.reportOn!=="0",
       inclCert:o.inclCert!==false&&o.inclCert!=="0",
-      days:parseInt(o.days,10)||30,
+      days:parseInt(o.days,10)||60,
       fromName:o.fromName||"Gestionale CAMI"
     };
-  }catch(e){return{recipients:"",autoOn:true,reportOn:true,inclCert:true,days:30,fromName:"Gestionale CAMI"};}
+  }catch(e){return{recipients:"",autoOn:true,reportOn:true,inclCert:true,days:60,fromName:"Gestionale CAMI"};}
 }
 function saveEmailSettings(){
   if(!(isSuper()||isAdmin()||isTecnico())){alert("Permesso negato");return;}
@@ -4437,7 +4454,7 @@ function loadEmailSettingsForm(){
   document.getElementById("emailAutoOn").value=o.autoOn?"1":"0";
   var er=document.getElementById("emailReportOn");if(er)er.value=o.reportOn!==false?"1":"0";
   document.getElementById("emailInclCert").value=o.inclCert?"1":"0";
-  document.getElementById("emailDays").value=o.days||30;
+  document.getElementById("emailDays").value=o.days||60;
   document.getElementById("emailFromName").value=o.fromName||"Gestionale CAMI";
   updateEmailStatus();
 }
@@ -4457,7 +4474,42 @@ function updateEmailStatus(){
   el.innerHTML="Auto scadenze: <strong>"+(o.autoOn?"ON":"OFF")+"</strong> · Report intervento: <strong>"+(o.reportOn!==false?"ON":"OFF")+"</strong> · Destinatari: <strong>"+(o.recipients||"(nessuno)")+"</strong> · Ultimo invio auto: <strong>"+last+"</strong> · Service: "+EMAILJS_SERVICE_ID;
 }
 function isSoonDays(d,days){var x=daysUntil(d);return x!==null&&x>=0&&x<=days;}
+function collectWorkItems(days){
+  days=days||DAYS_WARN_60;
+  var out=[];
+  visibleEquipment().forEach(function(e){
+    if(isStatoSenzaScadenze(e))return;
+    function add(kind,date,label){
+      if(!date)return;
+      var du=daysUntil(date);
+      if(du===null)return;
+      var bucket=du<0?"overdue":(du<=30?"soon":(du<=days?"m60":null));
+      if(!bucket)return;
+      out.push({id:e.id,kind:kind,date:date,bucket:bucket,label:label,cliente:clienteName(e.clienteId),acronimo:e.acronimo||"",matricola:e.matricola||"",sede:e.sede||"",days:du});
+    }
+    add("man",e.prossimaMan,"Manutenzione");
+    stageProxList(e).forEach(function(x){add("fil-S"+x.stadio,x.prox,"Filtro S"+x.stadio+(x.codice?" "+x.codice:""));});
+  });
+  return out;
+}
+function loadEmailSent(){try{return JSON.parse(safeGetLocal("cami_email_sent_v1","{}")||"{}");}catch(e){return{};}}
+function saveEmailSent(m){try{safeSetLocal("cami_email_sent_v1",JSON.stringify(m));}catch(e){}}
+function emailItemKey(it){return String(it.id)+"|"+it.kind+"|"+it.bucket+"|"+String(it.date||"");}
+function buildShortExpiryMessage(items){
+  if(!items||!items.length)return null;
+  var over=items.filter(function(x){return x.bucket==="overdue";});
+  var soon=items.filter(function(x){return x.bucket==="soon";});
+  var m60=items.filter(function(x){return x.bucket==="m60";});
+  function line(it){return "- "+it.cliente+" "+it.acronimo+" mat."+(it.matricola||"-")+" · "+it.label+" "+fmt(it.date)+(it.days<0?(" (scaduto da "+Math.abs(it.days)+"g)"):(" (tra "+it.days+"g)"));}
+  var m="CAMI – da fare\n"+new Date().toLocaleDateString("it-IT")+"\n\n";
+  if(over.length)m+="SCADUTI ("+over.length+")\n"+over.map(line).join("\n")+"\n\n";
+  if(soon.length)m+="ENTRO 30 GIORNI ("+soon.length+")\n"+soon.map(line).join("\n")+"\n\n";
+  if(m60.length)m+="ENTRO 2 MESI ("+m60.length+")\n"+m60.map(line).join("\n")+"\n\n";
+  m+="Apri il gestionale per i dettagli.";
+  return m;
+}
 function buildExpiryMessage(){
+
   var o=getEmailSettings();
   var days=o.days||30;
   var a=[],b=[],c=[];
@@ -4525,12 +4577,16 @@ function sendExpiryEmailDo(manual){
       }
     }
   }else{
-    message=buildExpiryMessage();
+    var oDays=o.days||DAYS_WARN_60;
+    var items=collectWorkItems(oDays);
+    var sent=loadEmailSent();
+    items=items.filter(function(it){return !sent[emailItemKey(it)];});
+    if(!items.length)return;
+    message=buildShortExpiryMessage(items);
     if(!message)return;
+    window.__pendingEmailSentKeys=items.map(emailItemKey);
   }
   if(!manual){
-    var t=new Date().toISOString().slice(0,10);
-    if(safeGetLocal(LAST_EMAIL_KEY)===t)return;
   }
   var subject="Scadenze DPC CAMI - "+new Date().toLocaleDateString("it-IT");
   var done=0,fail=0,lastErr="";
@@ -4538,6 +4594,12 @@ function sendExpiryEmailDo(manual){
     if(idx>=list.length){
       if(done>0){
         safeSetLocal(LAST_EMAIL_KEY,new Date().toISOString().slice(0,10));
+        if(window.__pendingEmailSentKeys){
+          var sm=loadEmailSent();
+          window.__pendingEmailSentKeys.forEach(function(k){sm[k]=1;});
+          saveEmailSent(sm);
+          window.__pendingEmailSentKeys=null;
+        }
         toast("Email OK: "+done+" destinatari");
         try{updateEmailStatus();}catch(e){}
         try{logAudit("EMAIL",null,(manual?"Manuale":"Auto")+" -> "+done);}catch(e){}
@@ -6234,17 +6296,17 @@ function openOggiModal(){
   var items=[];
   visibleEquipment().forEach(function(e){
     if(isStatoSenzaScadenze(e))return;
-    if(isOverdue(e.prossimaMan)||isSoon(e.prossimaMan)){
+    if(isOverdue(e.prossimaMan)||isSoonTier(e.prossimaMan,DAYS_WARN_60)){
       items.push({type:"man",status:expStatus(e.prossimaMan),date:e.prossimaMan,e:e,label:"Manutenzione"});
     }
     stageProxList(e).forEach(function(x){
-      if(x.status==="overdue"||x.status==="soon"){
-        items.push({type:"fil",status:x.status,date:x.prox,e:e,label:"Filtro S"+x.stadio+(x.codice?" ("+x.codice+")":""),stadio:x.stadio});
+      if(isOverdue(x.prox)||isSoonTier(x.prox,DAYS_WARN_60)){
+        items.push({type:"fil",status:expStatus(x.prox),date:x.prox,e:e,label:"Filtro S"+x.stadio+(x.codice?" ("+x.codice+")":""),stadio:x.stadio});
       }
     });
   });
   items.sort(function(a,b){
-    var oa={overdue:0,soon:1};if(oa[a.status]!==oa[b.status])return oa[a.status]-oa[b.status];
+    var oa={overdue:0,soon7:1,soon15:2,soon30:3,soon:3,soon60:4};if(oa[a.status]!==oa[b.status])return (oa[a.status]||9)-(oa[b.status]||9);
     return String(a.date).localeCompare(String(b.date));
   });
   var empty=document.getElementById("oggiEmpty"),list=document.getElementById("oggiList");
@@ -6446,12 +6508,14 @@ function buildNotifications(){
     else if(isSoonTier(e.prossimaMan,DAYS_WARN_7))items.push({tier:"soon7",text:"MAN entro 7gg: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip"});
     else if(isSoonTier(e.prossimaMan,DAYS_WARN_15))items.push({tier:"soon15",text:"MAN entro 15gg: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip"});
     else if(isSoon(e.prossimaMan))items.push({tier:"soon30",text:"MAN entro 30gg: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip"});
+    else if(isSoonTier(e.prossimaMan,DAYS_WARN_60))items.push({tier:"soon60",text:"MAN entro 2 mesi: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip"});
     stageProxList(e).forEach(function(x){
       var st=expStatusSimple(x.prox);
       if(st==="overdue")items.push({tier:"overdue",text:"Filtro S"+x.stadio+" scaduto: "+(e.acronimo||"")+" "+(e.matricola||""),id:e.id,kind:"equip"});
       else if(isSoonTier(x.prox,DAYS_WARN_7))items.push({tier:"soon7",text:"Filtro S"+x.stadio+" entro 7gg: "+(e.matricola||""),id:e.id,kind:"equip"});
       else if(isSoonTier(x.prox,DAYS_WARN_15))items.push({tier:"soon15",text:"Filtro S"+x.stadio+" entro 15gg: "+(e.matricola||""),id:e.id,kind:"equip"});
       else if(isSoon(x.prox))items.push({tier:"soon30",text:"Filtro S"+x.stadio+" entro 30gg: "+(e.matricola||""),id:e.id,kind:"equip"});
+      else if(isSoonTier(x.prox,DAYS_WARN_60))items.push({tier:"soon60",text:"Filtro S"+x.stadio+" entro 2 mesi: "+(e.matricola||""),id:e.id,kind:"equip"});
     });
   });
   return items;
@@ -7533,13 +7597,15 @@ function sendBrowserNotify(title,body){
   try{new Notification(title,{body:body,icon:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔬</text></svg>"});}catch(e){}
 }
 function notifyExpiringOnLogin(){
-  var sc=0,so=0;
+  var sc=0,so=0,m60=0;
   visibleEquipment().forEach(function(e){
-    var st=deviceExpiryStatus(e);
-    if(st==="overdue")sc++;else if(st==="soon")so++;
+    var t=deviceExpiryTier(e);
+    if(t==="overdue")sc++;
+    else if(t==="soon7"||t==="soon15"||t==="soon30")so++;
+    else if(t==="soon60")m60++;
   });
-  if(sc||so){
-    sendBrowserNotify("Gestionale CAMI – Scadenze",(sc?sc+" scaduti":"")+(sc&&so?" · ":"")+(so?so+" in scadenza":""));
+  if(sc||so||m60){
+    sendBrowserNotify("Gestionale CAMI – Scadenze",(sc?sc+" scaduti":"")+(sc&&(so||m60)?" · ":"")+(so?so+" entro 30gg":"")+(so&&m60?" · ":"")+(m60?m60+" entro 2 mesi":""));
   }
 }
 
