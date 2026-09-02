@@ -2264,8 +2264,9 @@ function isBlankDato(v){
 function dpcMissingFields(e){
   var miss=[];
   if(!e)return ["scheda"];
-  var req=["acronimo","costruttore","modello","matricola","idDispositivo","sede","dipartimento","edificio","laboratorio","piano","stanza","stato","responsabile","cadenzaMan","ultimaMan","prossimaMan"];
+  var req=["acronimo","costruttore","modello","matricola","idDispositivo","ultimaMan","prossimaMan","sede","stato"];
   for(var i=0;i<req.length;i++){if(isBlankDato(e[req[i]]))miss.push(req[i]);}
+  if(!e.clienteId)miss.push("cliente");
   if(String(e.haSistemaFiltrante||"").toLowerCase()==="si"){
     var n=parseNumStadi(e.stadiFiltranti)||countStadi(e.filtriStadi)||0;
     if(n<1)miss.push("n stadi");
@@ -2327,12 +2328,16 @@ function markMissingFilterFields(){
     st.textContent="#modal input.miss-filtro,#modal select.miss-filtro,#stadiBox input.miss-filtro,#stadiBox select.miss-filtro{border:2px solid #dc2626!important;background:#fef2f2!important}";
     document.head.appendChild(st);
   }
-  var ids=["acronimo","costruttore","modello","matricola","idDispositivo","sede","dipartimento","edificio","laboratorio","piano","stanza","stato","responsabile","cadenzaMan","ultimaMan","prossimaMan"];
+  var ids=["acronimo","costruttore","modello","matricola","idDispositivo","ultimaMan","prossimaMan","sede","stato","clienteId","haSistemaFiltrante"];
   for(var i=0;i<ids.length;i++){
     var el=document.getElementById(ids[i]);
     if(!el)continue;
     paintMiss(el, isBlankDato(el.value));
   }
+  ["dipartimento","edificio","laboratorio","piano","stanza","responsabile","referenteContatto","cadenzaMan","indirizzo","accessori"].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el)paintMiss(el,false);
+  });
   var on=String((document.getElementById("haSistemaFiltrante")||{}).value||"").toLowerCase()==="si";
   var n=on?parseNumStadi((document.getElementById("stadiFiltranti")||{}).value||""):0;
   var box=document.getElementById("stadiBox");
