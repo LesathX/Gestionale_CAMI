@@ -681,6 +681,7 @@ html.ui-only-dpc #commesseChrome{display:none!important}
     <div class="logo"><div class="logo-icon"><i class="fas fa-flask"></i></div><div><h1>Gestionale CAMI <span class="sync-badge">Multi</span></h1><p>DPC - Stadi dinamici</p></div></div>
     <div class="header-actions">
       <div class="bell-wrap"><button class="btn bell-btn" id="btnBell" title="Notifiche" onclick="toggleBell()"><i class="fas fa-bell"></i><span class="bell-count" id="bellCount">0</span></button><div class="bell-panel" id="bellPanel"></div></div>
+      <button class="btn btn-secondary" id="btnRubrica" onclick="openRubricaModal()"><i class="fas fa-address-book"></i> Contatti referenti</button>
       <button class="btn btn-secondary" id="btnDpcHome" style="display:none" onclick="showDpcPage()"><i class="fas fa-flask"></i> DPC</button>
       <button class="btn btn-primary" id="btnCommesse" onclick="showCommessePage()"><i class="fas fa-folder-open"></i> Commesse</button>
       <button class="btn btn-secondary" id="btnToolsNav" style="display:none" onclick="showToolsPage()"><i class="fas fa-toolbox"></i> Strumenti</button>
@@ -1291,6 +1292,23 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       </div>
     </div>
     <div class="form-actions"><button class="btn-cancel" onclick="closeImportClienteModal()">Annulla</button><button class="btn-save" onclick="confirmImportCliente()">Continua</button></div>
+  </div>
+</div></div>
+
+<div id="rubricaModal" class="modal-overlay" style="z-index:50000"><div class="modal" style="max-width:920px">
+  <div class="modal-header"><h2><i class="fas fa-address-book"></i> Rubrica referenti</h2><button class="modal-close" onclick="closeRubricaModal()">&times;</button></div>
+  <div class="modal-body">
+    <p style="font-size:.82rem;color:#64748b;margin:0 0 .7rem">Si aggiorna da sola dalle schede DPC (nome referente + contatto). Cerca, copia o apri i DPC collegati.</p>
+    <div class="search-wrap" style="position:relative;margin-bottom:.7rem">
+      <i class="fas fa-search" style="position:absolute;left:.55rem;top:50%;transform:translateY(-50%);color:#94a3b8"></i>
+      <input id="rubricaSearch" placeholder="Cerca nome, telefono, email, cliente, sede..." oninput="renderRubrica()" style="width:100%;padding:.5rem .5rem .5rem 2rem;border:1px solid #cbd5e1;border-radius:.45rem">
+    </div>
+    <div id="rubricaCount" style="font-size:.78rem;color:#64748b;margin-bottom:.4rem"></div>
+    <div style="overflow:auto;max-height:60vh">
+      <table class="users-table"><thead><tr>
+        <th>Referente</th><th>Contatti</th><th>Clienti</th><th>Sedi</th><th>DPC</th><th></th>
+      </tr></thead><tbody id="rubricaBody"></tbody></table>
+    </div>
   </div>
 </div></div>
 
@@ -3193,6 +3211,86 @@ function fillCommClienteFattSelect(selected){
   });
   sel.innerHTML=h;
   if(cur)sel.value=cur;
+}
+
+function collectRubrica(){
+  var map={};
+  function add(nome, cont, extra){
+    nome=String(nome||"").trim();
+    if(!nome || isBlankDato(nome))return;
+    var k=nome.toLowerCase();
+    if(!map[k]) map[k]={nome:nome, contatti:{}, clienti:{}, sedi:{}, dpc:0};
+    var c=String(cont||"").trim();
+    if(c && !isBlankDato(c)) map[k].contatti[c]=1;
+    if(extra&&extra.cliente) map[k].clienti[String(extra.cliente)]=1;
+    if(extra&&extra.sede && !isBlankDato(extra.sede)) map[k].sedi[String(extra.sede)]=1;
+    if(extra&&extra.dpc) map[k].dpc++;
+  }
+  (equipment||[]).forEach(function(e){
+    add(e.responsabile, e.referenteContatto, {cliente:clienteName(e.clienteId), sede:e.sede, dpc:1});
+  });
+  (clienti||[]).forEach(function(cli){
+    add(cli.referente||cli.responsabile, cli.referente_contatto||cli.telefono||cli.email, {cliente:cli.nome||"", sede:cli.citta||cli.sede||""});
+  });
+  return Object.keys(map).map(function(k){
+    var x=map[k];
+    return {
+      nome:x.nome,
+      contatti:Object.keys(x.contatti).sort(),
+      clienti:Object.keys(x.clienti).filter(Boolean).sort(),
+      sedi:Object.keys(x.sedi).filter(Boolean).sort(),
+      dpc:x.dpc
+    };
+  }).sort(function(a,b){return a.nome.localeCompare(b.nome,"it",{sensitivity:"base"});});
+}
+function formatRubricaContact(s){
+  var t=String(s||"");
+  if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t)) return '<a href="mailto:'+escHtml(t)+'">'+escHtml(t)+'</a>';
+  var digits=t.replace(/[^\d+]/g,"");
+  if(digits.length>=8 && /[\d]/.test(t) && t.length<=22) return '<a href="tel:'+escHtml(digits)+'">'+escHtml(t)+'</a>';
+  return escHtml(t);
+}
+function openRubricaModal(){
+  var m=document.getElementById("rubricaModal");
+  if(!m)return;
+  var s=document.getElementById("rubricaSearch");
+  if(s)s.value="";
+  m.classList.add("show");
+  renderRubrica();
+}
+function closeRubricaModal(){var m=document.getElementById("rubricaModal");if(m)m.classList.remove("show");}
+function renderRubrica(){
+  var q=String((document.getElementById("rubricaSearch")||{}).value||"").toLowerCase().trim();
+  var list=collectRubrica().filter(function(r){
+    if(!q)return true;
+    var blob=[r.nome,r.contatti.join(" "),r.clienti.join(" "),r.sedi.join(" ")].join(" ").toLowerCase();
+    return blob.indexOf(q)>-1;
+  });
+  var cnt=document.getElementById("rubricaCount");
+  if(cnt)cnt.textContent=list.length+" referent"+(list.length===1?"e":"i")+" (aggiornato dalle schede DPC)";
+  var tb=document.getElementById("rubricaBody");
+  if(!tb)return;
+  if(!list.length){tb.innerHTML='<tr><td colspan="6" style="color:#64748b;padding:.8rem">Nessun referente trovato. Compila il campo Referente nelle schede DPC.</td></tr>';return;}
+  tb.innerHTML=list.map(function(r){
+    var cont=r.contatti.length?r.contatti.map(formatRubricaContact).join("<br>"):'<span style="color:#94a3b8">—</span>';
+    var cli=r.clienti.length?escHtml(r.clienti.join(", ")):"—";
+    var sed=r.sedi.length?escHtml(r.sedi.join(", ")):"—";
+    var nomeJs=String(r.nome).replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+    return "<tr><td><strong>"+escHtml(r.nome)+"</strong></td><td>"+cont+"</td><td>"+cli+"</td><td>"+sed+"</td><td>"+r.dpc+"</td><td style=\"white-space:nowrap\"><button type=\"button\" class=\"btn-sm\" onclick=\"filtraDpcReferente('"+nomeJs+"')\">DPC</button> <button type=\"button\" class=\"btn-sm\" onclick=\"copiaRubrica('"+nomeJs+"')\">Copia</button></td></tr>";
+  }).join("");
+}
+function filtraDpcReferente(nome){
+  closeRubricaModal();
+  try{if(typeof showDpcPage==="function")showDpcPage();}catch(e){}
+  var inp=document.getElementById("searchInput");
+  if(inp){inp.value=nome;try{onDpcSearch();}catch(e){try{renderTable();}catch(ex){}}}
+}
+function copiaRubrica(nome){
+  var r=collectRubrica().find(function(x){return x.nome===nome;});
+  if(!r)return;
+  var txt=r.nome+(r.contatti.length?("\n"+r.contatti.join("\n")):"");
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){toast("Copiato: "+r.nome);}).catch(function(){prompt("Copia:",txt);});
+  else prompt("Copia:",txt);
 }
 
 function collectClienteRefPairs(cid){
