@@ -1,5 +1,5 @@
-/* Gestionale CAMI – Service Worker PWA v5 */
-const CACHE = "cami-pwa-v5";
+/* Gestionale CAMI – Service Worker PWA v6 */
+const CACHE = "cami-pwa-v6";
 const PRECACHE = ["./manifest.webmanifest","./icon-192.png","./icon-512.png","./apple-touch-icon.png"];
 
 self.addEventListener("install", (event) => {
@@ -21,7 +21,6 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
 
-  /* Mai intercettare API esterne */
   if (
     url.hostname.includes("supabase") ||
     url.hostname.includes("emailjs") ||
@@ -36,7 +35,6 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  /* HTML: sempre rete prima, senza bloccare se offline fallisce */
   const isDoc = req.mode === "navigate" || (req.headers.get("accept") || "").includes("text/html");
   if (isDoc) {
     event.respondWith(
@@ -53,7 +51,6 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  /* statici: cache poi rete */
   event.respondWith(
     caches.match(req).then((cached) => {
       const net = fetch(req)
