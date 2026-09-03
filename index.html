@@ -67,8 +67,9 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--cami-bg);color:#1e2
 .login-hint{text-align:center;font-size:.75rem;color:rgba(255,255,255,.82);margin-top:1.1rem}
 .header{background:linear-gradient(135deg,#1e3a8a 0%,#1e293b 55%,#0f172a 100%);color:#fff;box-shadow:0 4px 24px rgba(15,23,42,.18);border-bottom:3px solid var(--cami-red)}
 .header-inner{max-width:1900px;margin:0 auto;padding:1rem 1.15rem;display:flex;flex-wrap:wrap;gap:.65rem;align-items:center;justify-content:space-between}
-.logo{display:flex;gap:.7rem;align-items:center}
-.logo-icon{background:linear-gradient(135deg,rgba(59,130,246,.4),rgba(30,64,175,.5));padding:.55rem;border-radius:.7rem;border:1px solid rgba(147,197,253,.25)}
+.logo{display:flex;gap:.65rem;align-items:center}
+.header-logo{height:36px;width:auto;max-width:140px;object-fit:contain;display:block;filter:drop-shadow(0 2px 6px rgba(0,0,0,.25))}
+.logo-icon{display:none}
 .logo h1{font-size:1.15rem;font-weight:700;letter-spacing:-.01em}
 .logo p{font-size:.72rem;color:#94a3b8}
 .header-actions{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
@@ -694,6 +695,30 @@ html.ui-only-dpc #commesseChrome{display:none!important}
 @media(max-width:820px){
   .login-wrap{max-width:420px}
   .login-box{margin:0 auto;padding:1.7rem 1.25rem}
+  .login-logo{height:84px;max-width:92%}
+}
+.login-row{display:flex;align-items:center;justify-content:space-between;gap:.6rem;margin:.15rem 0 .85rem;color:rgba(255,255,255,.8);font-size:.8rem}
+.login-row label{display:flex;align-items:center;gap:.4rem;cursor:pointer}
+.login-eye{border:none;background:transparent;color:#1e40af;font-size:.8rem;cursor:pointer;margin:-2.6rem .6rem 0 auto;position:relative;z-index:2;display:block}
+.cli-pct{margin:.45rem 0 .15rem;font-size:.75rem;color:#64748b;display:flex;justify-content:space-between}
+.cli-pct-bar{height:7px;background:#e2e8f0;border-radius:99px;overflow:hidden;margin-bottom:.35rem}
+.cli-pct-bar span{display:block;height:100%;background:#16a34a}
+.cli-pct-bar.warn span{background:#d97706}
+.cli-pct-bar.bad span{background:#dc2626}
+.pwd-wrap{position:relative}
+.pwd-wrap .login-eye{position:absolute;right:.7rem;top:50%;transform:translateY(-70%);margin:0;color:#64748b}
+@media print{
+  .header,.app-sticky,.filters,.page-chrome,.header-actions,button,.btn,.altro-wrap,.bell-wrap,.modal-header,.form-actions{display:none!important}
+  .modal-overlay.show{position:static;background:#fff;display:block!important;padding:0}
+  .modal{box-shadow:none;max-width:100%!important}
+  #printContent{display:block!important}
+}
+@media(max-width:700px){
+  .header-logo{height:28px;max-width:110px}
+  .header-actions>.btn:not(#btnAltro):not(.btn-danger):not(.bell-btn){ }
+  #btnCommesse,#btnDpcHome{flex:0 0 auto}
+  .dpc-back{min-height:40px}
+  #dpcListBar{position:sticky;top:0;z-index:4;background:#eef2f7}
 }
 
 </style>
@@ -709,7 +734,11 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       <div class="login-box-sub">Gestionale DPC · Accesso riservato</div>
       <div id="loginError" class="login-error"></div>
       <input type="text" id="loginUsername" placeholder="Username" autocomplete="username">
-      <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+      <div class="pwd-wrap">
+        <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+        <button type="button" class="login-eye" onclick="toggleLoginPwd()" title="Mostra password"><i class="fas fa-eye" id="loginEyeIcon"></i></button>
+      </div>
+      <div class="login-row"><label><input type="checkbox" id="loginRemember"> Ricordami su questo dispositivo</label></div>
       <button type="button" class="btn-login" onclick="doLogin()">ACCEDI</button>
       <p class="login-hint">Utenti autorizzati</p>
     </div>
@@ -718,30 +747,34 @@ html.ui-only-dpc #commesseChrome{display:none!important}
 <div id="app" class="app">
   <div class="app-sticky" id="appSticky">
   <header class="header"><div class="header-inner">
-    <div class="logo"><div class="logo-icon"><i class="fas fa-flask"></i></div><div><h1>Gestionale CAMI <span class="sync-badge">Multi</span></h1><p>DPC - Stadi dinamici</p></div></div>
+    <div class="logo"><img src="logo-cami.png" alt="CAMI" class="header-logo"><div><h1>Gestionale <span class="sync-badge">Multi</span></h1><p>DPC - Stadi dinamici</p></div></div>
     <div class="header-actions">
       <div class="bell-wrap"><button class="btn bell-btn" id="btnBell" title="Notifiche" onclick="toggleBell()"><i class="fas fa-bell"></i><span class="bell-count" id="bellCount">0</span></button><div class="bell-panel" id="bellPanel"></div></div>
-      <button class="btn btn-secondary" id="btnRubrica" onclick="openRubricaModal()"><i class="fas fa-address-book"></i> Contatti referenti</button>
       <button class="btn btn-secondary" id="btnDpcHome" style="display:none" onclick="showDpcPage()"><i class="fas fa-flask"></i> DPC</button>
       <button class="btn btn-primary" id="btnCommesse" onclick="showCommessePage()"><i class="fas fa-folder-open"></i> Commesse</button>
-      <button class="btn btn-secondary" id="btnToolsNav" style="display:none" onclick="showToolsPage()"><i class="fas fa-toolbox"></i> Strumenti</button>
-      <button class="btn btn-primary" id="btnNuovo" style="display:none" onclick="openModal()"><i class="fas fa-plus"></i> Nuovo DPC</button>
-      <button class="btn btn-oggi" id="btnNuovoIntervento" style="display:none" onclick="openNuovoInterventoModal()"><i class="fas fa-wrench"></i> Nuovo intervento</button>
-      <button class="btn btn-secondary" id="btnInterventiAssegnati" style="display:none" onclick="openInterventiAssegnatiModal()"><i class="fas fa-clipboard-list"></i> Interventi assegnati</button>
-      <button class="btn btn-primary" id="btnDashboard" style="display:none" onclick="showDashboardPage()"><i class="fas fa-chart-pie"></i> Dashboard scadenze</button>
-      <button class="btn btn-oggi" id="btnOggi" style="display:none !important" onclick="openOggiModal()"><i class="fas fa-tasks"></i> Cosa fare oggi</button>
-      <button class="btn btn-primary" id="btnTodo" style="display:none" onclick="showTodoPage()"><i class="fas fa-check-square"></i> TO DO</button>
-      <button class="btn btn-secondary" id="btnPiano" style="display:none" onclick="showPianoPage()"><i class="fas fa-calendar-alt"></i> Piano +2 mesi</button>
-      <button class="btn btn-oggi" id="btnPianoInt" style="display:none" onclick="showPianoIntPage()"><i class="fas fa-route"></i> Interventi pianificati</button>
       <div class="altro-wrap" id="altroWrap">
-        <button type="button" class="btn btn-secondary" id="btnAltro" onclick="toggleAltroMenu(event)"><i class="fas fa-ellipsis-h"></i> Altro <i class="fas fa-caret-down"></i></button>
+        <button type="button" class="btn btn-secondary" id="btnAltro" onclick="toggleAltroMenu(event)"><i class="fas fa-ellipsis-h"></i> Menu <i class="fas fa-caret-down"></i></button>
         <div class="altro-menu" id="altroMenu">
+          <div class="altro-group" id="altroOperativo">
+            <div class="altro-title">Operativo</div>
+            <button type="button" class="altro-item" id="btnRubrica" onclick="closeAltroMenu();openRubricaModal()"><i class="fas fa-address-book"></i> Contatti referenti</button>
+            <button type="button" class="altro-item" id="btnNuovo" style="display:none" onclick="closeAltroMenu();openModal()"><i class="fas fa-plus"></i> Nuovo DPC</button>
+            <button type="button" class="altro-item" id="btnNuovoIntervento" style="display:none" onclick="closeAltroMenu();openNuovoInterventoModal()"><i class="fas fa-wrench"></i> Nuovo intervento</button>
+            <button type="button" class="altro-item" id="btnInterventiAssegnati" style="display:none" onclick="closeAltroMenu();openInterventiAssegnatiModal()"><i class="fas fa-clipboard-list"></i> Interventi assegnati</button>
+            <button type="button" class="altro-item" id="btnDashboard" style="display:none" onclick="closeAltroMenu();showDashboardPage()"><i class="fas fa-chart-pie"></i> Dashboard scadenze</button>
+            <button type="button" class="altro-item" id="btnTodo" style="display:none" onclick="closeAltroMenu();showTodoPage()"><i class="fas fa-check-square"></i> TO DO</button>
+            <button type="button" class="altro-item" id="btnPiano" style="display:none" onclick="closeAltroMenu();showPianoPage()"><i class="fas fa-calendar-alt"></i> Piano +2 mesi</button>
+            <button type="button" class="altro-item" id="btnListaSpesa" style="display:none" onclick="closeAltroMenu();openListaSpesa()"><i class="fas fa-boxes"></i> Lista spesa filtri</button>
+            <button type="button" class="altro-item" id="btnPianoInt" style="display:none" onclick="closeAltroMenu();showPianoIntPage()"><i class="fas fa-route"></i> Interventi pianificati</button>
+            <button type="button" class="altro-item" id="btnOggi" style="display:none" onclick="closeAltroMenu();openOggiModal()"><i class="fas fa-tasks"></i> Cosa fare oggi</button>
+          </div>
           <div class="altro-group" id="altroAnagrafica">
             <div class="altro-title">Anagrafica</div>
             <button type="button" class="altro-item" id="btnClienti" style="display:none" onclick="closeAltroMenu();openClientiModal()"><i class="fas fa-building"></i> Clienti</button>
             <button type="button" class="altro-item" id="btnUsers" style="display:none" onclick="closeAltroMenu();openUsersModal()"><i class="fas fa-users"></i> Utenti</button>
             <button type="button" class="altro-item" id="btnAssegnaTecnico" style="display:none" onclick="closeAltroMenu();openAssegnaTecnicoModal()"><i class="fas fa-user-tag"></i> Assegna tecnico</button>
             <button type="button" class="altro-item" id="btnTools" style="display:none" onclick="closeAltroMenu();openToolsPage()"><i class="fas fa-toolbox"></i> Strumenti</button>
+            <button type="button" id="btnToolsNav" style="display:none" onclick="closeAltroMenu();showToolsPage()"></button>
           </div>
           <div class="altro-group" id="altroExport">
             <div class="altro-title">Export / Import</div>
@@ -760,11 +793,11 @@ html.ui-only-dpc #commesseChrome{display:none!important}
             <button type="button" class="altro-item" id="btnBackup" style="display:none" onclick="closeAltroMenu();exportFullBackup()"><i class="fas fa-cloud-download-alt"></i> Backup</button>
             <button type="button" class="altro-item" id="btnCloudBackups" style="display:none" onclick="closeAltroMenu();openCloudBackupsModal()"><i class="fas fa-cloud"></i> Backup cloud</button>
             <label class="altro-item" id="btnLoadBackup" style="display:none;cursor:pointer"><i class="fas fa-cloud-upload-alt"></i> Carica backup<input type="file" accept=".json,application/json" hidden onchange="closeAltroMenu();importFullBackup(event)"></label>
+            <button type="button" class="altro-item" id="btnPannelloAdmin" style="display:none" onclick="closeAltroMenu();openPannelloAdmin()"><i class="fas fa-sliders-h"></i> Pannello admin</button>
+            <button type="button" class="altro-item" id="btnInstallPwa" style="display:none" onclick="closeAltroMenu();installPwaApp()"><i class="fas fa-download"></i> Installa app</button>
           </div>
         </div>
       </div>
-      <button class="btn btn-secondary" id="btnPannelloAdmin" style="display:none" onclick="openPannelloAdmin()"><i class="fas fa-sliders-h"></i> Pannello admin</button>
-      <button class="btn btn-secondary" id="btnInstallPwa" style="display:none" onclick="installPwaApp()"><i class="fas fa-download"></i> Installa app</button>
       <button class="btn btn-danger" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Esci</button>
       <div class="user-badge"><span id="currentUserName">-</span> <span id="currentUserRole"></span></div>
     </div>
@@ -784,7 +817,7 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       <select id="filterSede" onchange="onDpcFiltersChange()"><option value="">Sedi</option></select>
       <select id="filterStato" onchange="onDpcFiltersChange()"><option value="">Stati</option><option>OPERATIVA</option><option>IN PRODUZIONE</option><option>MANUTENZIONE</option><option>DA INSTALLARE</option><option>IN DISUSO</option><option>DISMESSA</option><option>NON DI COMPETENZA CAMI</option></select>
       <select id="filterFiltro" onchange="onDpcFiltersChange()"><option value="">Filtro</option><option value="si">Si</option><option value="no">No</option></select>
-      <select id="filterScadenza" onchange="onDpcFiltersChange()"><option value="">Scadenze DPC</option><option value="scaduti">DPC scaduti</option><option value="d7">DPC scaduti + entro 7 gg</option><option value="d15">DPC scaduti + entro 15 gg</option><option value="d30">DPC scaduti + entro 30 gg</option><option value="d60">DPC scaduti + entro 2 mesi</option><option value="in_scadenza">DPC in scadenza (1-30)</option><option value="in_2mesi">DPC entro 2 mesi (31-60)</option><option value="ok">DPC in regola</option></select>
+      <select id="filterScadenza" onchange="onDpcFiltersChange()"><option value="">Scadenze DPC</option><option value="scaduti">DPC scaduti</option><option value="d7">DPC scaduti + entro 7 gg</option><option value="d15">DPC scaduti + entro 15 gg</option><option value="d30">DPC scaduti + entro 30 gg</option><option value="d60">DPC scaduti + entro 2 mesi</option><option value="in_scadenza">DPC in scadenza (1-30)</option><option value="in_2mesi">DPC entro 2 mesi (31-60)</option><option value="ok">DPC in regola</option><option value="incomplete">Schede incomplete</option></select>
     </div></div>
     <div id="clientHome" class="client-home">
       <h2>I tuoi clienti</h2>
@@ -1338,10 +1371,14 @@ html.ui-only-dpc #commesseChrome{display:none!important}
 <div id="rubricaModal" class="modal-overlay" style="z-index:50000"><div class="modal" style="max-width:920px">
   <div class="modal-header"><h2><i class="fas fa-address-book"></i> Rubrica referenti</h2><button class="modal-close" onclick="closeRubricaModal()">&times;</button></div>
   <div class="modal-body">
-    <p style="font-size:.82rem;color:#64748b;margin:0 0 .7rem">Si aggiorna da sola dalle schede DPC (nome referente + contatto). Cerca, copia o apri i DPC collegati.</p>
-    <div class="search-wrap" style="position:relative;margin-bottom:.7rem">
-      <i class="fas fa-search" style="position:absolute;left:.55rem;top:50%;transform:translateY(-50%);color:#94a3b8"></i>
-      <input id="rubricaSearch" placeholder="Cerca nome, telefono, email, cliente, sede..." oninput="renderRubrica()" style="width:100%;padding:.5rem .5rem .5rem 2rem;border:1px solid #cbd5e1;border-radius:.45rem">
+    <p style="font-size:.82rem;color:#64748b;margin:0 0 .7rem">Dalle schede DPC + rubrica extra (modificabile). Un referente può coprire più clienti.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin-bottom:.7rem">
+      <div class="search-wrap" style="position:relative;flex:1;min-width:180px">
+        <i class="fas fa-search" style="position:absolute;left:.55rem;top:50%;transform:translateY(-50%);color:#94a3b8"></i>
+        <input id="rubricaSearch" placeholder="Cerca nome, telefono, email, cliente, sede..." oninput="renderRubrica()" style="width:100%;padding:.5rem .5rem .5rem 2rem;border:1px solid #cbd5e1;border-radius:.45rem">
+      </div>
+      <button class="btn btn-primary" type="button" onclick="openRubricaEdit()"><i class="fas fa-plus"></i> Nuovo</button>
+      <button class="btn btn-excel" type="button" onclick="exportRubricaExcel()"><i class="fas fa-file-excel"></i> Excel</button>
     </div>
     <div id="rubricaCount" style="font-size:.78rem;color:#64748b;margin-bottom:.4rem"></div>
     <div style="overflow:auto;max-height:60vh">
@@ -1349,6 +1386,16 @@ html.ui-only-dpc #commesseChrome{display:none!important}
         <th>Referente</th><th>Contatti</th><th>Clienti</th><th>Sedi</th><th>DPC</th><th></th>
       </tr></thead><tbody id="rubricaBody"></tbody></table>
     </div>
+  </div>
+</div></div>
+<div id="rubricaEditModal" class="modal-overlay" style="z-index:50010"><div class="modal" style="max-width:480px">
+  <div class="modal-header"><h2 id="rubricaEditTitle">Referente</h2><button class="modal-close" onclick="closeRubricaEdit()">&times;</button></div>
+  <div class="modal-body">
+    <input type="hidden" id="rubricaEditId">
+    <div class="form-group"><label>Nome *</label><input id="rubricaEditNome"></div>
+    <div class="form-group"><label>Contatti (uno per riga: tel / email)</label><textarea id="rubricaEditContatti" rows="4" placeholder="335 1234567&#10;nome@email.it"></textarea></div>
+    <div class="form-group"><label>Note</label><input id="rubricaEditNote"></div>
+    <div class="form-actions"><button class="btn-cancel" onclick="closeRubricaEdit()">Annulla</button><button class="btn-save" onclick="saveRubricaEdit()">Salva</button></div>
   </div>
 </div></div>
 
@@ -2528,6 +2575,10 @@ function refreshAltroMenuVisibility(){
   var g2=document.getElementById("altroExport");
   var g3=document.getElementById("altroAdmin");
   if(g1)g1.style.display=(shown("btnClienti")||shown("btnUsers")||shown("btnAssegnaTecnico")||shown("btnTools"))?"block":"none";
+  var g0=document.getElementById("altroOperativo");
+  if(g0)g0.style.display="block";
+  var bls=document.getElementById("btnListaSpesa");
+  if(bls)bls.style.display=(shown("btnPiano"))?"flex":"none";
   // Export always has Export Excel/JSON at least
   if(g2)g2.style.display="block";
   if(g3)g3.style.display=(shown("btnAudit")||shown("btnBackup")||shown("btnCloudBackups")||shown("btnLoadBackup"))?"block":"none";
@@ -2894,7 +2945,7 @@ function showCommessePage(){
   var bd=document.getElementById("btnDpcHome"),bc=document.getElementById("btnCommesse"),bt=document.getElementById("btnToolsNav");
   if(bd)bd.style.display="inline-flex";
   if(bc)bc.style.display="none";
-  if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
+  if(bt)bt.style.display="none";
   fillCommesseClienteFilters();
   loadCommesse();
   try{syncStickyChrome();}catch(e){}
@@ -2908,11 +2959,11 @@ function showDpcPage(){
   var bd=document.getElementById("btnDpcHome"),bc=document.getElementById("btnCommesse"),bt=document.getElementById("btnToolsNav");
   if(bd)bd.style.display="none";
   if(bc)bc.style.display="inline-flex";
-  if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
+  if(bt)bt.style.display="none";
   if(typeof UI_STANDBY_ONLY_DPC!=="undefined"&&UI_STANDBY_ONLY_DPC){
     if(bd)bd.style.display="none";
     if(bc)bc.style.display="none";
-    if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
+    if(bt)bt.style.display="none";
   }
   try{showClientHome();}catch(e){}
   try{syncStickyChrome();}catch(e){}
@@ -2926,7 +2977,7 @@ function showTodoPage(){
   var bd=document.getElementById("btnDpcHome"),bc=document.getElementById("btnCommesse"),bt=document.getElementById("btnToolsNav");
   if(bd)bd.style.display="inline-flex";
   if(bc)bc.style.display=(UI_STANDBY_ONLY_DPC?"none":"inline-flex");
-  if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
+  if(bt)bt.style.display="none";
   try{fillMeseSelect("todoMese");}catch(e){}
   try{renderTodoList();}catch(e){}
   try{window.scrollTo(0,0);}catch(e){}
@@ -2939,7 +2990,7 @@ function showDashboardPage(){
   var bd=document.getElementById("btnDpcHome"),bc=document.getElementById("btnCommesse"),bt=document.getElementById("btnToolsNav");
   if(bd)bd.style.display="inline-flex";
   if(bc)bc.style.display=(UI_STANDBY_ONLY_DPC?"none":"inline-flex");
-  if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
+  if(bt)bt.style.display="none";
   try{renderDashboard();}catch(e){console.warn(e);var d=document.getElementById("dashMonthDetail");if(d)d.textContent="Errore dashboard: "+(e&&e.message?e.message:e);}
   try{window.scrollTo(0,0);}catch(e){}
 }
@@ -2951,7 +3002,7 @@ function showPianoPage(){
   var bd=document.getElementById("btnDpcHome"),bc=document.getElementById("btnCommesse"),bt=document.getElementById("btnToolsNav");
   if(bd)bd.style.display="inline-flex";
   if(bc)bc.style.display=(UI_STANDBY_ONLY_DPC?"none":"inline-flex");
-  if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
+  if(bt)bt.style.display="none";
   fillPianoMeseSelect();
   try{renderPianoPage();}catch(e){}
   try{window.scrollTo(0,0);}catch(e){}
@@ -2964,7 +3015,7 @@ function showPianoIntPage(){
   var bd=document.getElementById("btnDpcHome"),bc=document.getElementById("btnCommesse"),bt=document.getElementById("btnToolsNav");
   if(bd)bd.style.display="inline-flex";
   if(bc)bc.style.display=(UI_STANDBY_ONLY_DPC?"none":"inline-flex");
-  if(bt)bt.style.display=(window.__toolsNavVisible?"inline-flex":"none");
+  if(bt)bt.style.display="none";
   try{renderPianoIntPage();}catch(e){}
   try{window.scrollTo(0,0);}catch(e){}
 }
@@ -3259,18 +3310,23 @@ function collectRubrica(){
     nome=String(nome||"").trim();
     if(!nome || isBlankDato(nome))return;
     var k=nome.toLowerCase();
-    if(!map[k]) map[k]={nome:nome, contatti:{}, clienti:{}, sedi:{}, dpc:0};
+    if(!map[k]) map[k]={nome:nome, contatti:{}, clienti:{}, sedi:{}, dpc:0, extraId:""};
     var c=String(cont||"").trim();
     if(c && !isBlankDato(c)) map[k].contatti[c]=1;
     if(extra&&extra.cliente) map[k].clienti[String(extra.cliente)]=1;
     if(extra&&extra.sede && !isBlankDato(extra.sede)) map[k].sedi[String(extra.sede)]=1;
     if(extra&&extra.dpc) map[k].dpc++;
+    if(extra&&extra.extraId) map[k].extraId=extra.extraId;
   }
   (equipment||[]).forEach(function(e){
     add(e.responsabile, e.referenteContatto, {cliente:clienteName(e.clienteId), sede:e.sede, dpc:1});
   });
   (clienti||[]).forEach(function(cli){
     add(cli.referente||cli.responsabile, cli.referente_contatto||cli.telefono||cli.email, {cliente:cli.nome||"", sede:cli.citta||cli.sede||""});
+  });
+  loadRubricaExtra().forEach(function(x){
+    (x.contatti||[]).forEach(function(c){ add(x.nome,c,{extraId:x.id}); });
+    if(!(x.contatti||[]).length) add(x.nome,"",{extraId:x.id});
   });
   return Object.keys(map).map(function(k){
     var x=map[k];
@@ -3279,9 +3335,61 @@ function collectRubrica(){
       contatti:Object.keys(x.contatti).sort(),
       clienti:Object.keys(x.clienti).filter(Boolean).sort(),
       sedi:Object.keys(x.sedi).filter(Boolean).sort(),
-      dpc:x.dpc
+      dpc:x.dpc,
+      extraId:x.extraId||""
     };
   }).sort(function(a,b){return a.nome.localeCompare(b.nome,"it",{sensitivity:"base"});});
+}
+var RUBRICA_KEY="cami_rubrica_extra_v1";
+function loadRubricaExtra(){try{return JSON.parse(safeGetLocal(RUBRICA_KEY,"[]")||"[]");}catch(e){return[];}}
+function saveRubricaExtra(arr){safeSetLocal(RUBRICA_KEY,JSON.stringify(arr||[]));}
+function openRubricaEdit(id){
+  var m=document.getElementById("rubricaEditModal");if(!m)return;
+  document.getElementById("rubricaEditId").value=id||"";
+  var x=(loadRubricaExtra().find(function(r){return r.id===id;})||{});
+  document.getElementById("rubricaEditTitle").textContent=id?"Modifica referente":"Nuovo referente";
+  document.getElementById("rubricaEditNome").value=x.nome||"";
+  document.getElementById("rubricaEditContatti").value=(x.contatti||[]).join("\n");
+  document.getElementById("rubricaEditNote").value=x.note||"";
+  m.classList.add("show");
+}
+function closeRubricaEdit(){var m=document.getElementById("rubricaEditModal");if(m)m.classList.remove("show");}
+function saveRubricaEdit(){
+  var id=document.getElementById("rubricaEditId").value;
+  var nome=document.getElementById("rubricaEditNome").value.trim();
+  if(!nome){alert("Inserisci il nome");return;}
+  var cont=document.getElementById("rubricaEditContatti").value.split(/\n|;|,/).map(function(s){return s.trim();}).filter(Boolean);
+  var note=document.getElementById("rubricaEditNote").value.trim();
+  var arr=loadRubricaExtra();
+  if(id){
+    var i=arr.findIndex(function(x){return x.id===id;});
+    if(i>=0) arr[i]={id:id,nome:nome,contatti:cont,note:note};
+    else arr.push({id:id,nome:nome,contatti:cont,note:note});
+  }else{
+    arr.push({id:"r"+Date.now(),nome:nome,contatti:cont,note:note});
+  }
+  saveRubricaExtra(arr);
+  closeRubricaEdit();
+  renderRubrica();
+  toast("Rubrica aggiornata");
+}
+function deleteRubricaExtra(id){
+  if(!id){alert("Questo contatto arriva dalle schede DPC: modificalo lì, oppure aggiungi un contatto extra.");return;}
+  if(!confirm("Eliminare questo contatto extra dalla rubrica?"))return;
+  saveRubricaExtra(loadRubricaExtra().filter(function(x){return x.id!==id;}));
+  renderRubrica();
+}
+function exportRubricaExcel(){
+  var list=collectRubrica();
+  var rows=[["Referente","Contatti","Clienti","Sedi","N DPC"]];
+  list.forEach(function(r){rows.push([r.nome,r.contatti.join(" | "),r.clienti.join(" | "),r.sedi.join(" | "),r.dpc]);});
+  var ws=XLSX.utils.aoa_to_sheet(rows),wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"Rubrica");
+  XLSX.writeFile(wb,"rubrica_referenti.xlsx");
+}
+function openListaSpesa(){
+  try{showPianoPage();}catch(e){}
+  setTimeout(function(){var el=document.getElementById("pianoSpesa");if(el)el.scrollIntoView({behavior:"smooth",block:"start"});},200);
 }
 function formatRubricaContact(s){
   var t=String(s||"");
@@ -3316,8 +3424,18 @@ function renderRubrica(){
     var cli=r.clienti.length?escHtml(r.clienti.join(", ")):"—";
     var sed=r.sedi.length?escHtml(r.sedi.join(", ")):"—";
     var nomeJs=String(r.nome).replace(/\\/g,"\\\\").replace(/'/g,"\\'");
-    return "<tr><td><strong>"+escHtml(r.nome)+"</strong></td><td>"+cont+"</td><td>"+cli+"</td><td>"+sed+"</td><td>"+r.dpc+"</td><td style=\"white-space:nowrap\"><button type=\"button\" class=\"btn-sm\" onclick=\"filtraDpcReferente('"+nomeJs+"')\">DPC</button> <button type=\"button\" class=\"btn-sm\" onclick=\"copiaRubrica('"+nomeJs+"')\">Copia</button></td></tr>";
+    var extraBtn=r.extraId?(' <button type="button" class="btn-sm" onclick="openRubricaEdit(\''+r.extraId+'\')">Modifica</button> <button type="button" class="btn-sm" onclick="deleteRubricaExtra(\''+r.extraId+'\')">Elimina</button>'):(' <button type="button" class="btn-sm" onclick="openRubricaEditFromNome(\''+nomeJs+'\')">Aggiungi contatti</button>');
+    return "<tr><td><strong>"+escHtml(r.nome)+"</strong></td><td>"+cont+"</td><td>"+cli+"</td><td>"+sed+"</td><td>"+r.dpc+"</td><td style=\"white-space:nowrap\"><button type=\"button\" class=\"btn-sm\" onclick=\"filtraDpcReferente('"+nomeJs+"')\">DPC</button> <button type=\"button\" class=\"btn-sm\" onclick=\"copiaRubrica('"+nomeJs+"')\">Copia</button>"+extraBtn+"</td></tr>";
   }).join("");
+}
+function openRubricaEditFromNome(nome){
+  var arr=loadRubricaExtra();
+  var ex=arr.find(function(x){return String(x.nome||"").toLowerCase()===String(nome||"").toLowerCase();});
+  if(ex){openRubricaEdit(ex.id);return;}
+  openRubricaEdit();
+  document.getElementById("rubricaEditNome").value=nome||"";
+  var r=collectRubrica().find(function(x){return x.nome===nome;});
+  if(r)document.getElementById("rubricaEditContatti").value=(r.contatti||[]).join("\n");
 }
 function filtraDpcReferente(nome){
   closeRubricaModal();
@@ -3863,6 +3981,11 @@ function openClienteElenco(id){
   try{syncStickyChrome();}catch(e){}
   try{window.scrollTo(0,0);}catch(e){}
 }
+function openClienteIncomplete(id){
+  var sel=document.getElementById("filterScadenza");
+  if(sel)sel.value="incomplete";
+  openClienteElenco(id);
+}
 function renderClientCards(){
   var el=document.getElementById("clientCards");
   if(!el)return;
@@ -3885,9 +4008,17 @@ function renderClientCards(){
       var ids=userClienteIds();
       if(ids.length && ids.indexOf(c.id)<0 && (loadUiPrefs().homepage||{}).tecnico==="cards_assigned") return;
     }
+    var totAll=(equipment||[]).filter(function(e){return e.clienteId===c.id;}).length;
+    var missAll=(equipment||[]).filter(function(e){return e.clienteId===c.id&&dpcHasMissingData(e);}).length;
+    var okAll=totAll-missAll;
+    var pct=totAll?Math.round(100*okAll/totAll):100;
+    var pctCls=pct<70?"bad":(pct<100?"warn":"");
     html+='<div class="cli-card tone-'+tone+'" style="border-top-color:'+escHtml(br.color||toneColor)+'">'+
       '<div class="cli-top"><div class="cli-ico" style="background:'+escHtml(br.color||toneColor)+'22;color:'+escHtml(br.color||toneColor)+'">'+(br.logo?('<img src="'+br.logo+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">'):'<i class="fas fa-building"></i>')+'</div><h3>'+escHtml(c.nome)+'</h3></div>'+
       '<div class="cli-n">'+eqs.length+' DPC</div>'+
+      '<div class="cli-pct" style="cursor:pointer" title="Apri schede incomplete" onclick="openClienteIncomplete(\''+String(c.id).replace(/'/g,"")+'\' )"><span>Schede complete</span><strong>'+pct+'%</strong></div>'+
+      '<div class="cli-pct-bar '+pctCls+'"><span style="width:'+pct+'%"></span></div>'+
+      '<div style="font-size:.72rem;color:#64748b;margin-bottom:.35rem">'+okAll+' ok · '+missAll+' da completare</div>'+
       '<div class="traffic"><span class="'+(tone==="red"?"on red":"")+'"></span><span class="'+(tone==="orange"?"on orange":"")+'"></span><span class="'+(tone==="green"?"on green":"")+'"></span></div>'+
       '<div class="cli-badge '+tone+'">'+escHtml(badge)+'</div>'+
       '<button type="button" class="apri" onclick="openClienteElenco(\''+String(c.id).replace(/'/g,"")+'\' )"><i class="fas fa-list"></i> Apri elenco</button>'+
@@ -3929,6 +4060,7 @@ function dpcMatchesHomeFilters(e,f){
     else if(f.fsc==="d60")ok=tier==="overdue"||tier==="soon7"||tier==="soon15"||tier==="soon30"||tier==="soon60";
     else if(f.fsc==="in_2mesi")ok=tier==="soon60";
     else if(f.fsc==="ok")ok=dest==="ok";
+    else if(f.fsc==="incomplete")ok=dpcHasMissingData(e);
     if(!ok)return false;
   }
   if(f.q){
@@ -4382,18 +4514,33 @@ function syncTableScrollbars(){
 window.addEventListener("resize",function(){try{syncTableScrollbars();}catch(e){}});
 
 
-function renderTable(){try{refreshBell();}catch(ex){}var q=document.getElementById("searchInput").value.toLowerCase(),fcl=document.getElementById("filterCliente").value,fac=document.getElementById("filterAcronimo").value,fse=document.getElementById("filterSede").value,fst=document.getElementById("filterStato").value,ffi=document.getElementById("filterFiltro").value,fsc=document.getElementById("filterScadenza").value;var baseList=visibleEquipment();var list=baseList.filter(function(e){var ms=!q||[e.matricola,e.idDispositivo,e.modello,e.sede,e.acronimo,labelAcronimo(e.acronimo,"full"),clienteName(e.clienteId),clienteCode(e.clienteId),e.responsabile,filterCodesText(e)].join(" ").toLowerCase().indexOf(q)>-1;var dest=deviceExpiryStatus(e),msc=true;if(fsc==="scaduti")msc=dest==="overdue";else if(fsc==="in_scadenza")msc=dest==="soon";else if(fsc==="d7"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7";}else if(fsc==="d15"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7"||t==="soon15";}else if(fsc==="d30")msc=dest==="overdue"||dest==="soon";else if(fsc==="d60"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7"||t==="soon15"||t==="soon30"||t==="soon60";}else if(fsc==="in_2mesi"){var t=deviceExpiryTier(e);msc=t==="soon60";}else if(fsc==="ok")msc=dest==="ok"||dest==="none";return ms&&(!fcl||e.clienteId===fcl)&&(!fac||e.acronimo===fac)&&(!fse||e.sede===fse)&&(!fst||e.stato===fst)&&(!ffi||e.haSistemaFiltrante===ffi)&&msc;});list.sort(function(a,b){var o={overdue:0,soon:1,ok:2,none:3},sa=deviceExpiryStatus(a),sb=deviceExpiryStatus(b);if(o[sa]!==o[sb])return o[sa]-o[sb];return(a.matricola||"").localeCompare(b.matricola||"");});var tb=document.getElementById("tableBody"),empty=document.getElementById("emptyState");if(!list.length){tb.innerHTML="";empty.classList.add("show");try{syncTableScrollbars();}catch(ex){}return;}empty.classList.remove("show");var html="";list.forEach(function(e){var st=deviceExpiryStatus(e),row=st==="overdue"?"row-overdue":(st==="soon"?"row-soon":"");var manSt=isStatoSenzaScadenze(e)?"none":expStatus(e.prossimaMan),dc=manSt==="overdue"?"overdue":(manSt==="soon"?"soon":"");var days="";if(manSt==="overdue")days=" <small>(-"+Math.abs(daysUntil(e.prossimaMan))+"g)</small>";else if(manSt==="soon")days=" <small>("+daysUntil(e.prossimaMan)+"g)</small>";var nf=nextFilterProx(e),filCell="-";if(nf){var fdc=nf.status==="overdue"?"overdue":(nf.status==="soon"?"soon":"");var fd="";if(nf.status==="overdue")fd=" <small>(-"+Math.abs(daysUntil(nf.prox))+"g)</small>";else if(nf.status==="soon")fd=" <small>("+daysUntil(nf.prox)+"g)</small>";filCell='<span class="'+fdc+'">S'+nf.stadio+' '+fmt(nf.prox)+fd+'</span>';}
+function renderTable(){try{refreshBell();}catch(ex){}var q=document.getElementById("searchInput").value.toLowerCase(),fcl=document.getElementById("filterCliente").value,fac=document.getElementById("filterAcronimo").value,fse=document.getElementById("filterSede").value,fst=document.getElementById("filterStato").value,ffi=document.getElementById("filterFiltro").value,fsc=document.getElementById("filterScadenza").value;var baseList=visibleEquipment();var list=baseList.filter(function(e){var ms=!q||[e.matricola,e.idDispositivo,e.modello,e.sede,e.acronimo,labelAcronimo(e.acronimo,"full"),clienteName(e.clienteId),clienteCode(e.clienteId),e.responsabile,filterCodesText(e)].join(" ").toLowerCase().indexOf(q)>-1;var dest=deviceExpiryStatus(e),msc=true;if(fsc==="scaduti")msc=dest==="overdue";else if(fsc==="in_scadenza")msc=dest==="soon";else if(fsc==="d7"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7";}else if(fsc==="d15"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7"||t==="soon15";}else if(fsc==="d30")msc=dest==="overdue"||dest==="soon";else if(fsc==="d60"){var t=deviceExpiryTier(e);msc=t==="overdue"||t==="soon7"||t==="soon15"||t==="soon30"||t==="soon60";}else if(fsc==="in_2mesi"){var t=deviceExpiryTier(e);msc=t==="soon60";}else if(fsc==="ok")msc=dest==="ok"||dest==="none";else if(fsc==="incomplete")msc=dpcHasMissingData(e);return ms&&(!fcl||e.clienteId===fcl)&&(!fac||e.acronimo===fac)&&(!fse||e.sede===fse)&&(!fst||e.stato===fst)&&(!ffi||e.haSistemaFiltrante===ffi)&&msc;});list.sort(function(a,b){var o={overdue:0,soon:1,ok:2,none:3},sa=deviceExpiryStatus(a),sb=deviceExpiryStatus(b);if(o[sa]!==o[sb])return o[sa]-o[sb];return(a.matricola||"").localeCompare(b.matricola||"");});var tb=document.getElementById("tableBody"),empty=document.getElementById("emptyState");if(!list.length){tb.innerHTML="";empty.classList.add("show");try{syncTableScrollbars();}catch(ex){}return;}empty.classList.remove("show");var html="";list.forEach(function(e){var st=deviceExpiryStatus(e),row=st==="overdue"?"row-overdue":(st==="soon"?"row-soon":"");var manSt=isStatoSenzaScadenze(e)?"none":expStatus(e.prossimaMan),dc=manSt==="overdue"?"overdue":(manSt==="soon"?"soon":"");var days="";if(manSt==="overdue")days=" <small>(-"+Math.abs(daysUntil(e.prossimaMan))+"g)</small>";else if(manSt==="soon")days=" <small>("+daysUntil(e.prossimaMan)+"g)</small>";var nf=nextFilterProx(e),filCell="-";if(nf){var fdc=nf.status==="overdue"?"overdue":(nf.status==="soon"?"soon":"");var fd="";if(nf.status==="overdue")fd=" <small>(-"+Math.abs(daysUntil(nf.prox))+"g)</small>";else if(nf.status==="soon")fd=" <small>("+daysUntil(nf.prox)+"g)</small>";filCell='<span class="'+fdc+'">S'+nf.stadio+' '+fmt(nf.prox)+fd+'</span>';}
     var stFil="-";if(isStatoSenzaScadenze(e)){filCell="-";stFil="-";}else if(nf){stFil=statusFiltroBadge(autoFilterStatus(nf.prox));}else{var fs=e.filtriStadi||{};for(var si=1;si<=4;si++){var ss=fs[String(si)];if(ss&&ss.prox){stFil=statusFiltroBadge(autoFilterStatus(ss.prox));break;}}}var att=(e.tipoAttivita&&e.tipoAttivita.length)?e.tipoAttivita.join(", "):"-";var filtro=e.haSistemaFiltrante==="si"?'<span class="badge badge-blue">Si</span>':'<span class="badge badge-gray">No</span>';var nSt=countStadi(e.filtriStadi),stadiTxt=nSt?String(nSt):(e.stadiFiltranti||"-");var canInt=canEditInterventi(e.clienteId);var canAna=canEditAnagrafica(e.clienteId);var az='<button class="btn-icon history" title="Storico" onclick="openHistory(\''+e.id+'\')"><i class="fas fa-history"></i></button><button class="btn-icon report" title="Report" onclick="openReport(\''+e.id+'\')"><i class="fas fa-file-alt"></i></button><button class="btn-icon" title="Commenti" style="color:#7c3aed" onclick="openComments(\''+e.id+'\')"><i class="fas fa-comments"></i></button><button class="btn-icon" title="Scheda/Stampa" style="color:#0369a1" onclick="openPrintScheda(\''+e.id+'\')"><i class="fas fa-print"></i></button>';if(canAna)az+='<button class="btn-icon" title="Duplica" style="color:#0f766e" onclick="duplicaEquipment(\''+e.id+'\')"><i class="fas fa-copy"></i></button><button class="btn-icon edit" title="Modifica" onclick="editEquipment(\''+e.id+'\')"><i class="fas fa-pen"></i></button><button class="btn-icon delete" title="Elimina" onclick="deleteEquipment(\''+e.id+'\')"><i class="fas fa-trash"></i></button>';html+='<tr class="'+row+'"><td>'+clienteBadge(e.clienteId)+'</td><td class="'+(dpcHasMissingData(e)?'acro-miss':'acro-ok')+'"'+xlStyle(e,'acronimo')+' title="'+String(labelAcronimo(e.acronimo,'full')).replace(/"/g,'&quot;')+'"><strong>'+(e.acronimo||"-")+'</strong><div style="font-size:.68rem;color:#64748b;font-weight:500;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+labelAcronimo(e.acronimo,'desc')+'</div></td><td class="truncate"'+xlStyle(e,'costruttore')+'>'+(e.costruttore||"-")+'</td><td class="truncate"'+xlStyle(e,'modello')+'>'+(e.modello||"-")+'</td><td class="code"'+xlStyle(e,'matricola')+'>'+(e.matricola||"-")+'</td><td class="code"'+xlStyle(e,'id_dispositivo')+'>'+(e.idDispositivo||"-")+'</td><td>'+fmt(e.ultimaMan)+'</td><td class="'+dc+'">'+(isStatoSenzaScadenze(e)?"-":(fmt(e.prossimaMan)+days))+'</td><td>'+filCell+'</td><td>'+stFil+'</td><td>'+(e.sede||"-")+'</td><td class="truncate">'+(e.edificio||"-")+'</td><td class="truncate">'+(e.laboratorio||"-")+'</td><td>'+(e.piano||"-")+'</td><td>'+(e.stanza||"-")+'</td><td>'+statusBadge(e.stato)+'</td><td class="truncate">'+(e.responsabile||"-")+'</td><td>'+(e.cadenzaMan||"-")+'</td><td>'+att+'</td><td>'+filtro+'</td><td>'+stadiTxt+'</td><td class="truncate">'+(e.accessori||"-")+'</td><td class="truncate">'+(e.note||"-")+'</td><td><div class="actions">'+az+'</div></td></tr>';});tb.innerHTML=html;try{syncTableScrollbars();}catch(ex){};}
-async function doLogin(){var u=document.getElementById("loginUsername").value.trim(),p=document.getElementById("loginPassword").value,err=document.getElementById("loginError");if(!u||!p){err.textContent="Inserisci credenziali";err.classList.add("show");return;}var res=await sb.from("users").select("*").eq("username",u).limit(1);if(res.error){err.textContent=res.error.message;err.classList.add("show");return;}if(!res.data.length||res.data[0].password!==p){err.textContent="Credenziali non corrette";err.classList.add("show");return;}var row=res.data[0];var role=normalizeRole(row.role);currentUser={id:row.id,username:row.username,nome:row.nome||row.username,role:role,clienteId:row.cliente_id||null,clienteIds:[]};try{var tc=await sb.from("tecnico_clienti").select("cliente_id").eq("user_id",row.id);if(tc&&!tc.error&&tc.data)currentUser.clienteIds=tc.data.map(function(x){return x.cliente_id;});}catch(ex){}if(!currentUser.clienteIds.length&&currentUser.clienteId)currentUser.clienteIds=[currentUser.clienteId];safeSetSession(SESSION_KEY,JSON.stringify(currentUser));err.classList.remove("show");
+async function doLogin(){var u=document.getElementById("loginUsername").value.trim(),p=document.getElementById("loginPassword").value,err=document.getElementById("loginError");if(!u||!p){err.textContent="Inserisci credenziali";err.classList.add("show");return;}var res=await sb.from("users").select("*").eq("username",u).limit(1);if(res.error){err.textContent=res.error.message;err.classList.add("show");return;}if(!res.data.length||res.data[0].password!==p){err.textContent="Credenziali non corrette";err.classList.add("show");return;}var row=res.data[0];var role=normalizeRole(row.role);currentUser={id:row.id,username:row.username,nome:row.nome||row.username,role:role,clienteId:row.cliente_id||null,clienteIds:[]};try{var tc=await sb.from("tecnico_clienti").select("cliente_id").eq("user_id",row.id);if(tc&&!tc.error&&tc.data)currentUser.clienteIds=tc.data.map(function(x){return x.cliente_id;});}catch(ex){}if(!currentUser.clienteIds.length&&currentUser.clienteId)currentUser.clienteIds=[currentUser.clienteId];
+  var persist=document.getElementById("loginRemember")&&document.getElementById("loginRemember").checked;
+  var payload=JSON.stringify(currentUser);
+  if(persist){safeSetLocal(SESSION_KEY,payload);safeRemoveSession(SESSION_KEY);}
+  else {safeSetSession(SESSION_KEY,payload);safeRemoveLocal(SESSION_KEY);}
+  safeSetLocal("cami_last_user",u);
+  err.classList.remove("show");
   try{await sb.from("users").update({last_login:new Date().toISOString()}).eq("id",row.id);}catch(e){}
   try{await logAudit("LOGIN",null,"Accesso "+currentUser.username+" ("+currentUser.role+")");}catch(e){}
   showApp();}
 function doLogout(){
   try{stopNotificheRealtime();}catch(e){}
   _dbNotifiche=[];_seenNotifIds={};
-  currentUser=null;safeRemoveSession(SESSION_KEY);document.getElementById("app").classList.remove("show");document.getElementById("loginScreen").classList.remove("hidden");
+  currentUser=null;safeRemoveSession(SESSION_KEY);safeRemoveLocal(SESSION_KEY);document.getElementById("app").classList.remove("show");document.getElementById("loginScreen").classList.remove("hidden");
+  try{var lu=safeGetLocal("cami_last_user","");if(lu&&document.getElementById("loginUsername"))document.getElementById("loginUsername").value=lu;}catch(e){}
 }
-function checkSession(){try{var s=safeGetSession(SESSION_KEY);if(s){currentUser=JSON.parse(s);showApp();return;}}catch(e){}document.getElementById("loginScreen").classList.remove("hidden");}
+function toggleLoginPwd(){
+  var el=document.getElementById("loginPassword");if(!el)return;
+  el.type=el.type==="password"?"text":"password";
+  var ic=document.getElementById("loginEyeIcon");
+  if(ic)ic.className=el.type==="password"?"fas fa-eye":"fas fa-eye-slash";
+}
+function checkSession(){try{var s=safeGetSession(SESSION_KEY)||safeGetLocal(SESSION_KEY);if(s){currentUser=JSON.parse(s);showApp();return;}}catch(e){}document.getElementById("loginScreen").classList.remove("hidden");
+  try{var lu=safeGetLocal("cami_last_user","");if(lu&&document.getElementById("loginUsername"))document.getElementById("loginUsername").value=lu;}catch(e){}
+}
 async function showApp(){document.getElementById("loginScreen").classList.add("hidden");document.getElementById("app").classList.add("show");document.getElementById("currentUserName").textContent=currentUser.nome;document.getElementById("currentUserRole").textContent="("+roleLabel(currentUser.role)+")";var s=isSuper(),c=canCreateDpc(),t=isTecnico(),a=isBackOfficer(),bo=isBackOfficer();document.getElementById("btnNuovo").style.display=c?"inline-flex":"none";
   var bia=document.getElementById("btnInterventiAssegnati");if(bia)bia.style.display=(s||a||t)?"inline-flex":"none";
   var bni=document.getElementById("btnNuovoIntervento");if(bni)bni.style.display=(s||a||t)?"inline-flex":"none";
@@ -4416,11 +4563,7 @@ async function showApp(){document.getElementById("loginScreen").classList.add("h
   var bt=document.getElementById("btnTools");if(bt)bt.style.display=(s||a||t)?"inline-flex":"none";
   window.__toolsNavVisible=!!(s||a||t);
   var btnNav=document.getElementById("btnToolsNav");
-  if(btnNav){
-    // nascondi se siamo già su Strumenti
-    var onTools=document.getElementById("pageTools")&&document.getElementById("pageTools").classList.contains("active");
-    btnNav.style.display=(window.__toolsNavVisible&&!onTools)?"inline-flex":"none";
-  }
+  if(btnNav) btnNav.style.display="none";
   var be=document.getElementById("btnExportCustom");if(be)be.style.display=(s||a||t)?"inline-flex":"none";
   var br=document.getElementById("btnReportMensile");if(br)br.style.display=(s||a||t)?"inline-flex":"none";
   var bp=document.getElementById("btnPacchetto");if(bp)bp.style.display=(s||a||t)?"inline-flex":"none";
@@ -6706,7 +6849,7 @@ async function restoreBackupData(data){
   toast("Backup ripristinato");
 }
 
-function exportExcel(markBackup){var rows=[["Cliente","Acronimo","Costruttore","Modello","Matricola","ID","Ultima","Prossima","Prox filtro","Sede","Edificio","Lab","Piano","Stanza","Stato","Referente","Cadenza","Attivita","Filtro","Stadi","Accessori","Note"]];for(var i=1;i<=4;i++)rows[0].push("S"+i+" Codice","S"+i+" Misure","S"+i+" Tipo","S"+i+" Qty","S"+i+" Data","S"+i+" Prox","S"+i+" Status");equipment.forEach(function(e){var nf=nextFilterProx(e);var r=[clienteName(e.clienteId),e.acronimo,e.costruttore,e.modello,e.matricola,e.idDispositivo,e.ultimaMan,e.prossimaMan,nf?("S"+nf.stadio+" "+nf.prox):"",e.sede,e.edificio,e.laboratorio,e.piano,e.stanza,e.stato,e.responsabile,e.cadenzaMan,(e.tipoAttivita||[]).join(", "),e.haSistemaFiltrante,e.stadiFiltranti,e.accessori,e.note];for(var i=1;i<=4;i++){var s=(e.filtriStadi&&e.filtriStadi[String(i)])?e.filtriStadi[String(i)]:emptyStage();r.push(s.codice,s.misure,s.tipologia,s.qty,s.data_install,s.prox,s.status);}rows.push(r);});var ws=XLSX.utils.aoa_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"DPC");XLSX.writeFile(wb,"dpc_export_"+new Date().toISOString().slice(0,10)+".xlsx");if(markBackup){try{safeSetLocal(LAST_BACKUP_KEY,String(Date.now()));}catch(e){}toast("Export Excel salvato");}}
+function exportExcel(markBackup){var rows=[["Cliente","Acronimo","Costruttore","Modello","Matricola","ID","Ultima","Prossima","Prox filtro","Sede","Edificio","Lab","Piano","Stanza","Stato","Referente","Cadenza","Attivita","Filtro","Stadi","Accessori","Note"]];for(var i=1;i<=4;i++)rows[0].push("S"+i+" Codice","S"+i+" Misure","S"+i+" Tipo","S"+i+" Classe","S"+i+" Qty","S"+i+" Data","S"+i+" Prox","S"+i+" Status");equipment.forEach(function(e){var nf=nextFilterProx(e);var r=[clienteName(e.clienteId),e.acronimo,e.costruttore,e.modello,e.matricola,e.idDispositivo,e.ultimaMan,e.prossimaMan,nf?("S"+nf.stadio+" "+nf.prox):"",e.sede,e.edificio,e.laboratorio,e.piano,e.stanza,e.stato,e.responsabile,e.cadenzaMan,(e.tipoAttivita||[]).join(", "),e.haSistemaFiltrante,e.stadiFiltranti,e.accessori,e.note];for(var i=1;i<=4;i++){var s=(e.filtriStadi&&e.filtriStadi[String(i)])?e.filtriStadi[String(i)]:emptyStage();r.push(s.codice,s.misure,s.tipologia,s.classe,s.qty,s.data_install,s.prox,s.status);}rows.push(r);});var ws=XLSX.utils.aoa_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"DPC");XLSX.writeFile(wb,"dpc_export_"+new Date().toISOString().slice(0,10)+".xlsx");if(markBackup){try{safeSetLocal(LAST_BACKUP_KEY,String(Date.now()));}catch(e){}toast("Export Excel salvato");}}
 async function importData(ev){if(!isSuper())return;var file=ev.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=async function(e){try{var data=JSON.parse(e.target.result);if(!Array.isArray(data))throw new Error("JSON non valido");if(!confirm("Importare "+data.length+"?"))return;for(var i=0;i<data.length;i++){var x=data[i];await sb.from("equipment").insert([{cliente_id:x.clienteId||(clienti[0]?clienti[0].id:null),acronimo:x.acronimo||"",costruttore:x.costruttore||"",modello:x.modello||"",matricola:x.matricola||"",id_dispositivo:x.idDispositivo||"",ultima_man:x.ultimaMan||null,prossima_man:x.prossimaMan||null,sede:x.sede||"",edificio:x.edificio||"",laboratorio:x.laboratorio||"",piano:x.piano||"",stanza:x.stanza||"",stato:x.stato||"OPERATIVA",responsabile:x.responsabile||"",cadenza_man:x.cadenzaMan||"",tipo_attivita:x.tipoAttivita||[],ha_sistema_filtrante:x.haSistemaFiltrante||"no",stadi_filtranti:x.stadiFiltranti||"",accessori:x.accessori||"",note:x.note||"",filtri_stadi:x.filtriStadi||{}}]);}await logAudit("IMPORT",null,"Import JSON "+data.length);toast("Import OK");await loadAll();}catch(err){alert(err.message);}};reader.readAsText(file);ev.target.value="";}
 function normalizeHeader(s){return String(s||"").toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ");}
 function findCol(h,names){for(var i=0;i<h.length;i++){var x=normalizeHeader(h[i]);if(!x)continue;for(var j=0;j<names.length;j++){if(x===names[j]||x.indexOf(names[j])>-1)return i;}}return -1;}
@@ -7122,6 +7265,7 @@ async function runExcelImport(file,clienteId,dpcMode){
             qty:base+3<end?base+3:base,
             tipologia:base+4<end?base+4:base,
             correlazione:base+5<end?base+5:base,
+            classe:base+4<end?base+4:base,
             data:base+6<end?base+6:base,
             durata:base+7<end?base+7:base,
             prox:base+8<end?base+8:base,
@@ -7135,6 +7279,7 @@ async function runExcelImport(file,clienteId,dpcMode){
             else if(x==="tipo"||/^tipo\b/.test(x))subMap.tipo=k;
             else if(x.indexOf("q.ta")>-1||x.indexOf("qta")>-1||x.indexOf("quantita")>-1)subMap.qty=k;
             else if(x.indexOf("tipologia")>-1||x.indexOf("particellare")>-1||x.indexOf("molecolare")>-1)subMap.tipologia=k;
+            else if(x.indexOf("classe")>-1)subMap.classe=k;
             else if(x.indexOf("correlazione")>-1)subMap.correlazione=k;
             else if(x.indexOf("data")>-1)subMap.data=k;
             else if(x.indexOf("durata")>-1)subMap.durata=k;
@@ -7309,20 +7454,22 @@ async function runExcelImport(file,clienteId,dpcMode){
             var tipo=cell(row,sc.tipo);
             var qty=cell(row,sc.qty);
             var tipol=cell(row,sc.tipologia);
+            var classeRaw=sc.classe!=null?cell(row,sc.classe):"";
             var corr=cell(row,sc.correlazione);
             var dataInst=parseExcelDate(rawCell(row,sc.data));
             var durata=cell(row,sc.durata);
             var prox=parseExcelDate(rawCell(row,sc.prox));
             var statusRaw=cell(row,sc.status);
             // salta solo se TUTTI i campi utili sono vuoti
-            if(isEmptyFilterVal(codice)&&isEmptyFilterVal(misure)&&isEmptyFilterVal(tipol)&&isEmptyFilterVal(tipo)&&isEmptyFilterVal(dataInst)&&isEmptyFilterVal(prox)&&isEmptyFilterVal(qty))return;
-            // codice "-" da solo senza altri dati → vuoto
+            if(isEmptyFilterVal(codice)&&isEmptyFilterVal(misure)&&isEmptyFilterVal(tipol)&&isEmptyFilterVal(tipo)&&isEmptyFilterVal(classeRaw)&&isEmptyFilterVal(dataInst)&&isEmptyFilterVal(prox)&&isEmptyFilterVal(qty))return;
             if(isEmptyFilterVal(codice)&&isEmptyFilterVal(misure)&&isEmptyFilterVal(tipol)&&isEmptyFilterVal(tipo)&&!dataInst&&!prox)return;
             if(!prox&&dataInst&&durata)prox=calcProx(dataInst,durata)||"";
+            var tc=parseTipoClasse({tipologia:isEmptyFilterVal(tipol)?(isEmptyFilterVal(tipo)?"":tipo):tipol, classe:classeRaw||""});
             var st={
               codice:isEmptyFilterVal(codice)?"":codice,
               misure:isEmptyFilterVal(misure)?"":misure,
-              tipologia:isEmptyFilterVal(tipol)?(isEmptyFilterVal(tipo)?"":tipo):tipol,
+              tipologia:tc.tipo||(isEmptyFilterVal(tipol)?(isEmptyFilterVal(tipo)?"":tipo):tipol),
+              classe:tc.classe||(isEmptyFilterVal(classeRaw)?"":String(classeRaw).toUpperCase()),
               qty:isEmptyFilterVal(qty)?"":qty,
               correlazione:isEmptyFilterVal(corr)?"":corr,
               data_install:dataInst||"",
@@ -7459,6 +7606,7 @@ async function runExcelImport(file,clienteId,dpcMode){
           codice:findCol(h,[si+" stadio codice","stadio "+si+" codice",si+"o stadio codice","s"+si+" codice","codice filtro "+si,"s"+si+" codice"]),
           misure:findCol(h,[si+" stadio misure","s"+si+" misure","misure "+si,"misure filtro "+si]),
           tipologia:findCol(h,[si+" stadio tipologia","s"+si+" tipologia","tipologia "+si,"tipo filtro "+si]),
+          classe:findCol(h,[si+" stadio classe","s"+si+" classe","classe "+si,"classe filtro "+si]),
           qty:findCol(h,[si+" stadio q","s"+si+" qty","quantita "+si,"q.ta "+si]),
           correlazione:findCol(h,[si+" stadio correlazione","s"+si+" correlazione"]),
           data:findCol(h,[si+" stadio data","s"+si+" data","data install "+si,"data installazione "+si]),
@@ -7483,10 +7631,11 @@ async function runExcelImport(file,clienteId,dpcMode){
         var fs={},maxS=0;
         for(var si=1;si<=4;si++){
           var sc=stageCols[si];
-          var st={codice:cell(row,sc.codice),misure:cell(row,sc.misure),tipologia:cell(row,sc.tipologia),qty:cell(row,sc.qty),correlazione:cell(row,sc.correlazione),data_install:parseExcelDate(cell(row,sc.data)),durata_mesi:cell(row,sc.durata),prox:parseExcelDate(cell(row,sc.prox)),status:""};
+          var st={codice:cell(row,sc.codice),misure:cell(row,sc.misure),tipologia:cell(row,sc.tipologia),qty:cell(row,sc.qty),correlazione:cell(row,sc.correlazione),data_install:parseExcelDate(cell(row,sc.data)),durata_mesi:cell(row,sc.durata),prox:parseExcelDate(cell(row,sc.prox)),status:"",classe:cell(row,sc.classe)};
+          var tc=parseTipoClasse(st);st.tipologia=tc.tipo||st.tipologia;st.classe=tc.classe;
           if(!st.prox)st.prox=calcProx(st.data_install,st.durata_mesi)||"";
           st.status=autoFilterStatus(st.prox);
-          if(st.codice||st.misure||st.tipologia||st.data_install||st.prox){fs[String(si)]=st;maxS=si;}
+          if(st.codice||st.misure||st.tipologia||st.classe||st.data_install||st.prox){fs[String(si)]=st;maxS=si;}
         }
         var haFiltro=mapFiltro(cell(row,cFiltro));
         if(haFiltro==="no"&&Object.keys(fs).length)haFiltro="si";
@@ -7814,7 +7963,7 @@ function doExportCustom(){
     return (!fcl||e.clienteId===fcl)&&(!fst||e.stato===fst)&&(!fac||e.acronimo===fac)&&msc;
   });
   var rows=[["Cliente","Codice cliente","Acronimo","Costruttore","Modello","Matricola","ID","Ultima","Prossima","Prox filtro","Status filtro","Sede","Edificio","Lab","Piano","Stanza","Stato","Referente","Cadenza","Attivita","Filtro","Stadi","Accessori","Note"]];
-  for(var i=1;i<=4;i++)rows[0].push("S"+i+" Codice","S"+i+" Misure","S"+i+" Tipo","S"+i+" Qty","S"+i+" Data","S"+i+" Prox","S"+i+" Status");
+  for(var i=1;i<=4;i++)rows[0].push("S"+i+" Codice","S"+i+" Misure","S"+i+" Tipo","S"+i+" Classe","S"+i+" Qty","S"+i+" Data","S"+i+" Prox","S"+i+" Status");
   list.forEach(function(e){
     var nf=null;
     try{nf=nextFilterProx(e);}catch(ex){nf=null;}
@@ -7823,7 +7972,7 @@ function doExportCustom(){
     var r=[clienteName(e.clienteId),clienteCode(e.clienteId),e.acronimo,e.costruttore,e.modello,e.matricola,e.idDispositivo,e.ultimaMan,e.prossimaMan,nf?("S"+nf.stadio+" "+nf.prox):"",stf,e.sede,e.edificio,e.laboratorio,e.piano,e.stanza,e.stato,e.responsabile,e.cadenzaMan,(e.tipoAttivita||[]).join(", "),haFiltro,e.stadiFiltranti||"",e.accessori,e.note];
     for(var i=1;i<=4;i++){
       var s=(e.filtriStadi&&e.filtriStadi[String(i)])?e.filtriStadi[String(i)]:emptyStage();
-      r.push(s.codice||"",s.misure||"",s.tipologia||"",s.qty||"",s.data_install||"",s.prox||"",s.status||autoFilterStatus(s.prox)||"");
+      r.push(s.codice||"",s.misure||"",s.tipologia||"",s.classe||"",s.qty||"",s.data_install||"",s.prox||"",s.status||autoFilterStatus(s.prox)||"");
     }
     rows.push(r);
   });
@@ -7839,10 +7988,10 @@ function openPrintScheda(id){
   var fs=e.filtriStadi||{},stadiHtml="";
   for(var i=1;i<=4;i++){
     var s=fs[String(i)];if(!s)continue;
-    stadiHtml+="<tr><td>"+i+"o</td><td>"+(s.codice||"-")+"</td><td>"+(s.misure||"-")+"</td><td>"+(s.tipologia||"-")+"</td><td>"+(s.data_install||"-")+"</td><td>"+(s.prox||"-")+"</td><td>"+statusFiltroBadge(autoFilterStatus(s.prox||calcProx(s.data_install,s.durata_mesi)))+"</td></tr>";
+    stadiHtml+="<tr><td>"+i+"°</td><td>"+(s.codice||"-")+"</td><td>"+(s.misure||"-")+"</td><td>"+(s.tipologia||"-")+(s.classe?(" "+s.classe):"")+"</td><td>"+(s.qty||"-")+"</td><td>"+(s.data_install||"-")+"</td><td>"+(s.prox||"-")+"</td><td>"+statusFiltroBadge(autoFilterStatus(s.prox||calcProx(s.data_install,s.durata_mesi)))+"</td></tr>";
   }
-  if(!stadiHtml)stadiHtml='<tr><td colspan="7">Nessun stadio</td></tr>';
-  var html='<div style="font-size:.9rem"><h3 style="margin-bottom:.5rem">Scheda DPC · '+(e.acronimo||"")+' · '+(e.matricola||"")+'</h3>'+
+  if(!stadiHtml)stadiHtml='<tr><td colspan="8">Nessun stadio</td></tr>';
+  var html='<div class="print-scheda" style="font-size:.9rem"><img src="logo-cami.png" alt="CAMI" style="height:36px;margin-bottom:.6rem"><h3 style="margin-bottom:.5rem">Scheda DPC · '+(e.acronimo||"")+' · '+(e.matricola||"")+'</h3>'+
     '<p><strong>Cliente:</strong> '+clienteName(e.clienteId)+' ('+clienteCode(e.clienteId)+') · <strong>ID:</strong> '+(e.idDispositivo||"-")+'</p>'+
     '<p><strong>Costruttore/Modello:</strong> '+(e.costruttore||"-")+' / '+(e.modello||"-")+'</p>'+
     '<p><strong>Ubicazione:</strong> '+(e.sede||"-")+' · '+(e.edificio||"-")+' · '+(e.laboratorio||"-")+' · P.'+(e.piano||"-")+' · St.'+(e.stanza||"-")+'</p>'+
@@ -7851,7 +8000,7 @@ function openPrintScheda(id){
     '<p><strong>Sistema filtrante:</strong> '+(e.haSistemaFiltrante||"no")+' · <strong>Stadi:</strong> '+(e.stadiFiltranti||"-")+' · <strong>Accessori:</strong> '+(e.accessori||"-")+'</p>'+
     '<p><strong>Note:</strong> '+(e.note||"-")+'</p>'+
     '<h4 style="margin:1rem 0 .4rem">Filtri a stadi</h4>'+
-    '<table class="history-table"><thead><tr><th>Stadio</th><th>Codice</th><th>Misure</th><th>Tipo</th><th>Install.</th><th>Prox</th><th>Status</th></tr></thead><tbody>'+stadiHtml+'</tbody></table>'+
+    '<table class="history-table"><thead><tr><th>Stadio</th><th>Codice</th><th>Misure</th><th>Tipo / Classe</th><th>Q.tà</th><th>Install.</th><th>Prox</th><th>Status</th></tr></thead><tbody>'+stadiHtml+'</tbody></table>'+
     (e.fotoUrl?'<p style="margin-top:1rem"><img src="'+e.fotoUrl+'" style="max-width:280px;border:1px solid #e2e8f0;border-radius:.4rem"></p>':'')+
     '<p style="margin-top:1rem;font-size:.75rem;color:#64748b">Stampato da Gestionale CAMI · '+new Date().toLocaleString("it-IT")+'</p></div>';
   document.getElementById("printContent").innerHTML=html;
@@ -8069,7 +8218,7 @@ function doPacchettoExport(){
   var list=equipment.filter(function(e){return e.clienteId===cid;});
   if(!list.length){alert("Nessun DPC per questo cliente");return;}
   var rows=[["Cliente","Codice cliente","Acronimo","Costruttore","Modello","Matricola","ID","Ultima","Prossima","Prox filtro","Status filtro","Sede","Edificio","Lab","Piano","Stanza","Stato","Referente","Cadenza","Attivita","Filtro","Stadi","Accessori","Note"]];
-  for(var i=1;i<=4;i++)rows[0].push("S"+i+" Codice","S"+i+" Misure","S"+i+" Tipo","S"+i+" Qty","S"+i+" Data","S"+i+" Prox","S"+i+" Status");
+  for(var i=1;i<=4;i++)rows[0].push("S"+i+" Codice","S"+i+" Misure","S"+i+" Tipo","S"+i+" Classe","S"+i+" Qty","S"+i+" Data","S"+i+" Prox","S"+i+" Status");
   list.forEach(function(e){
     var nf=nextFilterProx(e);var stf=nf?autoFilterStatus(nf.prox):"";
     var r=[clienteName(e.clienteId),clienteCode(e.clienteId),e.acronimo,e.costruttore,e.modello,e.matricola,e.idDispositivo,e.ultimaMan,e.prossimaMan,nf?("S"+nf.stadio+" "+nf.prox):"",stf,e.sede,e.edificio,e.laboratorio,e.piano,e.stanza,e.stato,e.responsabile,e.cadenzaMan,(e.tipoAttivita||[]).join(", "),e.haSistemaFiltrante,e.stadiFiltranti,e.accessori,e.note];
