@@ -848,15 +848,16 @@ html.ui-only-dpc #commesseChrome{display:none!important}
           </div>
           <div class="altro-group" id="altroAdmin">
             <div class="altro-title">Admin</div>
+            <button type="button" class="altro-item" id="btnPannelloAdmin" style="display:none" onclick="closeAltroMenu();openPannelloAdmin()"><i class="fas fa-sliders-h"></i> Pannello admin</button>
             <button type="button" class="altro-item" id="btnAudit" style="display:none" onclick="closeAltroMenu();openAuditModal()"><i class="fas fa-history"></i> Modifiche</button>
             <button type="button" class="altro-item" id="btnBackup" style="display:none" onclick="closeAltroMenu();exportFullBackup()"><i class="fas fa-cloud-download-alt"></i> Backup</button>
             <button type="button" class="altro-item" id="btnCloudBackups" style="display:none" onclick="closeAltroMenu();openCloudBackupsModal()"><i class="fas fa-cloud"></i> Backup cloud</button>
             <label class="altro-item" id="btnLoadBackup" style="display:none;cursor:pointer"><i class="fas fa-cloud-upload-alt"></i> Carica backup<input type="file" accept=".json,application/json" hidden onchange="closeAltroMenu();importFullBackup(event)"></label>
-            <button type="button" class="altro-item" id="btnPannelloAdmin" style="display:none" onclick="closeAltroMenu();openPannelloAdmin()"><i class="fas fa-sliders-h"></i> Pannello admin</button>
             <button type="button" class="altro-item" id="btnInstallPwa" style="display:none" onclick="closeAltroMenu();installPwaApp()"><i class="fas fa-download"></i> Installa app</button>
           </div>
         </div>
       </div>
+      <button class="btn btn-secondary" id="btnPannelloAdminHead" style="display:none" onclick="openPannelloAdmin()"><i class="fas fa-sliders-h"></i> Pannello admin</button>
       <button class="btn btn-danger" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Esci</button>
       <div class="user-badge"><span id="currentUserName">-</span> <span id="currentUserRole"></span></div>
     </div>
@@ -2769,7 +2770,7 @@ function refreshAltroMenuVisibility(){
   if(bls)bls.style.display=(shown("btnPiano"))?"flex":"none";
   // Export always has Export Excel/JSON at least
   if(g2)g2.style.display="block";
-  if(g3)g3.style.display=(shown("btnAudit")||shown("btnBackup")||shown("btnCloudBackups")||shown("btnLoadBackup"))?"block":"none";
+  if(g3)g3.style.display=(shown("btnAudit")||shown("btnBackup")||shown("btnCloudBackups")||shown("btnLoadBackup")||shown("btnPannelloAdmin"))?"block":"none";
   // hide Altro button if somehow empty - keep always for export
   var aw=document.getElementById("altroWrap");
   if(aw)aw.style.display="inline-flex";
@@ -4475,6 +4476,8 @@ function applyButtonPrefs(){
   });
   var bpa=document.getElementById("btnPannelloAdmin");
   if(bpa) bpa.style.display=isSuper()?"inline-flex":"none";
+  var bpah=document.getElementById("btnPannelloAdminHead");
+  if(bpah) bpah.style.display=isSuper()?"inline-flex":"none";
 }
 function applyHomepageByRole(){
   var role=currentUser?normalizeRole(currentUser.role):"";
@@ -4754,6 +4757,7 @@ async function showApp(){document.getElementById("loginScreen").classList.add("h
   var bni=document.getElementById("btnNuovoIntervento");if(bni)bni.style.display=(s||a||t)?"inline-flex":"none";
   document.getElementById("btnUsers").style.display=canManageUsers()?"inline-flex":"none";
   var bpa=document.getElementById("btnPannelloAdmin");if(bpa)bpa.style.display=s?"inline-flex":"none";
+  var bpah=document.getElementById("btnPannelloAdminHead");if(bpah)bpah.style.display=s?"inline-flex":"none";
   document.getElementById("btnClienti").style.display=canManageClienti()?"inline-flex":"none";
   var bat=document.getElementById("btnAssegnaTecnico");if(bat)bat.style.display=canAssignTecnico()?"inline-flex":"none";
   document.getElementById("btnEmail").style.display=(s||a||t)?"inline-flex":"none";
