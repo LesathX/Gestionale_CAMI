@@ -721,6 +721,63 @@ html.ui-only-dpc #commesseChrome{display:none!important}
   #dpcListBar{position:sticky;top:0;z-index:4;background:#eef2f7}
 }
 
+/* ===== Calendario stime ===== */
+.cal-wrap{padding:.1rem 0 1.6rem}
+.cal-head h2{margin:0 0 .25rem;font-size:1.15rem;color:#1e3a8a}
+.cal-head p{margin:0 0 .75rem;color:#64748b;font-size:.82rem}
+.cal-toolbar{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin-bottom:.7rem}
+.cal-toolbar select,.cal-toolbar button{font-size:.8rem}
+.cal-nav{display:flex;align-items:center;gap:.45rem;font-weight:800;color:#1e3a8a;margin-right:.4rem}
+.cal-nav button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:.25rem .7rem;cursor:pointer;font-size:1.05rem}
+.cal-legend{display:flex;flex-wrap:wrap;gap:.55rem;font-size:.72rem;color:#475569;margin:.15rem 0 .65rem}
+.cal-legend i{display:inline-block;width:10px;height:10px;border-radius:99px;margin-right:.25rem;vertical-align:-1px}
+.cal-leg-stima{background:#93c5fd;border:1px dashed #1d4ed8}
+.cal-leg-piano{background:#1d4ed8}
+.cal-leg-fatto{background:#16a34a}
+.cal-leg-scad{background:#dc2626}
+.cal-layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(280px,.9fr);gap:1rem;align-items:start}
+@media(max-width:980px){.cal-layout{grid-template-columns:1fr}}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:8px}
+.cal-dow{text-align:center;font-size:.68rem;font-weight:700;color:#64748b;text-transform:uppercase;padding:.25rem 0}
+.cal-day{min-height:88px;border:1px solid #eef2f7;border-radius:8px;padding:4px 5px 6px;background:#fbfcfe;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.cal-day:hover{border-color:#93c5fd;background:#eff6ff}
+.cal-day.out{opacity:.38;background:#f8fafc;cursor:default}
+.cal-day.today{box-shadow:inset 0 0 0 2px #1d4ed8}
+.cal-day.sel{background:#dbeafe;border-color:#1d4ed8}
+.cal-day.has-overdue{background:#fef2f2}
+.cal-n{font-size:.72rem;font-weight:700;color:#0f172a}
+.cal-chips{display:flex;flex-wrap:wrap;gap:2px}
+.cal-chip{font-size:.62rem;font-weight:700;padding:1px 5px;border-radius:99px;line-height:1.4}
+.cal-chip.stima{background:#eff6ff;color:#1d4ed8;border:1px dashed #60a5fa}
+.cal-chip.piano{background:#1d4ed8;color:#fff}
+.cal-chip.fatto{background:#dcfce7;color:#166534}
+.cal-chip.scad{background:#fee2e2;color:#b91c1c}
+.cal-chip.sede{background:#f1f5f9;color:#334155}
+.cal-side{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:.75rem .8rem;min-height:240px}
+.cal-side h3{margin:0 0 .45rem;font-size:.95rem;color:#1e3a8a}
+.cal-group{border:1px solid #e2e8f0;border-radius:10px;padding:.55rem .6rem;margin-bottom:.5rem;background:#f8fafc}
+.cal-group h4{margin:0 0 .25rem;font-size:.82rem}
+.cal-group ul{margin:.2rem 0 .4rem;padding-left:1.05rem;font-size:.78rem;color:#334155}
+.cal-arre{background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:.55rem .7rem;margin-bottom:.7rem;font-size:.8rem}
+.cal-week{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.7rem}
+.cal-week .w{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:.45rem .55rem;font-size:.75rem;min-width:140px;flex:1}
+.cal-empty{color:#64748b;font-size:.82rem}
+.guida-tabs{display:flex;gap:.35rem;margin-bottom:.75rem}
+.guida-tabs button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:.35rem .7rem;cursor:pointer;font-size:.82rem;font-weight:600;color:#334155}
+.guida-tabs button.active{background:#1e3a8a;color:#fff;border-color:#1e3a8a}
+.guida-pane{display:none}
+.guida-pane.show{display:block}
+.guida-pane h3{margin:1rem 0 .35rem;color:#1e3a8a;font-size:.95rem}
+.guida-pane h3:first-child{margin-top:0}
+.guida-pane p,.guida-pane li{font-size:.84rem;color:#334155;line-height:1.45}
+.guida-pane ul{margin:.2rem 0 .6rem;padding-left:1.15rem}
+.guida-pane .tag{display:inline-block;font-size:.65rem;font-weight:700;padding:.1rem .4rem;border-radius:99px;background:#e0e7ff;color:#3730a3;margin-right:.25rem}
+@media print{
+  .cal-toolbar,.cal-side button,.header,.altro-wrap{display:none!important}
+  .cal-layout{display:block}
+  .cal-side{break-inside:avoid}
+}
+
 </style>
 </head>
 <body>
@@ -757,6 +814,8 @@ html.ui-only-dpc #commesseChrome{display:none!important}
         <div class="altro-menu" id="altroMenu">
           <div class="altro-group" id="altroOperativo">
             <div class="altro-title">Operativo</div>
+            <button type="button" class="altro-item" id="btnCalendario" style="display:none" onclick="closeAltroMenu();showCalendarioPage()"><i class="fas fa-calendar"></i> Calendario</button>
+            <button type="button" class="altro-item" id="btnGuida" onclick="closeAltroMenu();openGuidaModal()"><i class="fas fa-book"></i> Guida</button>
             <button type="button" class="altro-item" id="btnRubrica" onclick="closeAltroMenu();openRubricaModal()"><i class="fas fa-address-book"></i> Contatti referenti</button>
             <button type="button" class="altro-item" id="btnNuovo" style="display:none" onclick="closeAltroMenu();openModal()"><i class="fas fa-plus"></i> Nuovo DPC</button>
             <button type="button" class="altro-item" id="btnNuovoIntervento" style="display:none" onclick="closeAltroMenu();openNuovoInterventoModal()"><i class="fas fa-wrench"></i> Nuovo intervento</button>
@@ -984,6 +1043,52 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       <div id="dashMonths" class="dash-months"></div>
       <div id="dashContractAlert" style="margin-bottom:.75rem"></div>
       <div id="dashMonthDetail"></div>
+    </div>
+  </div>
+
+
+  <div id="pageCalendario" class="page-panel">
+    <div class="cal-wrap">
+      <div class="cal-head">
+        <h2><i class="fas fa-calendar"></i> Calendario interventi</h2>
+        <p>Stima dalle scadenze DPC (manutenzione e filtri). Gli interventi già assegnati coprono la stima. Clicca un giorno per il dettaglio, raggruppato per sede.</p>
+      </div>
+      <div class="cal-toolbar">
+        <div class="cal-nav">
+          <button type="button" onclick="calShift(-1)" title="Mese precedente">‹</button>
+          <span id="calMonthLabel">—</span>
+          <button type="button" onclick="calShift(1)" title="Mese successivo">›</button>
+          <button type="button" class="btn btn-secondary" style="padding:.25rem .55rem;font-size:.75rem" onclick="calGoToday()">Oggi</button>
+        </div>
+        <select id="calCliente" onchange="onCalFilter()"><option value="">Tutti i clienti</option></select>
+        <select id="calSede" onchange="renderCalendario()"><option value="">Tutte le sedi</option></select>
+        <select id="calTipo" onchange="renderCalendario()">
+          <option value="">Man. + filtri + interventi</option>
+          <option value="man">Solo manutenzioni</option>
+          <option value="fil">Solo filtri</option>
+          <option value="int">Solo interventi assegnati</option>
+        </select>
+        <select id="calTec" onchange="renderCalendario()"><option value="">Tutti i tecnici</option></select>
+        <button class="btn btn-excel" type="button" onclick="exportCalendarioExcel()"><i class="fas fa-file-excel"></i> Excel</button>
+        <button class="btn btn-print" type="button" onclick="window.print()"><i class="fas fa-print"></i> Stampa</button>
+      </div>
+      <div class="cal-legend">
+        <span><i class="cal-leg-stima"></i> Stima (scadenza DPC, non ancora assegnata)</span>
+        <span><i class="cal-leg-piano"></i> Intervento pianificato</span>
+        <span><i class="cal-leg-fatto"></i> Completato</span>
+        <span><i class="cal-leg-scad"></i> Scaduto / arretrato</span>
+      </div>
+      <div id="calArre" class="cal-arre" style="display:none"></div>
+      <div class="cal-layout">
+        <div>
+          <div id="calGrid" class="cal-grid"></div>
+          <div id="calWeek" class="cal-week"></div>
+        </div>
+        <div class="cal-side">
+          <h3 id="calSideTitle">Seleziona un giorno</h3>
+          <div id="calSide" class="cal-empty">Clicca una casella del mese per vedere le stime raggruppate per sede e creare l'intervento.</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1365,6 +1470,89 @@ html.ui-only-dpc #commesseChrome{display:none!important}
       </div>
     </div>
     <div class="form-actions"><button class="btn-cancel" onclick="closeImportClienteModal()">Annulla</button><button class="btn-save" onclick="confirmImportCliente()">Continua</button></div>
+  </div>
+</div></div>
+
+
+<div id="guidaModal" class="modal-overlay" style="z-index:50020"><div class="modal" style="max-width:820px">
+  <div class="modal-header"><h2><i class="fas fa-book"></i> Guida Gestionale CAMI</h2><button class="modal-close" onclick="closeGuidaModal()">&times;</button></div>
+  <div class="modal-body">
+    <div class="guida-tabs">
+      <button type="button" class="active" id="guidaTabOp" onclick="showGuidaTab('op')">Per chi usa il gestionale</button>
+      <button type="button" id="guidaTabAd" onclick="showGuidaTab('ad')">Per Super admin</button>
+    </div>
+    <div id="guidaPaneOp" class="guida-pane show">
+      <h3>Accesso</h3>
+      <p>Username e password. <strong>Ricordami</strong> lascia la sessione aperta su questo PC. L'occhio mostra/nasconde la password. L'ultimo username viene riproposto.</p>
+      <h3>Ruoli (in breve)</h3>
+      <ul>
+        <li><span class="tag">TECNICO</span> vede tutti i DPC; modifica anagrafica e interventi solo sui clienti assegnati.</li>
+        <li><span class="tag">BACK OFFICER</span> gestisce clienti, commesse, utenti (non Super), interventi.</li>
+        <li><span class="tag">SUPER ADMIN</span> tutto, più import Excel, backup, pannello grafica, audit.</li>
+      </ul>
+      <h3>Home clienti</h3>
+      <p>Card per cliente: quanti DPC, semaforo scadenze, barra <strong>Schede complete</strong>. Clic sulla % → elenco delle schede incomplete. <em>Apri elenco</em> → tabella DPC di quel cliente.</p>
+      <h3>Elenco DPC</h3>
+      <ul>
+        <li>Acronimo <strong>rosso</strong> = manca un campo obbligatorio (cliente, acronimo, costruttore, modello, matricola, ID, ultima/prossima man., sede, stato; se sistema filtrante = Sì anche stadi completi). <strong>Nero</strong> = scheda ok. N.A. / N.D. non conta come compilato.</li>
+        <li>Filtri in alto: cliente, acronimo, sede, stato, filtro sì/no, scadenze, schede incomplete.</li>
+        <li>Icone riga: storico, report, commenti, stampa scheda, duplica, modifica, elimina (se autorizzato).</li>
+      </ul>
+      <h3>Scheda DPC</h3>
+      <p>Obbligatori i campi sopra. Opzionali: cadenza, dipartimento, edificio, lab, piano, stanza, referente, contatti, indirizzo, accessori, foto, note. Filtri: a sinistra P/M, a destra la classe (GH…E10 oppure AS…NP), attaccati, senza spazio.</p>
+      <h3>Commesse</h3>
+      <p>Contratto di lavoro. Servono ROE, OFC/AMM, cliente, N° interventi, tipo. La cadenza (mesi) è automatica = durata / N° interventi. Puoi collegare i DPC. Da qui si creano gli interventi.</p>
+      <h3>Interventi</h3>
+      <ul>
+        <li><strong>Nuovo intervento</strong>: scegli la commessa (cliente e DPC si precompilano), data, tecnici, DPC, tipo. Se il tecnico ha già un intervento quel giorno compare un avviso.</li>
+        <li><strong>Interventi assegnati</strong>: elenco. Chiudi con o senza allegati (RIT, DDT, foto…).</li>
+      </ul>
+      <h3>Calendario</h3>
+      <p>Mese con tre colori: <strong>stima</strong> (scadenza manutenzione/filtro ancora senza intervento), <strong>pianificato</strong> (intervento già creato), <strong>fatto</strong>. Se esiste già un intervento su quel DPC entro 7 giorni, la stima sparisce. Clic sul giorno → sedi e DPC. <em>Crea intervento</em> apre il form con data, cliente e DPC già pronti (scegli la commessa se ce n'è più d'una). Arretrati in alto. Sotto: carico per settimana. Non usa Google: è interno.</p>
+      <h3>Altre pagine operative</h3>
+      <ul>
+        <li><strong>TO DO</strong> — preparazione materiale/documenti per il mese.</li>
+        <li><strong>Piano +2 mesi</strong> — lavoro da fare tra due mesi, lista spesa filtri, crea bozze interventi.</li>
+        <li><strong>Lista spesa filtri</strong> — scorciatoia alla lista spesa del Piano.</li>
+        <li><strong>Interventi pianificati</strong> — bozze dal Piano (non sono gli assegnati).</li>
+        <li><strong>Dashboard scadenze</strong> — mese per mese, clic per elenco.</li>
+        <li><strong>Contatti referenti</strong> — rubrica da schede DPC + extra (Nuovo/Modifica/Excel). I extra restano su questo PC.</li>
+        <li><strong>Cosa fare oggi</strong> — lista urgenze (nascosta di default, si può riattivare).</li>
+      </ul>
+      <h3>Export</h3>
+      <p>Excel di tutti i DPC, export filtrato, JSON, report mese, pacchetto cliente. Stampa scheda dalla riga DPC (logo, classe, q.tà).</p>
+      <h3>Campanella</h3>
+      <p>Notifiche (scadenze, interventi chiusi). Clic per leggerle.</p>
+    </div>
+    <div id="guidaPaneAd" class="guida-pane">
+      <h3>Utenti</h3>
+      <p>Menu → Utenti. Crea username, password, ruolo. Il Super admin vede tutti; il Back Officer gestisce gli utenti non Super.</p>
+      <h3>Assegna tecnico</h3>
+      <p>Collega un tecnico a uno o più clienti. Senza assegnazione il tecnico vede i DPC in sola lettura e non può modificarli.</p>
+      <h3>Clienti</h3>
+      <p>Anagrafica, codice progressivo, contratto (inizio/fine). Eliminazione: Back Officer e Super. Recupero: solo Super.</p>
+      <h3>Import Excel</h3>
+      <p>Solo Super. File CAMI (stadi) o semplice. Riconosce tipologia P/M e classe (H13, F7, AS…). Duplicati (stessa sede + matricola/ID) saltati. Puoi aggiungere o sovrascrivere i DPC del cliente.</p>
+      <h3>Backup</h3>
+      <ul>
+        <li>Backup (download JSON) e Backup cloud (Storage Supabase).</li>
+        <li>Carica backup per ripristinare.</li>
+        <li>Automatico circa ogni 7 giorni al login Super.</li>
+        <li>Copia file precedente alle ultime migliorie: <code>index-backup-2026-09-03.html</code> sul repository.</li>
+      </ul>
+      <h3>Pannello admin</h3>
+      <p>Solo Super. Colonne visibili, bottoni per ruolo, homepage (card / elenco / dashboard), loghi e colori cliente, pubblicazione su tutti i PC (tabella ui_settings).</p>
+      <h3>Audit</h3>
+      <p>Storico login e modifiche. Non cancellare a mano.</p>
+      <h3>Strumenti</h3>
+      <p>Preventivo filtri, certificazioni, allegati obbligatori, geolocalizzazione, email automatiche (EmailJS), magazzino filtri.</p>
+      <h3>Cosa non toccare</h3>
+      <ul>
+        <li>Password e chiavi (Supabase, EmailJS) stanno nel file: non pubblicarle altrove.</li>
+        <li>Dopo un aggiornamento: <strong>Ctrl+F5</strong> una volta (cache PWA).</li>
+        <li>Google Calendar non è collegato: il calendario è interno al gestionale.</li>
+      </ul>
+    </div>
   </div>
 </div></div>
 
@@ -2919,7 +3107,7 @@ function applyAutoClientCode(inputId){
 /* ===== COMMESSE ===== */
 var commesse=[];
 function hideAllPages(){
-  ["pageDpc","pageCommesse","pageTools","pageTodo","pagePiano","pagePianoInt","pageDashboard"].forEach(function(id){
+  ["pageDpc","pageCommesse","pageTools","pageTodo","pagePiano","pagePianoInt","pageDashboard","pageCalendario"].forEach(function(id){
     var el=document.getElementById(id);if(el)el.classList.remove("active");
   });
   var dc=document.getElementById("dpcChrome");if(dc)dc.style.display="none";
@@ -3017,6 +3205,26 @@ function showPianoIntPage(){
   if(bc)bc.style.display=(UI_STANDBY_ONLY_DPC?"none":"inline-flex");
   if(bt)bt.style.display="none";
   try{renderPianoIntPage();}catch(e){}
+  try{window.scrollTo(0,0);}catch(e){}
+}
+
+function showCalendarioPage(){
+  hideAllPages();
+  var p=document.getElementById("pageCalendario");if(p)p.classList.add("active");
+  var dc=document.getElementById("dpcChrome");if(dc)dc.style.display="none";
+  var cc=document.getElementById("commesseChrome");if(cc)cc.style.display="none";
+  var bd=document.getElementById("btnDpcHome"),bc=document.getElementById("btnCommesse"),bt=document.getElementById("btnToolsNav");
+  if(bd)bd.style.display="inline-flex";
+  if(bc)bc.style.display=(typeof UI_STANDBY_ONLY_DPC!=="undefined"&&UI_STANDBY_ONLY_DPC?"none":"inline-flex");
+  if(bt)bt.style.display="none";
+  if(!window._calInit){
+    var n=new Date();
+    window.CAL_YM={y:n.getFullYear(),m:n.getMonth()};
+    window.CAL_SEL="";
+    window._calInit=true;
+  }
+  fillCalFilters();
+  renderCalendario();
   try{window.scrollTo(0,0);}catch(e){}
 }
 function showToolsPage(){
@@ -4559,6 +4767,7 @@ async function showApp(){document.getElementById("loginScreen").classList.add("h
   var bog=document.getElementById("btnOggi");if(bog)bog.style.display="none";
   var btd=document.getElementById("btnTodo");if(btd)btd.style.display=(s||a||t)?"inline-flex":"none";
   var bpi=document.getElementById("btnPiano");if(bpi)bpi.style.display=(s||a||t)?"inline-flex":"none";
+  var bcal=document.getElementById("btnCalendario");if(bcal)bcal.style.display=(s||a||t)?"inline-flex":"none";
   var bpit=document.getElementById("btnPianoInt");if(bpit)bpit.style.display=(s||a||t)?"inline-flex":"none";
   var bt=document.getElementById("btnTools");if(bt)bt.style.display=(s||a||t)?"inline-flex":"none";
   window.__toolsNavVisible=!!(s||a||t);
@@ -10232,6 +10441,333 @@ window.addEventListener("error",function(ev){
     if(el)el.textContent="Errore: "+msg+(line?(" @"+line):"");
   }catch(e){}
 });
+
+/* ===== Calendario stime DPC ===== */
+function calPad(n){n=String(n);return n.length<2?"0"+n:n;}
+function calIsoFromParts(y,m,d){return y+"-"+calPad(m)+"-"+calPad(d);}
+function calParseIso(s){s=String(s||"").slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(s))return null;return s;}
+function calTodayIso(){var n=new Date();return calIsoFromParts(n.getFullYear(),n.getMonth()+1,n.getDate());}
+var CAL_MESI=["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+function calShift(delta){
+  var ym=window.CAL_YM||{y:new Date().getFullYear(),m:new Date().getMonth()};
+  var dt=new Date(ym.y, ym.m+delta, 1);
+  window.CAL_YM={y:dt.getFullYear(),m:dt.getMonth()};
+  window.CAL_SEL="";
+  renderCalendario();
+}
+function calGoToday(){
+  var n=new Date();
+  window.CAL_YM={y:n.getFullYear(),m:n.getMonth()};
+  window.CAL_SEL=calTodayIso();
+  renderCalendario();
+}
+function fillCalFilters(){
+  var sc=document.getElementById("calCliente");
+  var prev=sc?sc.value:"";
+  if(sc){
+    sc.innerHTML='<option value="">Tutti i clienti</option>';
+    (clienti||[]).forEach(function(c){sc.innerHTML+='<option value="'+c.id+'">'+escHtml(c.nome)+'</option>';});
+    if(prev)sc.value=prev;
+  }
+  fillCalSedi();
+  var st=document.getElementById("calTec");
+  var pt=st?st.value:"";
+  if(st){
+    st.innerHTML='<option value="">Tutti i tecnici</option>';
+    (users||[]).filter(function(u){return normalizeRole(u.role)==="tecnico";}).forEach(function(u){
+      var nome=u.nome||u.username;
+      st.innerHTML+='<option value="'+escHtml(nome)+'">'+escHtml(nome)+'</option>';
+    });
+    if(pt)st.value=pt;
+  }
+}
+function onCalFilter(){fillCalSedi();renderCalendario();}
+function fillCalSedi(){
+  var ss=document.getElementById("calSede");if(!ss)return;
+  var prev=ss.value;
+  var cid=(document.getElementById("calCliente")||{}).value||"";
+  var set={};
+  (equipment||[]).forEach(function(e){
+    if(cid&&e.clienteId!==cid)return;
+    var se=String(e.sede||"").trim();
+    if(se)set[se]=1;
+  });
+  ss.innerHTML='<option value="">Tutte le sedi</option>';
+  Object.keys(set).sort(function(a,b){return a.localeCompare(b,"it");}).forEach(function(s){
+    ss.innerHTML+='<option value="'+String(s).replace(/"/g,"")+'">'+escHtml(s)+'</option>';
+  });
+  if(prev)ss.value=prev;
+}
+function calCovered(equipId, dateIso, assiList){
+  var t=new Date(dateIso+"T00:00:00").getTime();
+  if(isNaN(t))return false;
+  for(var i=0;i<(assiList||[]).length;i++){
+    var a=assiList[i];
+    if(a.done)continue;
+    var ids=parseAssiEquipIds(a).map(String);
+    if(ids.indexOf(String(equipId))<0)continue;
+    var ds=calParseIso(a.data);if(!ds)continue;
+    var dt=new Date(ds+"T00:00:00").getTime();
+    if(Math.abs(dt-t)<=7*86400000)return true;
+  }
+  return false;
+}
+function collectCalEvents(assiList){
+  var evs=[];
+  (visibleEquipment()||[]).forEach(function(e){
+    if(isStatoSenzaScadenze(e))return;
+    var cli=clienteName(e.clienteId);
+    var sede=String(e.sede||"").trim()||"(senza sede)";
+    if(e.prossimaMan&&calParseIso(e.prossimaMan)){
+      if(!calCovered(e.id,e.prossimaMan,assiList)){
+        evs.push({date:calParseIso(e.prossimaMan),kind:"stima",type:"man",equipId:e.id,clienteId:e.clienteId,cliente:cli,sede:sede,acronimo:e.acronimo||"",matricola:e.matricola||"",label:"Manutenzione",tecnico:""});
+      }
+    }
+    stageProxList(e).forEach(function(x){
+      var d=calParseIso(x.prox);if(!d)return;
+      if(calCovered(e.id,d,assiList))return;
+      evs.push({date:d,kind:"stima",type:"fil",equipId:e.id,clienteId:e.clienteId,cliente:cli,sede:sede,acronimo:e.acronimo||"",matricola:e.matricola||"",label:"Filtro S"+x.stadio+(x.codice?(" "+x.codice):""),tecnico:"",stadio:x.stadio});
+    });
+  });
+  (assiList||[]).forEach(function(a){
+    var d=calParseIso(a.data);if(!d)return;
+    var ids=parseAssiEquipIds(a);
+    var kind=a.done?"fatto":"piano";
+    var sede=String(a.sede||"").trim();
+    if(!sede&&ids.length){
+      var eq0=(equipment||[]).find(function(x){return String(x.id)===String(ids[0]);});
+      sede=eq0?String(eq0.sede||"").trim():"";
+    }
+    sede=sede||"(senza sede)";
+    evs.push({date:d,kind:kind,type:"int",equipId:ids[0]||a.equip_id||"",equipIds:ids,clienteId:a.cliente_id,cliente:clienteName(a.cliente_id),sede:sede,acronimo:a.acronimo||"",matricola:a.matricola||"",label:a.tipo||"Intervento",tecnico:a.tecnico||"",assiId:a.id,nDpc:ids.length||1});
+  });
+  return evs;
+}
+function calApplyFilters(evs){
+  var cid=(document.getElementById("calCliente")||{}).value||"";
+  var sede=(document.getElementById("calSede")||{}).value||"";
+  var tipo=(document.getElementById("calTipo")||{}).value||"";
+  var tec=(document.getElementById("calTec")||{}).value||"";
+  return evs.filter(function(e){
+    if(cid&&String(e.clienteId)!==String(cid))return false;
+    if(sede&&e.sede!==sede)return false;
+    if(tipo==="man"&&e.type!=="man")return false;
+    if(tipo==="fil"&&e.type!=="fil")return false;
+    if(tipo==="int"&&e.type!=="int")return false;
+    if(tec&&String(e.tecnico||"").toLowerCase().indexOf(String(tec).toLowerCase())<0)return false;
+    return true;
+  });
+}
+function calIsOverdueEv(e){
+  if(e.kind==="fatto")return false;
+  var d=daysUntil(e.date);
+  return d!==null&&d<0;
+}
+async function renderCalendario(){
+  var grid=document.getElementById("calGrid");if(!grid)return;
+  var lab=document.getElementById("calMonthLabel");
+  var ym=window.CAL_YM||{y:new Date().getFullYear(),m:new Date().getMonth()};
+  if(lab)lab.textContent=CAL_MESI[ym.m]+" "+ym.y;
+  var assi=[];
+  try{assi=await loadAssiFromDb()||[];}catch(e){assi=[];}
+  window._calAssi=assi;
+  var all=calApplyFilters(collectCalEvents(assi));
+  window._calEvents=all;
+  var today=calTodayIso();
+  var first=new Date(ym.y,ym.m,1);
+  var startDow=(first.getDay()+6)%7; // lun=0
+  var daysIn=new Date(ym.y,ym.m+1,0).getDate();
+  var prevDays=new Date(ym.y,ym.m,0).getDate();
+  var cells=[];
+  var i,d,iso;
+  for(i=0;i<startDow;i++){
+    d=prevDays-startDow+i+1;
+    var pm=ym.m===0?11:ym.m-1, py=ym.m===0?ym.y-1:ym.y;
+    cells.push({iso:calIsoFromParts(py,pm+1,d),n:d,out:true});
+  }
+  for(d=1;d<=daysIn;d++) cells.push({iso:calIsoFromParts(ym.y,ym.m+1,d),n:d,out:false});
+  while(cells.length%7){
+    d=cells.length-(startDow+daysIn)+1;
+    var nm=ym.m===11?0:ym.m+1, ny=ym.m===11?ym.y+1:ym.y;
+    cells.push({iso:calIsoFromParts(ny,nm+1,d),n:d,out:true});
+  }
+  var byDay={};
+  all.forEach(function(e){
+    if(!byDay[e.date])byDay[e.date]=[];
+    byDay[e.date].push(e);
+  });
+  var h='<div class="cal-dow">Lun</div><div class="cal-dow">Mar</div><div class="cal-dow">Mer</div><div class="cal-dow">Gio</div><div class="cal-dow">Ven</div><div class="cal-dow">Sab</div><div class="cal-dow">Dom</div>';
+  cells.forEach(function(c){
+    var list=byDay[c.iso]||[];
+    var nSt=0,nPi=0,nFa=0,nSc=0,sedi={};
+    list.forEach(function(e){
+      if(e.kind==="stima")nSt++;
+      else if(e.kind==="piano")nPi++;
+      else if(e.kind==="fatto")nFa++;
+      if(calIsOverdueEv(e))nSc++;
+      sedi[e.sede]=1;
+    });
+    var cls="cal-day"+(c.out?" out":"")+(c.iso===today?" today":"")+(c.iso===(window.CAL_SEL||"")?" sel":"")+(nSc?" has-overdue":"");
+    var chips="";
+    if(nSc)chips+='<span class="cal-chip scad">'+nSc+' scad</span>';
+    if(nSt)chips+='<span class="cal-chip stima">'+nSt+' stima</span>';
+    if(nPi)chips+='<span class="cal-chip piano">'+nPi+' pian.</span>';
+    if(nFa)chips+='<span class="cal-chip fatto">'+nFa+' ok</span>';
+    var nSe=Object.keys(sedi).length;
+    if(nSe)chips+='<span class="cal-chip sede">'+nSe+' sed'+(nSe===1?"e":"i")+'</span>';
+    var click=c.out?"":' onclick="calSelectDay(\''+c.iso+'\')"';
+    h+='<div class="'+cls+'"'+click+'><div class="cal-n">'+c.n+'</div><div class="cal-chips">'+chips+'</div></div>';
+  });
+  grid.innerHTML=h;
+  var arre=all.filter(function(e){return calIsOverdueEv(e);});
+  var box=document.getElementById("calArre");
+  if(box){
+    if(!arre.length){box.style.display="none";box.innerHTML="";}
+    else{
+      box.style.display="block";
+      var nDpc={};
+      arre.forEach(function(e){if(e.equipId)nDpc[e.equipId]=1;});
+      box.innerHTML='<strong>Arretrati:</strong> '+arre.length+' scadenze / interventi aperti in ritardo · '+Object.keys(nDpc).length+' DPC. Clicca i giorni in rosso o vai al mese della data.';
+    }
+  }
+  renderCalWeek(all, ym);
+  if(window.CAL_SEL) calSelectDay(window.CAL_SEL, true);
+  else {
+    var side=document.getElementById("calSide");
+    var tit=document.getElementById("calSideTitle");
+    if(tit)tit.textContent="Seleziona un giorno";
+    if(side)side.innerHTML='<p class="cal-empty">Clicca una casella del mese per vedere le stime raggruppate per sede.</p>';
+  }
+}
+function renderCalWeek(all, ym){
+  var wrap=document.getElementById("calWeek");if(!wrap)return;
+  var first=new Date(ym.y,ym.m,1);
+  var start=new Date(first);
+  start.setDate(1-((first.getDay()+6)%7));
+  var h="";
+  for(var w=0;w<6;w++){
+    var a=new Date(start);a.setDate(start.getDate()+w*7);
+    var b=new Date(a);b.setDate(a.getDate()+6);
+    if(a.getMonth()!==ym.m && b.getMonth()!==ym.m) continue;
+    var aIso=calIsoFromParts(a.getFullYear(),a.getMonth()+1,a.getDate());
+    var bIso=calIsoFromParts(b.getFullYear(),b.getMonth()+1,b.getDate());
+    var slice=all.filter(function(e){return e.date>=aIso&&e.date<=bIso;});
+    var sedi={}, tec={}, nSt=0,nPi=0;
+    slice.forEach(function(e){
+      sedi[e.cliente+"|"+e.sede]=1;
+      if(e.tecnico)tec[e.tecnico]=1;
+      if(e.kind==="stima")nSt++;
+      if(e.kind==="piano")nPi++;
+    });
+    var tecTxt=Object.keys(tec).length?Object.keys(tec).join(", "):"nessun tecnico assegnato";
+    h+='<div class="w"><strong>Sett. '+fmt(aIso).slice(0,5)+'–'+fmt(bIso)+'</strong><div>'+Object.keys(sedi).length+' sedi · '+nSt+' stime · '+nPi+' pianificati</div><div style="color:#64748b">'+escHtml(tecTxt)+'</div></div>';
+  }
+  wrap.innerHTML=h;
+}
+function calSelectDay(iso, keep){
+  window.CAL_SEL=iso;
+  if(!keep){
+    var cells=document.querySelectorAll("#calGrid .cal-day");
+    cells.forEach(function(el){el.classList.toggle("sel", (el.getAttribute("onclick")||"").indexOf(iso)>-1);});
+  }
+  var tit=document.getElementById("calSideTitle");
+  if(tit)tit.textContent=fmt(iso);
+  var list=(window._calEvents||[]).filter(function(e){return e.date===iso;});
+  var side=document.getElementById("calSide");
+  if(!side)return;
+  if(!list.length){side.innerHTML='<p class="cal-empty">Niente in questo giorno (con i filtri attivi).</p>';return;}
+  var groups={};
+  list.forEach(function(e){
+    var k=(e.clienteId||"")+"||"+e.sede;
+    if(!groups[k])groups[k]={clienteId:e.clienteId,cliente:e.cliente,sede:e.sede,items:[],ids:[]};
+    groups[k].items.push(e);
+    if(e.equipId && groups[k].ids.indexOf(String(e.equipId))<0) groups[k].ids.push(String(e.equipId));
+    (e.equipIds||[]).forEach(function(id){if(groups[k].ids.indexOf(String(id))<0)groups[k].ids.push(String(id));});
+  });
+  var keys=Object.keys(groups).sort(function(a,b){return groups[a].cliente.localeCompare(groups[b].cliente,"it");});
+  var h="";
+  keys.forEach(function(k){
+    var g=groups[k];
+    var nSt=g.items.filter(function(x){return x.kind==="stima";}).length;
+    var nPi=g.items.filter(function(x){return x.kind==="piano";}).length;
+    var nFa=g.items.filter(function(x){return x.kind==="fatto";}).length;
+    var idsJs=g.ids.map(function(id){return String(id).replace(/\\/g,"\\\\").replace(/'/g,"\\'");}).join(",");
+    var sedeJs=String(g.sede).replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+    h+='<div class="cal-group"><h4>'+escHtml(g.cliente)+' · '+escHtml(g.sede)+'</h4>';
+    h+='<div style="font-size:.72rem;color:#64748b;margin-bottom:.3rem">'+g.ids.length+' DPC · '+nSt+' stime · '+nPi+' pian. · '+nFa+' fatti</div><ul>';
+    g.items.forEach(function(it){
+      var col=it.kind==="stima"?"#1d4ed8":(it.kind==="fatto"?"#166534":"#0f172a");
+      h+='<li style="color:'+col+'"><strong>'+escHtml(it.acronimo||it.label)+'</strong> '+(it.matricola?("· "+escHtml(it.matricola)+" "):"")+escHtml(it.label)+(it.tecnico?(" · "+escHtml(it.tecnico)):"")+(calIsOverdueEv(it)?" · SCADUTO":"")+'</li>';
+    });
+    h+='</ul>';
+    if(g.clienteId&&g.ids.length){
+      h+='<button type="button" class="btn btn-oggi" style="padding:.3rem .55rem;font-size:.75rem" onclick="calCreaIntervento(\''+String(g.clienteId).replace(/'/g,"\\'")+'\',\''+sedeJs+'\',\''+iso+'\',\''+idsJs+'\')"><i class="fas fa-wrench"></i> Crea intervento</button> ';
+    }
+    h+='<button type="button" class="btn btn-secondary" style="padding:.3rem .55rem;font-size:.75rem" onclick="calApriCliente(\''+String(g.clienteId||"").replace(/'/g,"\\'")+'\')">Apri elenco</button>';
+    h+='</div>';
+  });
+  side.innerHTML=h;
+}
+function calApriCliente(id){
+  try{showDpcPage();}catch(e){}
+  try{openClienteElenco(id);}catch(e){}
+}
+async function calCreaIntervento(clienteId, sede, iso, idsCsv){
+  var ids=String(idsCsv||"").split(",").map(function(s){return s.trim();}).filter(Boolean);
+  await openNuovoInterventoModal();
+  var dt=document.getElementById("niData");if(dt)dt.value=iso;
+  var comms=(commesse||[]).filter(function(c){
+    return String(c.cliente_id)===String(clienteId) && String(c.stato||"aperta")!=="chiusa";
+  });
+  if(comms.length===1){
+    var sel=document.getElementById("niCommessa");
+    if(sel){sel.value=comms[0].id;onNiCommessaChange();}
+  }else if(comms.length>1){
+    toast("Scegli la commessa, poi i DPC della sede restano selezionabili");
+  }else{
+    toast("Nessuna commessa aperta per questo cliente: creala prima");
+  }
+  setTimeout(function(){
+    var ns=document.getElementById("niSede");
+    if(ns&&sede&&sede!=="(senza sede)"){
+      var found=false;
+      Array.prototype.forEach.call(ns.options,function(o){if(o.value===sede)found=true;});
+      if(found){ns.value=sede;try{fillNiDpc();}catch(e){}}
+    }
+    if(ids.length){
+      document.querySelectorAll("#niDpcList .ni-dpc-cb").forEach(function(cb){
+        cb.checked=ids.indexOf(String(cb.value))>=0;
+      });
+      try{updateNiDpcCount();}catch(e){}
+    }
+  },80);
+}
+function exportCalendarioExcel(){
+  var list=window._calEvents||[];
+  var rows=[["Data","Stato","Tipo","Cliente","Sede","Acronimo","Matricola","Dettaglio","Tecnico"]];
+  list.slice().sort(function(a,b){return String(a.date).localeCompare(b.date);}).forEach(function(e){
+    rows.push([e.date,e.kind,e.type,e.cliente,e.sede,e.acronimo,e.matricola,e.label,e.tecnico||""]);
+  });
+  var ws=XLSX.utils.aoa_to_sheet(rows),wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"Calendario");
+  var ym=window.CAL_YM||{y:new Date().getFullYear(),m:new Date().getMonth()};
+  XLSX.writeFile(wb,"calendario_"+ym.y+"_"+calPad(ym.m+1)+".xlsx");
+}
+function openGuidaModal(){
+  var m=document.getElementById("guidaModal");if(!m)return;
+  showGuidaTab("op");
+  m.classList.add("show");
+}
+function closeGuidaModal(){var m=document.getElementById("guidaModal");if(m)m.classList.remove("show");}
+function showGuidaTab(which){
+  var op=document.getElementById("guidaPaneOp"),ad=document.getElementById("guidaPaneAd");
+  var b1=document.getElementById("guidaTabOp"),b2=document.getElementById("guidaTabAd");
+  if(op)op.classList.toggle("show",which==="op");
+  if(ad)ad.classList.toggle("show",which==="ad");
+  if(b1)b1.classList.toggle("active",which==="op");
+  if(b2)b2.classList.toggle("active",which==="ad");
+}
+
 window.addEventListener("unhandledrejection",function(ev){
   try{console.error("Promise reject:",ev&&ev.reason);}catch(e){}
 });
