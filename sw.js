@@ -1,5 +1,5 @@
-/* Gestionale CAMI – Service Worker PWA v2 */
-const CACHE = "cami-pwa-v4";
+/* Gestionale CAMI – Service Worker PWA v5 */
+const CACHE = "cami-pwa-v5";
 const PRECACHE = ["./manifest.webmanifest","./icon-192.png","./icon-512.png","./apple-touch-icon.png"];
 
 self.addEventListener("install", (event) => {
