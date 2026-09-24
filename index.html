@@ -1542,7 +1542,9 @@ html.ui-only-dpc #commesseChrome{display:none!important}
         <li>Copia file precedente alle ultime migliorie: <code>index-backup-2026-09-03.html</code> sul repository.</li>
       </ul>
       <h3>Pannello admin</h3>
-      <p>Solo Super. Colonne visibili, bottoni per ruolo, homepage (card / elenco / dashboard), loghi e colori cliente, pubblicazione su tutti i PC (tabella ui_settings).</p>
+      <p>Solo Super. Colonne visibili, bottoni per ruolo, homepage (card / elenco / dashboard), loghi e colori cliente, pubblicazione su tutti i PC (tabella ui_settings). In alto: stato database e tasto «Tieni sveglio ora».</p>
+      <h3>Antipausa database</h3>
+      <p>Il piano Free di Supabase si spegne dopo circa 7 giorni senza uso (errore Failed to fetch al login). Due volte al giorno parte un ping automatico dal repository. Ogni accesso Super fa lo stesso. Non serve lasciare il gestionale aperto.</p>
       <h3>Audit</h3>
       <p>Storico login e modifiche. Non cancellare a mano.</p>
       <h3>Strumenti</h3>
@@ -2092,6 +2094,12 @@ html.ui-only-dpc #commesseChrome{display:none!important}
   <div class="modal-header"><h2>Pannello amministrazione</h2><button class="modal-close" onclick="closePannelloAdmin()">&times;</button></div>
   <div class="modal-body">
     <p class="client-home-sub" style="margin-top:0">Solo Super admin. Le regole si salvano su Supabase e valgono su tutti i PC.</p>
+    <div id="keepBox" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:.5rem;padding:.7rem .85rem;margin:.35rem 0 1rem">
+      <div style="font-weight:700;font-size:.82rem;color:#166534"><i class="fas fa-heartbeat"></i> Database (antipausa)</div>
+      <p id="keepStatus" style="margin:.3rem 0 .5rem;font-size:.8rem;color:#166534">Controllo…</p>
+      <button type="button" class="btn btn-save" onclick="pingKeepaliveNow()"><i class="fas fa-bolt"></i> Tieni sveglio ora</button>
+      <p style="margin:.5rem 0 0;font-size:.72rem;color:#64748b">Il piano Free si spegne dopo circa 7 giorni senza uso. Un ping automatico parte due volte al giorno, anche se nessuno apre il gestionale. Ogni accesso Super fa lo stesso.</p>
+    </div>
     <div id="uiSqlWarn" class="sql-box"></div>
     <div class="admin-tabs">
       <button type="button" class="active" onclick="adminTab('vis',this)">Visualizzazione</button>
@@ -2742,6 +2750,59 @@ function parseTipoClasse(s){
 }
 async function logAudit(azione,eq,dettagli){try{await sb.from("audit_log").insert([{equip_id:eq&&eq.id?eq.id:null,matricola:eq?eq.matricola||"":"",id_dispositivo:eq?eq.idDispositivo||"":"",username:currentUser?currentUser.username:"?",azione:azione,dettagli:dettagli||""}]);}catch(e){console.warn("audit",e);}}
 function checkAutoBackup(){try{var last=parseInt(safeGetLocal(LAST_BACKUP_KEY,"0")||"0",10);if(!last||(Date.now()-last)>BACKUP_DAYS*86400000){exportFullBackup({cloudOnly:true});}}catch(e){}}
+var KEEP_KEY="cami_keepalive_at";
+async function pingKeepalive(force){
+  if(!sb)return {ok:false,msg:"client assente"};
+  var last=parseInt(safeGetLocal(KEEP_KEY,"0")||"0",10);
+  if(!force && last && (Date.now()-last)<6*3600*1000) return {ok:true,skipped:true};
+  var r=await sb.from("users").select("id").limit(1);
+  if(r.error) return {ok:false,msg:r.error.message};
+  var now=new Date().toISOString();
+  try{
+    await sb.from("ui_settings").upsert({
+      id:"keepalive",
+      data:{at:now,by:(currentUser&&currentUser.username)||"app"},
+      updated_at:now,
+      updated_by:(currentUser&&currentUser.username)||"app"
+    });
+  }catch(e){}
+  safeSetLocal(KEEP_KEY,String(Date.now()));
+  return {ok:true,at:now};
+}
+async function refreshKeepaliveStatus(){
+  var el=document.getElementById("keepStatus");
+  if(!el||!sb)return;
+  el.style.color="#166534";
+  el.textContent="Controllo…";
+  try{
+    var res=await sb.from("ui_settings").select("data,updated_at").eq("id","keepalive").maybeSingle();
+    if(res&&res.error){
+      el.textContent=friendlyDbErr(res.error.message);
+      el.style.color="#b91c1c";
+      return;
+    }
+    if(res&&res.data){
+      var at=(res.data.data&&res.data.data.at)||res.data.updated_at;
+      var by=(res.data.data&&res.data.data.by)||"";
+      var d=at?new Date(at):null;
+      var age=d?(Date.now()-d.getTime()):9e15;
+      var ok=age<5*86400000;
+      el.style.color=ok?"#166534":"#b45309";
+      el.textContent=(ok?"Database sveglio. ":"Ultimo ping vecchio: riavvia o premi il tasto. ")+"Ultimo battito: "+(d&&!isNaN(d)?d.toLocaleString("it-IT"):"-")+(by?" · "+by:"");
+    }else{
+      el.textContent="Nessun battito ancora. Premi «Tieni sveglio ora».";
+    }
+  }catch(e){
+    el.style.color="#b91c1c";
+    el.textContent=friendlyDbErr(e.message||e);
+  }
+}
+async function pingKeepaliveNow(){
+  var r=await pingKeepalive(true);
+  if(r.ok){try{toast("Database svegliato");}catch(e){}}
+  else alert(friendlyDbErr(r.msg||"errore"));
+  try{await refreshKeepaliveStatus();}catch(e){}
+}
 function showFotoPreview(url){var img=document.getElementById("fotoPreview");if(!img)return;if(url){img.src=url;img.classList.add("show");}else{img.src="";img.classList.remove("show");}}
 async function uploadFotoIfAny(equipId){var fileInput=document.getElementById("fotoFile");var file=fileInput&&fileInput.files&&fileInput.files[0];if(!file)return{url:document.getElementById("fotoUrl").value||"",path:document.getElementById("fotoPath").value||""};var path=(equipId||"tmp")+"/"+Date.now()+"_"+safeName(file.name);var up=await sb.storage.from("foto").upload(path,file,{upsert:true});if(up.error)throw up.error;return{url:sb.storage.from("foto").getPublicUrl(path).data.publicUrl,path:path};}
 
@@ -4378,6 +4439,7 @@ function adminTab(id,btn){
   if(btn)btn.classList.add("active");
 }
 function fillAdminForm(){
+  try{refreshKeepaliveStatus();}catch(e){}
   var p=loadUiPrefs();
   var a=document.getElementById("uiShowFilteredList"); if(a)a.checked=!!p.showFilteredList;
   var b=document.getElementById("uiShowStatsHome"); if(b)b.checked=!!p.showStatsHome;
@@ -4804,7 +4866,7 @@ async function showApp(){document.getElementById("loginScreen").classList.add("h
   try{applyHomepageByRole();}catch(e){}
   try{await loadDbNotifiche();refreshBell();}catch(e){}
   try{startNotificheRealtime();}catch(e){console.warn(e);}
-  if(s||a||t)setTimeout(function(){sendExpiryEmail(false);},2000);if(s)setTimeout(checkAutoBackup,2500);requestNotifyPermission();setTimeout(notifyExpiringOnLogin,3000);setTimeout(showPendingInAppNotifications,1500);
+  if(s||a||t)setTimeout(function(){sendExpiryEmail(false);},2000);if(s)setTimeout(checkAutoBackup,2500);if(s)setTimeout(function(){pingKeepalive(false);},1800);requestNotifyPermission();setTimeout(notifyExpiringOnLogin,3000);setTimeout(showPendingInAppNotifications,1500);
   try{var dc=document.getElementById("dpcChrome");if(dc)dc.style.display="block";syncStickyChrome();setTimeout(syncStickyChrome,50);setTimeout(syncStickyChrome,400);}catch(e){}
 }
 async function showPendingInAppNotifications(){
