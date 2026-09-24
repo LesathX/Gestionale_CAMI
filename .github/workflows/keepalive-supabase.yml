@@ -1,0 +1,33 @@
+name: Antipausa database CAMI
+
+on:
+  schedule:
+    - cron: "0 6,18 * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase (lettura + battito)
+        env:
+          SB_URL: https://josevxlanibnlumpbxjl.supabase.co
+          SB_KEY: sb_publishable_XyAfO9cKakVWTjbLHrA3Fw_mZGGG0rI
+        run: |
+          set -euo pipefail
+          NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          curl -fsS \
+            -H "apikey: ${SB_KEY}" \
+            -H "Authorization: Bearer ${SB_KEY}" \
+            -H "Accept: application/json" \
+            "${SB_URL}/rest/v1/users?select=id&limit=1" >/dev/null
+          curl -sS -o /tmp/keep.json -w "%{http_code}" \
+            -X POST \
+            -H "apikey: ${SB_KEY}" \
+            -H "Authorization: Bearer ${SB_KEY}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: resolution=merge-duplicates,return=minimal" \
+            "${SB_URL}/rest/v1/ui_settings" \
+            -d "{\"id\":\"keepalive\",\"data\":{\"at\":\"${NOW}\",\"by\":\"github-actions\"},\"updated_at\":\"${NOW}\",\"updated_by\":\"github-actions\"}" > /tmp/keep.code || true
+          echo "SELECT ok · upsert HTTP $(cat /tmp/keep.code) · ${NOW}"
+          test "$(cat /tmp/keep.code)" = "201" -o "$(cat /tmp/keep.code)" = "200" -o "$(cat /tmp/keep.code)" = "204" || echo "upsert non bloccante"
